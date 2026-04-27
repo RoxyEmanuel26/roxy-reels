@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="EnakReels — Discover trending short videos in a premium, immersive vertical feed experience.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="EnakReels — Vertical Video Feed">
+    <meta property="og:description" content="Discover trending short videos in a premium, immersive experience.">
+    <meta property="og:type" content="website">
+    
+    <title>EnakReels — Vertical Video Feed</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="assets/css/main.css?v=9">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <svg class="splash-icon" viewBox="0 0 48 48" fill="none">
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00d4aa"/>
+                            <stop offset="100%" style="stop-color:#7c5cfc"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#logoGrad)" opacity="0.15"/>
+                    <path d="M20 16L32 24L20 32V16Z" fill="url(#logoGrad)"/>
+                </svg>
+                <span class="splash-title">EnakReels</span>
+            </div>
+            <div class="splash-loader">
+                <div class="splash-loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app" style="display:none;">
+        
+        <!-- Top Header -->
+        <header id="top-header" class="top-header">
+            <div class="header-inner">
+                <div class="header-left">
+                    <div class="header-logo" id="header-logo">
+                        <svg class="header-logo-icon" viewBox="0 0 48 48" fill="none">
+                            <defs>
+                                <linearGradient id="hLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#00d4aa"/>
+                                    <stop offset="100%" style="stop-color:#7c5cfc"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M20 16L32 24L20 32V16Z" fill="url(#hLogoGrad)"/>
+                        </svg>
+                        <span class="header-logo-text">EnakReels</span>
+                    </div>
+                </div>
+                <div class="header-center">
+                    <div id="feed-mode-tabs" class="feed-mode-tabs">
+                        <button class="tab-btn active" data-mode="trending" id="tab-trending">
+                            <span class="tab-icon">🔥</span>
+                            <span class="tab-label">Trending</span>
+                        </button>
+                        <button class="tab-btn" data-mode="search" id="tab-search">
+                            <span class="tab-icon">🔍</span>
+                            <span class="tab-label">Search</span>
+                        </button>
+                        <button class="tab-btn" data-mode="niches" id="tab-niches">
+                            <span class="tab-icon">✨</span>
+                            <span class="tab-label">Explore</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" id="btn-refresh" title="Refresh feed">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                    <button class="header-btn" id="btn-theme" title="Toggle theme">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Drawer -->
+        <div id="search-drawer" class="search-drawer">
+            <div class="search-drawer-backdrop" id="search-backdrop"></div>
+            <div class="search-drawer-content">
+                <div class="search-input-wrap">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search tags, keywords..." autocomplete="off" spellcheck="false">
+                    <button class="search-clear" id="search-clear">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div id="search-suggestions" class="search-suggestions"></div>
+            </div>
+        </div>
+
+        <!-- Niche Panel -->
+        <div id="niche-panel" class="niche-panel">
+            <div class="niche-panel-backdrop" id="niche-backdrop"></div>
+            <div class="niche-panel-content">
+                <div class="niche-panel-header">
+                    <h3>Explore Niches</h3>
+                    <button class="niche-close" id="niche-close">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="niche-search-wrap">
+                    <input type="text" id="niche-search-input" class="niche-search-input" placeholder="Search niches..." autocomplete="off">
+                </div>
+                <div id="niche-list" class="niche-list">
+                    <div class="niche-loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feed Container -->
+        <main id="feed-container" class="feed-container">
+            <!-- Video cards will be dynamically injected here -->
+        </main>
+
+        <!-- Feed Status Bar -->
+        <div id="feed-status" class="feed-status" style="display:none;">
+            <div class="feed-status-inner">
+                <span id="feed-status-text"></span>
+            </div>
+        </div>
+
+        <!-- Loading Indicator (bottom) -->
+        <div id="feed-loader" class="feed-loader" style="display:none;">
+            <div class="feed-loader-inner">
+                <div class="spinner"></div>
+                <span>Loading more...</span>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display:none;">
+            <div class="empty-state-inner">
+                <svg class="empty-icon" viewBox="0 0 80 80" fill="none">
+                    <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+                    <path d="M32 30L52 40L32 50V30Z" stroke="currentColor" stroke-width="2" fill="none" opacity="0.4"/>
+                </svg>
+                <h3 id="empty-title">No videos found</h3>
+                <p id="empty-message">Try a different search or explore trending content</p>
+                <button class="btn-primary" id="empty-action">Browse Trending</button>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="error-state" style="display:none;">
+            <div class="error-state-inner">
+                <svg class="error-icon" viewBox="0 0 80 80" fill="none">
+                    <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+                    <line x1="30" y1="30" x2="50" y2="50" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+                    <line x1="50" y1="30" x2="30" y2="50" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+                </svg>
+                <h3 id="error-title">Something went wrong</h3>
+                <p id="error-message">We couldn't load the feed. Please try again.</p>
+                <button class="btn-primary" id="error-retry">Retry</button>
+            </div>
+        </div>
+
+        <!-- Mute Indicator (global overlay) -->
+        <div id="mute-indicator" class="mute-indicator" style="display:none;">
+            <div class="mute-indicator-inner">
+                <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                    <line x1="17" y1="9" x2="23" y2="15"></line>
+                </svg>
+                <svg id="mute-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- Scripts (modular) -->
+    <script src="assets/js/api.js?v=8"></script>
+    <script src="assets/js/player.js?v=8"></script>
+    <script src="assets/js/ui.js?v=8"></script>
+    <script src="assets/js/feed.js?v=8"></script>
+    <script src="assets/js/app.js?v=8"></script>
+</body>
+</html>
