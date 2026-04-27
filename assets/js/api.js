@@ -7,7 +7,7 @@ var RoxyAPI = (() => {
   // Use local CORS proxy in dev; in production, replace with your proxy URL
   const BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
     ? 'http://localhost:3001/v2'
-    : 'https://api.redgifs.com/v2';
+    : '/api/v2';
 
   let _token = null;
   let _tokenExpiry = 0;
