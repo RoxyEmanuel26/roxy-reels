@@ -116,7 +116,7 @@ var RoxyAPI = (() => {
   /** Trending feed — uses /v2/gifs/search with order=trending */
   async function getTrending(page = 1, count = 30) {
     const key = `trending_${page}_${count}`;
-    const url = `${BASE}/gifs/search?order=trending&count=${count}&page=${page}`;
+    const url = `${BASE}/gifs/search?search_text=trending&order=top&count=${count}&page=${page}`;
     const signal = _signal('feed');
     return _mapGifs(await _cachedFetch(key, url, { signal }));
   }
@@ -127,8 +127,8 @@ var RoxyAPI = (() => {
     const q = encodeURIComponent(query.trim());
     const signal = _signal('feed');
 
-    // Primary: /v2/gifs/search with tags (confirmed working via API testing)
-    const url = `${BASE}/gifs/search?tags=${q}&page=${page}&count=${count}&order=trending`;
+    // Primary: /v2/gifs/search with search_text
+    const url = `${BASE}/gifs/search?search_text=${q}&page=${page}&count=${count}&order=top`;
     return _mapGifs(await _authFetch(url, { signal }));
   }
 
@@ -164,7 +164,7 @@ var RoxyAPI = (() => {
   /** Gifs by niche — uses /v2/niches/{niche}/gifs */
   async function getNicheGifs(nicheId, page = 1, count = 30) {
     if (_isBlocked(nicheId)) return { items: [], page: 1, pages: 1, total: 0 };
-    const url = `${BASE}/niches/${encodeURIComponent(nicheId)}/gifs?page=${page}&count=${count}&order=trending`;
+    const url = `${BASE}/niches/${encodeURIComponent(nicheId)}/gifs?page=${page}&count=${count}&order=top`;
     const signal = _signal('feed');
     return _mapGifs(await _authFetch(url, { signal }));
   }
