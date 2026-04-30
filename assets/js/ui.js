@@ -214,29 +214,52 @@ var RoxyUI = (() => {
   // ─── Show/Hide States ──────────────────────
   function showEmpty(title, message) {
     const el = document.getElementById('empty-state');
-    document.getElementById('empty-title').textContent = title || 'No videos found';
-    document.getElementById('empty-message').textContent = message || 'Try a different search or explore trending content';
+    if (!el) return;
+    const tEl = document.getElementById('empty-title');
+    const mEl = document.getElementById('empty-message');
+    if (tEl) tEl.textContent = title || 'No videos found';
+    if (mEl) mEl.textContent = message || 'Try a different search or explore trending content';
     el.style.display = 'flex';
   }
-  function hideEmpty() { document.getElementById('empty-state').style.display = 'none'; }
+  function hideEmpty() { 
+    const el = document.getElementById('empty-state');
+    if (el) el.style.display = 'none'; 
+  }
 
   function showError(title, message) {
     const el = document.getElementById('error-state');
-    document.getElementById('error-title').textContent = title || 'Something went wrong';
-    document.getElementById('error-message').textContent = message || 'We couldn\'t load the feed. Please try again.';
+    if (!el) return;
+    const tEl = document.getElementById('error-title');
+    const mEl = document.getElementById('error-message');
+    if (tEl) tEl.textContent = title || 'Something went wrong';
+    if (mEl) mEl.textContent = message || 'We couldn\'t load the feed. Please try again.';
     el.style.display = 'flex';
   }
-  function hideError() { document.getElementById('error-state').style.display = 'none'; }
+  function hideError() { 
+    const el = document.getElementById('error-state');
+    if (el) el.style.display = 'none'; 
+  }
 
-  function showLoader() { document.getElementById('feed-loader').style.display = 'block'; }
-  function hideLoader() { document.getElementById('feed-loader').style.display = 'none'; }
+  function showLoader() { 
+    const el = document.getElementById('feed-loader');
+    if (el) el.style.display = 'block'; 
+  }
+  function hideLoader() { 
+    const el = document.getElementById('feed-loader');
+    if (el) el.style.display = 'none'; 
+  }
 
   function showFeedStatus(text) {
     const el = document.getElementById('feed-status');
-    document.getElementById('feed-status-text').textContent = text;
+    if (!el) return;
+    const tEl = document.getElementById('feed-status-text');
+    if (tEl) tEl.textContent = text;
     el.style.display = 'block';
   }
-  function hideFeedStatus() { document.getElementById('feed-status').style.display = 'none'; }
+  function hideFeedStatus() { 
+    const el = document.getElementById('feed-status');
+    if (el) el.style.display = 'none'; 
+  }
 
   // ─── Theme Toggle ──────────────────────────
   function toggleTheme() {

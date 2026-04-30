@@ -30,9 +30,9 @@ var RoxyApp = (() => {
     const splash = document.getElementById('splash-screen');
     const app = document.getElementById('app');
     setTimeout(() => {
-      splash.classList.add('hidden');
-      app.style.display = '';
-      setTimeout(() => splash.remove(), 500);
+      if (splash) splash.classList.add('hidden');
+      if (app) app.style.display = '';
+      setTimeout(() => { if (splash) splash.remove(); }, 500);
     }, 400);
   }
 
