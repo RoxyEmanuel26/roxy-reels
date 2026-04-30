@@ -39,7 +39,12 @@ export default async function handler(req, res) {
 
     // Copy response headers
     response.headers.forEach((value, key) => {
-      if (!key.toLowerCase().startsWith('access-control-')) {
+      const lowerKey = key.toLowerCase();
+      // Exclude headers that fetch() automatically decompressed or that interfere with Vercel's response
+      if (!lowerKey.startsWith('access-control-') &&
+          lowerKey !== 'content-encoding' &&
+          lowerKey !== 'content-length' &&
+          lowerKey !== 'transfer-encoding') {
         res.setHeader(key, value);
       }
     });
