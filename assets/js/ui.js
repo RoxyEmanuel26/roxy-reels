@@ -35,6 +35,7 @@ var RoxyUI = (() => {
         loop
         preload="metadata"
         poster="${item.poster || ''}"
+        referrerpolicy="no-referrer"
       ></video>
       <div class="video-volume-control">
         <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="0.3">
