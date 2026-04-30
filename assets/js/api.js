@@ -20,8 +20,8 @@ var RoxyAPI = (() => {
 
   function _isBlocked(text) {
     if (!text) return false;
-    const lower = text.toLowerCase();
-    return BLOCKED_WORDS.some(w => lower.includes(w));
+    const regex = new RegExp('\\b(' + BLOCKED_WORDS.join('|') + ')\\b', 'i');
+    return regex.test(text);
   }
 
   function _abort(key) {
