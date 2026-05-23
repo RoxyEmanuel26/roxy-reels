@@ -236,14 +236,6 @@ function navigate(urlPath) {
         floatWrapper.style.width = '';
         floatWrapper.style.height = '';
         
-        // Clear the theater-mode inline scale transform on #player-container
-        // so the CSS floating scale rule (.mode-floating #player-container { transform: scale(0.3333) }) takes over.
-        // This ensures the iframe never experiences an actual resize — only a CSS transform change.
-        const playerContainer = document.getElementById('player-container');
-        if (playerContainer) {
-          playerContainer.style.transform = '';
-        }
-        
         if (floatTitle) {
           floatTitle.textContent = i18n.translateVideoTitle(window.missavJState.activeVideo.title);
         }
@@ -319,7 +311,6 @@ export function closeFloatingPlayer() {
   
   const playerContainer = document.getElementById('player-container');
   if (playerContainer) {
-    playerContainer.style.transform = '';
     playerContainer.innerHTML = '';
   }
   
