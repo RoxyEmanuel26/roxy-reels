@@ -58,7 +58,7 @@ function renderActorsGrid(actorsList, searchQuery = '') {
     if (apiBtn) {
       apiBtn.addEventListener('click', () => {
         const actorName = decodeURIComponent(apiBtn.dataset.name);
-        window.location.hash = `#/actor?name=${encodeURIComponent(actorName)}`;
+        window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       });
     }
     return;
@@ -146,7 +146,7 @@ export function init() {
       const card = e.target.closest('.actor-browse-card');
       if (card) {
         const actorName = decodeURIComponent(card.dataset.name);
-        window.location.hash = `#/actor?name=${encodeURIComponent(actorName)}`;
+        window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       }
     });
   }

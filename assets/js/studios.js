@@ -54,7 +54,7 @@ function renderStudiosGrid(studiosList, searchQuery = '') {
     if (apiBtn) {
       apiBtn.addEventListener('click', () => {
         const studioName = decodeURIComponent(apiBtn.dataset.name);
-        window.location.hash = `#/studio?name=${encodeURIComponent(studioName)}`;
+        window.missavJNavigate(`/studio?name=${encodeURIComponent(studioName)}`);
       });
     }
     return;
@@ -140,7 +140,7 @@ export function init() {
       const card = e.target.closest('.studio-browse-card');
       if (card) {
         const studioName = decodeURIComponent(card.dataset.name);
-        window.location.hash = `#/studio?name=${encodeURIComponent(studioName)}`;
+        window.missavJNavigate(`/studio?name=${encodeURIComponent(studioName)}`);
       }
     });
   }

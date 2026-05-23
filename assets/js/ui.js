@@ -154,7 +154,7 @@ const ui = {
     const clearBtn = document.getElementById('empty-clear-btn');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        window.location.hash = '#/';
+        window.missavJNavigate('/');
       });
     }
   },

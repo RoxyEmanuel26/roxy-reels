@@ -555,7 +555,7 @@ function bindRelatedClicks(list) {
     const card = e.target.closest('.related-video-card');
     if (card) {
       const postId = card.dataset.id;
-      window.location.hash = `#/watch?id=${postId}`;
+      window.missavJNavigate(`/watch?id=${postId}`);
     }
   });
 }

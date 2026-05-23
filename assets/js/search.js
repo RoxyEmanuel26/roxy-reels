@@ -242,7 +242,7 @@ function setupHeaderLiveSearch() {
     if (e.key === 'Enter') {
       const val = newSearchInput.value.trim();
       if (val) {
-        window.location.hash = `#/search?q=${encodeURIComponent(val)}`;
+        window.missavJNavigate(`/search?q=${encodeURIComponent(val)}`);
       }
     }
   });
@@ -300,7 +300,7 @@ function bindGridClicks(grid) {
     if (actorChip) {
       e.stopPropagation();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
-      window.location.hash = `#/actor?name=${encodeURIComponent(actorName)}`;
+      window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       return;
     }
 
@@ -308,14 +308,14 @@ function bindGridClicks(grid) {
     if (studioName) {
       e.stopPropagation();
       const studio = decodeURIComponent(studioName.dataset.studio);
-      window.location.hash = `#/studio?name=${encodeURIComponent(studio)}`;
+      window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
       return;
     }
 
     const card = e.target.closest('.video-card');
     if (card && !card.classList.contains('skeleton-card')) {
       const postId = card.dataset.id;
-      window.location.hash = `#/watch?id=${postId}`;
+      window.missavJNavigate(`/watch?id=${postId}`);
     }
   });
 }

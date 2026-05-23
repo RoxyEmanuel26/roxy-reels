@@ -181,7 +181,7 @@ export async function init(filters = {}) {
           <h2 class="banner-title">${actorName}</h2>
           <p class="banner-desc">${i18n.t('banner_actor_desc', { name: actorName })}</p>
         </div>
-        <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
       </div>
     `;
   } else if (currentFilters.studio) {
@@ -194,7 +194,7 @@ export async function init(filters = {}) {
           <h2 class="banner-title">${studioName}</h2>
           <p class="banner-desc">${i18n.t('banner_studio_desc', { name: studioName })}</p>
         </div>
-        <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
       </div>
     `;
   } else if (currentFilters.tag) {
@@ -207,7 +207,7 @@ export async function init(filters = {}) {
           <h2 class="banner-title">${tagName}</h2>
           <p class="banner-desc">${i18n.t('banner_tag_desc', { name: tagName })}</p>
         </div>
-        <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
       </div>
     `;
   } else if (currentFilters.category) {
@@ -223,7 +223,7 @@ export async function init(filters = {}) {
             <h2 class="banner-title">${catName}</h2>
             <p class="banner-desc">${i18n.t('banner_category_desc', { name: catName })}</p>
           </div>
-          <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+          <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
         </div>
       `;
     }
@@ -383,7 +383,7 @@ function bindGridClicks(grid) {
     if (actorChip) {
       e.stopPropagation();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
-      window.location.hash = `#/actor?name=${encodeURIComponent(actorName)}`;
+      window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       return;
     }
 
@@ -391,14 +391,14 @@ function bindGridClicks(grid) {
     if (studioName) {
       e.stopPropagation();
       const studio = decodeURIComponent(studioName.dataset.studio);
-      window.location.hash = `#/studio?name=${encodeURIComponent(studio)}`;
+      window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
       return;
     }
 
     const card = e.target.closest('.video-card');
     if (card && !card.classList.contains('skeleton-card')) {
       const postId = card.dataset.id;
-      window.location.hash = `#/watch?id=${postId}`;
+      window.missavJNavigate(`/watch?id=${postId}`);
     }
   });
 }

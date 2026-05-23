@@ -2,7 +2,8 @@
   "rewrites": [
     { "source": "/api/posts", "destination": "/api/posts.js" },
     { "source": "/api/posts/:id", "destination": "/api/posts.js?id=:id" },
-    { "source": "/api/player/:id", "destination": "/api/player.js?id=:id" }
+    { "source": "/api/player/:id", "destination": "/api/player.js?id=:id" },
+    { "source": "/((?!api|assets|favicon.svg|.*\\..*).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

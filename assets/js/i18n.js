@@ -326,15 +326,36 @@ export function getLang() {
  * Menyimpan kode bahasa terpilih dan merender ulang UI statik + memicu routing untuk muat ulang feed
  * @param {string} langCode - Kode bahasa baru
  */
-export function setLang(langCode) {
+export function setLang(langCode, triggerRedirect = true) {
   localStorage.setItem('missav_lang', langCode);
   
   // Terjemahkan seluruh UI statik seketika
   translateStaticUI();
   
-  // Pemicu navigasi ulang rute SPA aktif saat ini agar konten dinamis di feed ikut terjemah
-  const currentHash = window.location.hash || '#/';
-  window.dispatchEvent(new HashChangeEvent('hashchange'));
+  // Jika triggerRedirect bernilai true, kita perbarui sub-path bahasa pada URL pathname dan pemicu rerender
+  if (triggerRedirect) {
+    const pathname = window.location.pathname;
+    const cleanPath = pathname.replace(/^\//, ''); // Contoh: "en/trending"
+    const segments = cleanPath.split('/');
+    
+    // Periksa jika segmen pertama adalah kode bahasa yang valid
+    const firstSegment = segments[0] || '';
+    const isLangSegment = LANGS.some(l => l.code === firstSegment);
+    
+    let newPathname = '';
+    if (isLangSegment) {
+      segments[0] = langCode;
+      newPathname = '/' + segments.join('/') + window.location.search;
+    } else {
+      newPathname = '/' + langCode + (pathname.startsWith('/') ? '' : '/') + pathname + window.location.search;
+    }
+    
+    // Update URL tanpa reload halaman
+    history.pushState(null, '', newPathname);
+    
+    // Picu event popstate agar SPA router mendeteksi rute baru dalam bahasa baru
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
   
   // Tampilkan toast konfirmasi bahasa
   const activeLang = LANGS.find(l => l.code === langCode);

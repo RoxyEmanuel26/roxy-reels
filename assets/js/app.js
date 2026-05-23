@@ -17,14 +17,55 @@ window.missavJState = {
   currentPath: ''    // Menyimpan path rute aktif
 };
 
-// Parameter Helper: Mengambil nilai parameter dari hash query string
+// Parameter Helper: Mengambil nilai parameter dari query string URL
 function getParam(name) {
-  const hash = window.location.hash;
-  const parts = hash.split('?');
-  if (parts.length < 2) return null;
-  const searchParams = new URLSearchParams(parts[1]);
+  const searchParams = new URLSearchParams(window.location.search);
   return searchParams.get(name);
 }
+
+/**
+ * Memecah URL pathname untuk mengekstrak kode bahasa aktif dan sub-rute SPA (Aman)
+ * @param {string} urlPath - window.location.pathname
+ * @returns {{lang: string, routePath: string}}
+ */
+function parseUrl(urlPath) {
+  const cleanPath = urlPath.replace(/^\//, ''); // Contoh: "en/trending"
+  const segments = cleanPath.split('?')[0].split('/'); // ["en", "trending"]
+  
+  let lang = segments[0] || '';
+  const isValidLang = i18n.LANGS.some(l => l.code === lang);
+  
+  let routePath = '/';
+  if (isValidLang) {
+    routePath = '/' + segments.slice(1).join('/');
+  } else {
+    lang = i18n.getLang();
+    routePath = '/' + segments.join('/');
+  }
+  
+  // Bersihkan rute dari trailing slash
+  if (routePath.length > 1 && routePath.endsWith('/')) {
+    routePath = routePath.slice(0, -1);
+  }
+  
+  return { lang, routePath };
+}
+
+/**
+ * Melakukan navigasi rute SPA baru menggunakan History API
+ * @param {string} routePath - Rute internal (contoh: '/watch?id=123' atau '/trending')
+ */
+window.missavJNavigate = function(routePath) {
+  const currentLang = i18n.getLang();
+  const cleanPath = routePath.startsWith('/') ? routePath : '/' + routePath;
+  
+  // Pisahkan pathname dan query string agar aman
+  const [pathPart, queryPart] = cleanPath.split('?');
+  const fullPath = `/${currentLang}${pathPart}` + (queryPart ? `?${queryPart}` : '');
+  
+  history.pushState(null, '', fullPath);
+  navigate(fullPath);
+};
 
 // Custom Renderer untuk Tonton Nanti dan Riwayat Tontonan
 function renderSavedVideosPage(title, postsList, emptyMessage) {
@@ -40,7 +81,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
         <div class="empty-icon">📁</div>
         <h3 data-i18n="empty_state_title">Daftar Kosong</h3>
         <p>${emptyMessage}</p>
-        <button onclick="window.location.hash='#/'" class="btn-primary" data-i18n="empty_clear_btn">Telusuri Video</button>
+        <button onclick="window.missavJNavigate('/')" class="btn-primary" data-i18n="empty_clear_btn">Telusuri Video</button>
       </div>
     `;
     i18n.translateStaticUI();
@@ -66,7 +107,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
       if (actorChip) {
         e.stopPropagation();
         const actorName = decodeURIComponent(actorChip.dataset.actor);
-        window.location.hash = `#/actor?name=${encodeURIComponent(actorName)}`;
+        window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
         return;
       }
 
@@ -74,14 +115,14 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
       if (studioName) {
         e.stopPropagation();
         const studio = decodeURIComponent(studioName.dataset.studio);
-        window.location.hash = `#/studio?name=${encodeURIComponent(studio)}`;
+        window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
         return;
       }
 
       const card = e.target.closest('.video-card');
       if (card && !card.classList.contains('skeleton-card')) {
         const postId = card.dataset.id;
-        window.location.hash = `#/watch?id=${postId}`;
+        window.missavJNavigate(`/watch?id=${postId}`);
       }
     });
 
@@ -114,18 +155,22 @@ const routes = {
 };
 
 /**
- * Fungsi navigasi utama yang dipanggil saat hash berubah (Dengan Logika Transpalasi PiP)
- * @param {string} hash - window.location.hash
+ * Fungsi navigasi utama yang dipanggil saat rute berubah (Dengan Logika Transpalasi PiP)
+ * @param {string} urlPath - window.location.pathname + window.location.search
  */
-function navigate(hash) {
-  const [pathWithHash] = hash.split('?');
-  const path = pathWithHash.replace('#', '') || '/';
+function navigate(urlPath) {
+  const { lang, routePath } = parseUrl(urlPath);
   
+  // Sinkronisasi bahasa secara dinamis jika berbeda dari preferensi i18n aktif saat ini
+  if (lang && lang !== i18n.getLang()) {
+    i18n.setLang(lang, false); // Setel bahasa tanpa memicu redirect loop
+  }
+
   const prevPath = window.missavJState.currentPath;
-  window.missavJState.currentPath = path;
+  window.missavJState.currentPath = routePath;
 
   // 1. Logika Transpalasi LEAVE WATCH (Watch -> Halaman Lain): Pindahkan player ke mode floating
-  if (prevPath === '/watch' && path !== '/watch') {
+  if (prevPath === '/watch' && routePath !== '/watch') {
     const playerContainer = document.getElementById('player-container');
     if (playerContainer && window.missavJState.activeVideo) {
       const floatBody = document.getElementById('floating-player-body');
@@ -145,19 +190,19 @@ function navigate(hash) {
 
   // 2. Logika Transpalasi ENTER WATCH (Halaman Lain -> Watch): Jika ID video sama dengan yang melayang, transplant balik!
   const targetId = getParam('id');
-  if (path === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
+  if (routePath === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
     // Sembunyikan floating player karena kita akan memindahkannya kembali ke watch area
     const floatWrapper = document.getElementById('floating-player-wrapper');
     if (floatWrapper) floatWrapper.classList.add('hidden');
     window.missavJState.isFloating = false;
   } 
   // Jika membuka video watch yang BERBEDA dari yang sedang melayang, matikan pemutar melayang
-  else if (path === '/watch' && window.missavJState.isFloating) {
+  else if (routePath === '/watch' && window.missavJState.isFloating) {
     closeFloatingPlayer();
   }
 
   // Ambil rute pencocokan atau default ke beranda
-  const route = routes[path] || routes['/'];
+  const route = routes[routePath] || routes['/'];
   
   const mainApp = document.getElementById('app-content');
   if (mainApp) {
@@ -168,7 +213,7 @@ function navigate(hash) {
   ui.showSkeletons(8);
   
   // Highlight sidebar
-  highlightActiveSidebarItem(path);
+  highlightActiveSidebarItem(routePath);
   
   // Scroll halaman ke atas secara instan saat rute berubah
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -177,7 +222,7 @@ function navigate(hash) {
   route().then(() => {
     i18n.translateStaticUI();
   }).catch(err => {
-    console.error(`Error loading route ${path}:`, err);
+    console.error(`Error loading route ${routePath}:`, err);
     ui.showError(i18n.t('error_load_page', { message: err.message }));
   });
 }
@@ -270,7 +315,7 @@ function setupFloatingPlayerDOM() {
   // Klik Maximize: Transplant balik ke watch page penuh
   document.getElementById('floating-player-maximize').addEventListener('click', () => {
     if (window.missavJState.activeVideo) {
-      window.location.hash = `#/watch?id=${window.missavJState.activeVideo.id}`;
+      window.missavJNavigate(`/watch?id=${window.missavJState.activeVideo.id}`);
     }
   });
 
@@ -349,7 +394,7 @@ function initGlobalEvents() {
   const handleSearchSubmit = () => {
     const query = searchInput.value.trim();
     if (query) {
-      window.location.hash = `#/search?q=${encodeURIComponent(query)}`;
+      window.missavJNavigate(`/search?q=${encodeURIComponent(query)}`);
     }
   };
 
@@ -435,13 +480,58 @@ function setupLanguageDropdown() {
 
 // Bootstrap router saat halaman dimuat
 document.addEventListener('DOMContentLoaded', () => {
+  // 1. Backward Compatibility: Tangkap rute hash lama dan alihkan ke pathname rute bersih baru secara instan
+  if (window.location.hash) {
+    const hashPath = window.location.hash.replace('#', '') || '/';
+    const lang = i18n.getLang();
+    window.location.replace(`/${lang}${hashPath}`);
+    return;
+  }
+
+  // 2. Interseptor Klik Tautan Global (Mendukung link hash lama dan link pathname relatif baru)
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link) {
+      const href = link.getAttribute('href');
+      if (href) {
+        const isInternalSPA = href.startsWith('#/') || 
+          (href.startsWith('/') && !href.startsWith('/api') && !href.startsWith('/assets') && !href.includes('.'));
+        if (isInternalSPA) {
+          e.preventDefault();
+          const cleanPath = href.replace('#', '');
+          window.missavJNavigate(cleanPath);
+        }
+      }
+    }
+  });
+
+  // 3. Jika rute pathname saat ini kosong atau tidak memiliki subpath bahasa, lakukan redirect
+  const currentPathname = window.location.pathname;
+  const { lang, routePath } = parseUrl(currentPathname);
+  
+  // Deteksi jika pengguna membuka root URL "/" secara langsung
+  if (currentPathname === '/' || currentPathname === '') {
+    const activeLang = i18n.getLang();
+    history.replaceState(null, '', `/${activeLang}/`);
+  }
+
   initGlobalEvents();
   setupLanguageDropdown();  // Inisialisasi dropdown bahasa
   setupScrollTopButton();   // Injeksi tombol scroll-to-top
   setupFloatingPlayerDOM(); // Injeksi pemutar melayang (PiP)
   setupKeyboardHotkeys();   // Daftarkan hotkeys keyboard
+  
+  // Sinkronkan preferensi bahasa aktif
+  if (lang) {
+    i18n.setLang(lang, false);
+  }
+  
   i18n.translateStaticUI(); // Pelokalan pertama kali
   
-  window.addEventListener('hashchange', () => navigate(window.location.hash));
-  navigate(window.location.hash || '#/');
+  // Daftarkan event popstate untuk tombol back/forward browser
+  window.addEventListener('popstate', () => {
+    navigate(window.location.pathname + window.location.search);
+  });
+  
+  navigate(window.location.pathname + window.location.search);
 });
