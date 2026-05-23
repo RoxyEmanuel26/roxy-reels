@@ -252,10 +252,16 @@ function setupHeaderLiveSearch() {
   });
 
   newSearchInput.addEventListener('input', (e) => {
+    // CRITICAL: Only perform live search if the user is currently on the search page
+    if (window.missavJState.currentPath !== '/search') return;
+
     const val = e.target.value.trim();
     clearTimeout(searchTimeout);
 
     searchTimeout = setTimeout(async () => {
+      // Re-verify route status inside asynchronous execution flow
+      if (window.missavJState.currentPath !== '/search') return;
+
       if (val.length >= 2) {
         currentQuery = val;
         currentFilters.search = val;

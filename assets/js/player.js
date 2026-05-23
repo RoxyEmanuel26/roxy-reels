@@ -37,7 +37,6 @@ function getSecureIframeMarkup(iframeHtml) {
   return `
     <iframe 
       src="${safeSrc}" 
-      allowfullscreen 
       frameborder="0"
       scrolling="no"
       title="MISSAV-J safe embed player"
@@ -227,7 +226,6 @@ export async function init(id) {
         const iframe = playerContainer.querySelector('iframe');
         if (iframe) {
           const hideShimmer = () => {
-            console.log('IFRAME LOAD EVENT FIRED');
             const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
             if (shimmer) shimmer.style.display = 'none';
           };
