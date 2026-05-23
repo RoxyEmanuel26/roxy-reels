@@ -1,5 +1,5 @@
 /**
- * Roxy Reels — UI State Helper (Secured & Optimized)
+ * MISSAV-J — UI State Helper (Secured & Optimized)
  * Mengelola elemen UI visual seperti loading skeleton, toast alert,
  * tema warna in-memory, serta tampilan error dan empty states yang aman dari XSS.
  */

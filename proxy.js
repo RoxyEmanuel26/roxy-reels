@@ -1,5 +1,5 @@
 /**
- * EnakReels — CORS Proxy Server
+ * MISSAV-J — CORS Proxy Server
  * Proxies requests to RedGIFs API, stripping/overriding CORS headers.
  */
 const http = require('http');
@@ -70,6 +70,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[EnakReels Proxy] Running on http://localhost:${PORT}`);
-  console.log(`[EnakReels Proxy] Proxying to ${TARGET}`);
+  console.log(`[MISSAV-J Proxy] Running on http://localhost:${PORT}`);
+  console.log(`[MISSAV-J Proxy] Proxying to ${TARGET}`);
 });

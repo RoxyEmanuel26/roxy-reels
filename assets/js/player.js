@@ -1,7 +1,8 @@
 /**
- * Roxy Reels — Video Player Page (Secured & Optimized)
- * Mengelola pemuatan video embed dengan sandboxing aman (anti-XSS),
- * rendering metadata tersanitasi, panel interaksi, dan rekomendasi video staggered.
+ * MISSAV-J — Video Player Page (Advanced Edition)
+ * Mengelola pemuatan video embed dengan sandboxing aman, penanganan transpalasi balik
+ * (transplant back) kontainer PiP tanpa reload iframe, pendaran cahaya Ambient Mode,
+ * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
 import api from './api.js';
@@ -17,40 +18,34 @@ const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.
 
 /**
  * Mengekstrak src dari HTML iframe mentah dan membangun iframe baru dengan sandboxing ketat (Mitigasi XSS)
- * @param {string} iframeHtml - String markup iframe asli dari API
- * @returns {string} Markup iframe yang aman dan disanbox
  */
 function getSecureIframeMarkup(iframeHtml) {
   if (!iframeHtml) return '<div class="player-loading-shimmer">Pemutar tidak tersedia.</div>';
   
-  // Ambil atribut src menggunakan regular expression
   const srcMatch = iframeHtml.match(/src=["']([^"']+)["']/i);
   if (!srcMatch) {
     return '<div class="player-loading-shimmer">Format player tidak didukung.</div>';
   }
   
-  const safeSrc = ui.escapeHTML(srcMatch[1]);
+  // Ganti HTML entity &#038; atau &amp; dengan ampersand asli (&) agar query parameter tidak rusak
+  let rawSrc = srcMatch[1].replace(/&#038;/g, '&').replace(/&amp;/g, '&');
+  const safeSrc = ui.escapeHTML(rawSrc);
   
-  // Terapkan sandbox restrict:
-  // allow-scripts: diperlukan oleh pemutar video eksternal
-  // allow-same-origin: agar iframe dapat memuat asetnya sendiri
-  // allow-presentation: mendukung cast screen/TV
-  // Tanpa allow-top-navigation untuk mencegah pengalihan halaman induk secara paksa!
   return `
     <iframe 
       src="${safeSrc}" 
-      sandbox="allow-scripts allow-same-origin allow-presentation allow-forms" 
       allowfullscreen 
       frameborder="0"
       scrolling="no"
-      title="Roxy Reels Safe Embed Player"
+      title="MISSAV-J safe embed player"
+      allow="autoplay; fullscreen; encrypted-media"
       style="width: 100%; height: 100%; display: block;"
     ></iframe>
   `;
 }
 
 /**
- * Inisialisasi halaman player detail
+ * Inisialisasi halaman player detail (Mendukung transplantasi balik tanpa reload iframe)
  * @param {string} id - ID Post / Video dari URL hash query
  */
 export async function init(id) {
@@ -62,8 +57,11 @@ export async function init(id) {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
 
-  // 1. Tampilkan layout kerangka halaman (YouTube watch style)
+  // 1. Tampilkan layout teater lengkap dengan Ambient Glow Canvas
   mainApp.innerHTML = `
+    <!-- Efek Pendaran Teater Ambient Glow -->
+    <div class="player-ambient-glow" id="player-ambient-glow"></div>
+
     <div class="player-page-layout">
       <!-- Kolom Kiri: Player & Info Utama -->
       <div class="player-main-column">
@@ -96,6 +94,10 @@ export async function init(id) {
               <button id="dislike-btn" class="player-btn">
                 <span class="btn-icon">👎</span>
                 <span id="dislike-count" class="btn-label">0</span>
+              </button>
+              <button id="watch-later-btn" class="player-btn">
+                <span class="btn-icon">📁</span>
+                <span id="watch-later-label" class="btn-label">Tonton Nanti</span>
               </button>
               <button id="share-btn" class="player-btn">
                 <span class="btn-icon">🔗</span>
@@ -149,29 +151,78 @@ export async function init(id) {
     </div>
   `;
 
-  // Tampilkan loading skeleton pada daftar video terkait
   const relatedList = document.getElementById('related-videos-list');
   ui.showSkeletonsInElement(relatedList, 6);
 
   try {
-    // 2. Fetch Detail Post & Player Embed secara paralel
-    const [post, player] = await Promise.all([
-      api.getPost(id),
-      api.getPlayer(id)
-    ]);
+    let post;
+    const isCurrentlyPlaying = window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(id);
 
-    // 3. Bangun markup iframe sandboxed yang aman dari eksploitasi scripting
-    const playerContainer = document.getElementById('player-container');
-    if (playerContainer) {
-      playerContainer.innerHTML = getSecureIframeMarkup(player.iframe_html);
+    if (isCurrentlyPlaying) {
+      // 2. MASTERCLASS DOM TRANSPLANT BACK: Video sudah berjalan di float! Tarik balik ke watch page tanpa reload
+      post = window.missavJState.activeVideo;
+      
+      const watchWrapper = document.querySelector('.player-iframe-container');
+      const container = document.getElementById('player-container');
+      const floatWrapper = document.getElementById('floating-player-wrapper');
+      
+      if (watchWrapper && container) {
+        watchWrapper.innerHTML = '';
+        watchWrapper.appendChild(container); // Pindahkan kembali elemen player
+      }
+      if (floatWrapper) {
+        floatWrapper.classList.add('hidden'); // Sembunyikan float wrapper
+      }
+      window.missavJState.isFloating = false;
+      
+      // Render metadata langsung (UX super kilat)
+      document.title = `${post.title} — MISSAV-J`;
+      renderPostMeta(post, id);
+      loadRelatedVideos(post);
+      
+      ui.showToast('Memaksimalkan pemutar penuh 🖥️');
+    } else {
+      // 3. Video TIDAK sedang berjalan (Fresh Load) dengan Penanganan Error dan Fallback Berlapis
+      const [fetchedPost, player] = await Promise.all([
+        api.getPost(id).catch(err => {
+          console.warn('[API Warning] Gagal memuat detail post, mencoba fallback...', err);
+          return null;
+        }),
+        api.getPlayer(id).catch(err => {
+          console.warn('[API Warning] Gagal memuat player endpoint, mencoba fallback...', err);
+          return null;
+        })
+      ]);
+      
+      if (!fetchedPost && !player) {
+        throw new Error('Gagal memuat data video maupun player dari server API.');
+      }
+      
+      post = fetchedPost || {
+        id,
+        title: 'Video Stream',
+        views: 0,
+        thumbnail: '',
+        iframe_html: player ? player.iframe_html : ''
+      };
+      
+      // Simpan objek ke active state sesi
+      window.missavJState.activeVideo = post;
+      
+      // Render iframe segar dengan fallback berlapis
+      const playerContainer = document.getElementById('player-container');
+      if (playerContainer) {
+        const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
+        playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
+      }
+      
+      document.title = `${post.title} — MISSAV-J`;
+      renderPostMeta(post, id);
+      loadRelatedVideos(post);
     }
 
-    // 4. Update Judul Dokumen + Metadata Detail
-    document.title = `${post.title} — Roxy Reels`;
-    renderPostMeta(post, id);
-
-    // 5. Muat Video Terkait (Related) berdasarkan Kategori pertama video
-    loadRelatedVideos(post);
+    // 4. Catat Riwayat Tontonan Sesi (In-memory, hindari duplikasi rujukan)
+    trackWatchHistory(post);
 
   } catch (error) {
     console.error('Gagal memuat Halaman Player:', error);
@@ -180,9 +231,21 @@ export async function init(id) {
 }
 
 /**
+ * Mencatat daftar riwayat tontonan sesi (Watch History)
+ */
+function trackWatchHistory(post) {
+  const history = window.missavJState.history;
+  const existIdx = history.findIndex(p => String(p.id) === String(post.id));
+  
+  if (existIdx !== -1) {
+    history.splice(existIdx, 1); // Hapus rujukan lama agar naik ke atas (terbaru)
+  }
+  
+  history.unshift(post); // Masukkan di antrean terdepan
+}
+
+/**
  * Merender metadata lengkap video ke elemen DOM (Tersanitasi Penuh)
- * @param {Object} post - Objek data video
- * @param {string|number} id - ID Video saat ini
  */
 function renderPostMeta(post, id) {
   const titleEl = document.getElementById('player-title');
@@ -194,6 +257,12 @@ function renderPostMeta(post, id) {
   const actorsList = document.getElementById('player-actors-list');
   const categoriesList = document.getElementById('player-categories-list');
   const tagsList = document.getElementById('player-tags-list');
+
+  // Ambient Mode: ikat warna poster video ke background ambient-glow blur
+  const glowEl = document.getElementById('player-ambient-glow');
+  if (glowEl && post.thumbnail) {
+    glowEl.style.backgroundImage = `url('${ui.escapeHTML(post.thumbnail)}')`;
+  }
 
   // Sanitasi & render Title & views
   const safeTitle = ui.escapeHTML(post.title);
@@ -209,7 +278,7 @@ function renderPostMeta(post, id) {
     dateEl.textContent = pubDate.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Code & Studio (Aman XSS)
+  // Code & Studio
   if (codeEl) {
     const safeCode = ui.escapeHTML(post.code || '');
     if (safeCode) {
@@ -251,6 +320,9 @@ function renderPostMeta(post, id) {
 
   // Likes & Dislikes
   setupLikesAndDislikes(post, id);
+
+  // Watch Later (Tonton Nanti) button logic
+  setupWatchLaterLogic(post);
 
   // Setup Share Button
   const shareBtn = document.getElementById('share-btn');
@@ -335,6 +407,43 @@ function setupLikesAndDislikes(post, id) {
 }
 
 /**
+ * Mengelola logic penyimpanan video Tonton Nanti in-memory
+ */
+function setupWatchLaterLogic(post) {
+  const watchLaterBtn = document.getElementById('watch-later-btn');
+  const watchLaterLabel = document.getElementById('watch-later-label');
+  if (!watchLaterBtn || !watchLaterLabel) return;
+
+  const updateButtonVisualState = () => {
+    const isSaved = window.missavJState.watchLater.some(p => String(p.id) === String(post.id));
+    if (isSaved) {
+      watchLaterBtn.classList.add('active');
+      watchLaterLabel.textContent = 'Tersimpan';
+    } else {
+      watchLaterBtn.classList.remove('active');
+      watchLaterLabel.textContent = 'Tonton Nanti';
+    }
+  };
+
+  updateButtonVisualState();
+
+  watchLaterBtn.addEventListener('click', () => {
+    const isSaved = window.missavJState.watchLater.some(p => String(p.id) === String(post.id));
+    
+    if (isSaved) {
+      // Hapus dari tonton nanti
+      window.missavJState.watchLater = window.missavJState.watchLater.filter(p => String(p.id) !== String(post.id));
+      ui.showToast('Dihapus dari Tonton Nanti 📁');
+    } else {
+      // Simpan ke tonton nanti
+      window.missavJState.watchLater.push(post);
+      ui.showToast('Disimpan ke Tonton Nanti 📁');
+    }
+    updateButtonVisualState();
+  });
+}
+
+/**
  * Mengambil rekomendasi video terkait berdasarkan kategori pertama
  */
 async function loadRelatedVideos(post) {
@@ -358,7 +467,6 @@ async function loadRelatedVideos(post) {
       return;
     }
 
-    // Gunakan staggered animation delay untuk kartu rekomendasi samping
     relatedList.innerHTML = filteredPosts
       .map((p, idx) => renderRelatedRowCard(p, idx))
       .join('');
@@ -373,9 +481,6 @@ async function loadRelatedVideos(post) {
 
 /**
  * Merender markup kartu video baris kecil untuk rekomendasi sidebar (Aman XSS & Staggered)
- * @param {Object} post - Objek video
- * @param {number} index - Indeks urutan untuk staggered delay
- * @returns {string} Markup HTML
  */
 function renderRelatedRowCard(post, index) {
   const safeId = ui.escapeHTML(post.id);
@@ -424,3 +529,4 @@ function bindRelatedClicks(list) {
     }
   });
 }
+export default { init };

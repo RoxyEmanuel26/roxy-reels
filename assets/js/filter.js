@@ -1,5 +1,5 @@
 /**
- * Roxy Reels — Filter Bar System
+ * MISSAV-J — Filter Bar System
  * Mengelola komponen sticky horizontal filter bar yang berisi kategori chips,
  * pengurutan dropdown (sort), dan filter tanggal (date range dengan ISO 8601).
  */

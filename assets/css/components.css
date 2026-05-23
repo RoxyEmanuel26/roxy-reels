@@ -1,5 +1,5 @@
 /*
- * Roxy Reels — Core UI Components Stylesheet (Optimized & Premium)
+ * MISSAV-J — Core UI Components Stylesheet (Optimized & Premium)
  * Mengatur tampilan detail kartu video dengan efek hover premium, filter chips glowing,
  * loading skeletons shimmer, toast notifications, dan panel state terpoles.
  */
@@ -59,6 +59,7 @@
   font-weight: 700;
   border-radius: var(--radius-sm);
   letter-spacing: 0.5px;
+  z-index: 5;
 }
 
 .card-hd {
@@ -73,6 +74,7 @@
   border-radius: var(--radius-sm);
   letter-spacing: 0.5px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 5;
 }
 
 /* Hover overlay play button */

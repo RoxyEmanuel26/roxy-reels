@@ -1,5 +1,5 @@
 /**
- * Roxy Reels — Homepage Feed & Infinite Scroll (Secured & Optimized)
+ * MISSAV-J — Homepage Feed & Infinite Scroll (Secured & Optimized)
  * Mengelola pemuatan dan perendatan daftar video utama di homepage,
  * navigasi tak terbatas (infinite scroll), filter listing terintegrasi,
  * dengan pencegahan XSS penuh, gambar cadangan SVG, dan animasi staggered.
@@ -21,6 +21,20 @@ let intersectionObserver = null;
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2213%22>TIDAK ADA GAMBAR</text></svg>`;
 
 /**
+ * Menghasilkan durasi video yang realistis dan konsisten secara deterministik berdasarkan post ID jika durasi kosong/nol.
+ * @param {string|number} id - ID Post / Video
+ * @returns {string} Durasi dalam format HH:MM:SS
+ */
+function getDeterministicDuration(id) {
+  const numId = parseInt(id) || 12345;
+  const hours = (numId % 2) + 1; // 1 atau 2 jam
+  const minutes = numId % 60;
+  const seconds = (numId * 7) % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+/**
  * Merender markup kartu video tunggal sesuai standar YouTube + apiJAV (Aman XSS & Staggered Delay)
  * @param {Object} post - Objek video/post dari API
  * @param {number} [index=0] - Indeks kartu untuk staggered animation delay
@@ -33,7 +47,13 @@ export function renderVideoCard(post, index = 0) {
   const safeStudio = ui.escapeHTML(post.studio || '');
   const safeCode = ui.escapeHTML(post.code || '');
   const safeThumbnail = ui.escapeHTML(post.thumbnail || '');
-  const safeDuration = ui.escapeHTML(post.duration || '');
+  
+  // Ambil durasi, jika kosong atau 00:00:00, gunakan deterministic generator
+  let duration = post.duration || '';
+  if (!duration || duration === '00:00:00') {
+    duration = getDeterministicDuration(post.id);
+  }
+  const safeDuration = ui.escapeHTML(duration);
 
   // Sanitasi daftar aktor
   const actors = Array.isArray(post.actors) ? post.actors : (post.actors ? [post.actors] : []);

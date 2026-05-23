@@ -1,10 +1,20 @@
 /**
- * Roxy Reels — App Orchestrator & SPA Router (Secured & Optimized)
- * Mengelola perutean berbasis hash (SPA), interaksi global seperti collapsible sidebar,
- * pencarian global, toggle tema, dan menyuntikkan tombol Scroll-to-Top premium.
+ * MISSAV-J — App Orchestrator & SPA Router (Advanced Edition)
+ * Mengelola perutean SPA berbasis hash, penanganan transpalasi pemutar melayang (PiP)
+ * tanpa reload iframe, hotkey keyboard, dan playlist in-memory (Watch Later & History).
  */
 
 import ui from './ui.js';
+import { renderVideoCard } from './feed.js';
+
+// Inisialisasi State Global In-Memory
+window.missavJState = {
+  watchLater: [],   // Menyimpan objek post tonton nanti
+  history: [],      // Menyimpan riwayat video yang dibuka
+  activeVideo: null, // Menyimpan detail video yang sedang diputar
+  isFloating: false, // Menandai apakah pemutar video sedang melayang
+  currentPath: ''    // Menyimpan path rute aktif
+};
 
 // Parameter Helper: Mengambil nilai parameter dari hash query string
 function getParam(name) {
@@ -15,7 +25,67 @@ function getParam(name) {
   return searchParams.get(name);
 }
 
-// Daftar rute aplikasi Roxy Reels berbasis hash
+// Custom Renderer untuk Tonton Nanti dan Riwayat Tontonan
+function renderSavedVideosPage(title, postsList, emptyMessage) {
+  const mainApp = document.getElementById('app-content');
+  if (!mainApp) return;
+
+  if (postsList.length === 0) {
+    mainApp.innerHTML = `
+      <div class="saved-list-header">
+        <h2 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-2);">${title}</h2>
+      </div>
+      <div class="empty-state">
+        <div class="empty-icon">📁</div>
+        <h3>Daftar Kosong</h3>
+        <p>${emptyMessage}</p>
+        <button onclick="window.location.hash='#/'" class="btn-primary">Telusuri Video</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Render daftar video dengan grid dan staggered delay
+  mainApp.innerHTML = `
+    <div class="saved-list-header" style="margin-bottom: var(--space-6);">
+      <h2 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-1);">${title}</h2>
+      <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">Menampilkan ${postsList.length} video dalam koleksi sesi</p>
+    </div>
+    <div class="video-grid" id="saved-video-grid">
+      ${postsList.map((post, idx) => renderVideoCard(post, idx)).join('')}
+    </div>
+  `;
+
+  // Hubungkan event click untuk navigasi card
+  const grid = document.getElementById('saved-video-grid');
+  if (grid) {
+    grid.addEventListener('click', (e) => {
+      const actorChip = e.target.closest('.actor-chip');
+      if (actorChip) {
+        e.stopPropagation();
+        const actorName = decodeURIComponent(actorChip.dataset.actor);
+        window.location.hash = `#/actor?name=${encodeURIComponent(actorName)}`;
+        return;
+      }
+
+      const studioName = e.target.closest('.card-studio');
+      if (studioName) {
+        e.stopPropagation();
+        const studio = decodeURIComponent(studioName.dataset.studio);
+        window.location.hash = `#/studio?name=${encodeURIComponent(studio)}`;
+        return;
+      }
+
+      const card = e.target.closest('.video-card');
+      if (card && !card.classList.contains('skeleton-card')) {
+        const postId = card.dataset.id;
+        window.location.hash = `#/watch?id=${postId}`;
+      }
+    });
+  }
+}
+
+// Daftar rute aplikasi MISSAV-J berbasis hash
 const routes = {
   '/':          () => import('./feed.js').then(m => m.init()),
   '/trending':  () => import('./trending.js').then(m => m.init()),
@@ -26,17 +96,56 @@ const routes = {
   '/actor':     () => import('./feed.js').then(m => m.init({ actor: getParam('name') })),
   '/studio':    () => import('./feed.js').then(m => m.init({ studio: getParam('name') })),
   '/tag':       () => import('./feed.js').then(m => m.init({ tag: getParam('name') })),
+  
+  // Rute baru untuk playlists in-memory
+  '/watch-later': () => Promise.resolve(renderSavedVideosPage('Tonton Nanti', window.missavJState.watchLater, 'Daftar tonton nanti Anda masih kosong. Simpan video dari halaman pemutaran!')),
+  '/history':     () => Promise.resolve(renderSavedVideosPage('Riwayat Tontonan Sesi', window.missavJState.history, 'Riwayat tontonan sesi Anda kosong. Silakan putar video terlebih dahulu!'))
 };
 
 /**
- * Fungsi navigasi utama yang dipanggil saat hash berubah
+ * Fungsi navigasi utama yang dipanggil saat hash berubah (Dengan Logika Transpalasi PiP)
  * @param {string} hash - window.location.hash
  */
 function navigate(hash) {
   const [pathWithHash] = hash.split('?');
   const path = pathWithHash.replace('#', '') || '/';
   
-  // Ambil rute pencocokan atau default ke homepage
+  const prevPath = window.missavJState.currentPath;
+  window.missavJState.currentPath = path;
+
+  // 1. Logika Transpalasi LEAVE WATCH (Watch -> Halaman Lain): Pindahkan player ke mode floating
+  if (prevPath === '/watch' && path !== '/watch') {
+    const playerContainer = document.getElementById('player-container');
+    if (playerContainer && window.missavJState.activeVideo) {
+      const floatBody = document.getElementById('floating-player-body');
+      const floatTitle = document.getElementById('floating-player-title');
+      const floatWrapper = document.getElementById('floating-player-wrapper');
+      
+      if (floatBody && floatTitle && floatWrapper) {
+        floatBody.innerHTML = '';
+        floatBody.appendChild(playerContainer); // Pindahkan elemen DOM player tanpa reload iframe!
+        floatTitle.textContent = window.missavJState.activeVideo.title;
+        floatWrapper.classList.remove('hidden');
+        window.missavJState.isFloating = true;
+        ui.showToast('Memutar dalam pemutar melayang 📱');
+      }
+    }
+  }
+
+  // 2. Logika Transpalasi ENTER WATCH (Halaman Lain -> Watch): Jika ID video sama dengan yang melayang, transplant balik!
+  const targetId = getParam('id');
+  if (path === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
+    // Sembunyikan floating player karena kita akan memindahkannya kembali ke watch area
+    const floatWrapper = document.getElementById('floating-player-wrapper');
+    if (floatWrapper) floatWrapper.classList.add('hidden');
+    window.missavJState.isFloating = false;
+  } 
+  // Jika membuka video watch yang BERBEDA dari yang sedang melayang, matikan pemutar melayang
+  else if (path === '/watch' && window.missavJState.isFloating) {
+    closeFloatingPlayer();
+  }
+
+  // Ambil rute pencocokan atau default ke beranda
   const route = routes[path] || routes['/'];
   
   const mainApp = document.getElementById('app-content');
@@ -44,13 +153,13 @@ function navigate(hash) {
     mainApp.innerHTML = '';
   }
   
-  // Tampilkan skeleton loader sebelum memuat konten
+  // Tampilkan skeleton loader
   ui.showSkeletons(8);
   
-  // Highlight item aktif di sidebar
+  // Highlight sidebar
   highlightActiveSidebarItem(path);
   
-  // Scroll halaman ke atas secara otomatis saat navigasi rute berubah (UX standar YouTube)
+  // Scroll halaman ke atas secara instan saat rute berubah
   window.scrollTo({ top: 0, behavior: 'instant' });
 
   // Panggil modul halaman terkait
@@ -61,8 +170,21 @@ function navigate(hash) {
 }
 
 /**
+ * Menutup pemutar melayang sepenuhnya
+ */
+export function closeFloatingPlayer() {
+  const float = document.getElementById('floating-player-wrapper');
+  if (float) float.classList.add('hidden');
+  
+  const body = document.getElementById('floating-player-body');
+  if (body) body.innerHTML = '';
+  
+  window.missavJState.activeVideo = null;
+  window.missavJState.isFloating = false;
+}
+
+/**
  * Memberikan class active pada link menu sidebar yang sesuai dengan rute aktif
- * @param {string} activePath - Rute saat ini (misalnya '/trending')
  */
 function highlightActiveSidebarItem(activePath) {
   const sidebarLinks = document.querySelectorAll('.sidebar-nav a, .sidebar-nav button');
@@ -82,7 +204,6 @@ function highlightActiveSidebarItem(activePath) {
  * Menyuntikkan tombol Scroll-to-Top mengambang secara dinamis
  */
 function setupScrollTopButton() {
-  // Cegah injeksi ganda jika sudah ada
   if (document.getElementById('scroll-top-btn')) return;
 
   const scrollTopBtn = document.createElement('button');
@@ -91,7 +212,6 @@ function setupScrollTopButton() {
   scrollTopBtn.setAttribute('title', 'Kembali ke Atas');
   scrollTopBtn.setAttribute('aria-label', 'Scroll to top');
   
-  // SVG Arrow Up Icon
   scrollTopBtn.innerHTML = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="18 15 12 9 6 15"></polyline>
@@ -100,7 +220,6 @@ function setupScrollTopButton() {
   
   document.body.appendChild(scrollTopBtn);
 
-  // Pantau scroll untuk memicu visibilitas tombol
   window.addEventListener('scroll', () => {
     if (window.scrollY > 300) {
       scrollTopBtn.classList.add('visible');
@@ -109,12 +228,78 @@ function setupScrollTopButton() {
     }
   });
 
-  // Eksekusi scroll mulus kembali ke atas ketika diklik
   scrollTopBtn.addEventListener('click', () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+/**
+ * Menyuntikkan struktur DOM Pemutar Melayang (PiP) secara dinamis
+ */
+function setupFloatingPlayerDOM() {
+  if (document.getElementById('floating-player-wrapper')) return;
+
+  const float = document.createElement('div');
+  float.id = 'floating-player-wrapper';
+  float.className = 'floating-player-wrapper hidden';
+  float.innerHTML = `
+    <div class="floating-player-header">
+      <span id="floating-player-title" class="text-ellipsis">Sedang Memutar...</span>
+      <div class="floating-player-controls">
+        <button id="floating-player-maximize" title="Kembali ke Layar Penuh">🗖</button>
+        <button id="floating-player-close" title="Tutup Pemutar">✕</button>
+      </div>
+    </div>
+    <div id="floating-player-body" class="floating-player-body"></div>
+  `;
+  document.body.appendChild(float);
+
+  // Klik Maximize: Transplant balik ke watch page penuh
+  document.getElementById('floating-player-maximize').addEventListener('click', () => {
+    if (window.missavJState.activeVideo) {
+      window.location.hash = `#/watch?id=${window.missavJState.activeVideo.id}`;
+    }
+  });
+
+  // Klik Close: Hancurkan pemutar melayang
+  document.getElementById('floating-player-close').addEventListener('click', closeFloatingPlayer);
+}
+
+/**
+ * Mendaftarkan Pintasan Keyboard Desktop (Hotkeys)
+ */
+function setupKeyboardHotkeys() {
+  window.addEventListener('keydown', (e) => {
+    // Abaikan jika user sedang mengetik di input bar
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+    
+    const iframe = document.querySelector('iframe');
+    if (!iframe) return;
+
+    // F: Layar Penuh (Fullscreen) untuk wrapper pemutar
+    if (e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      const wrapper = document.querySelector('.player-container-wrapper');
+      if (wrapper) {
+        if (!document.fullscreenElement) {
+          wrapper.requestFullscreen().catch(() => {});
+          ui.showToast('Mode Layar Penuh Aktif 🖥️');
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    }
+    // M: Fokus pemutar untuk membisukan (Mute) via standard keyboard
+    else if (e.key.toLowerCase() === 'm') {
+      iframe.focus();
+      ui.showToast('Pemutar difokuskan. Tekan M untuk Mute.');
+    }
+    // Spasi: Fokus pemutar untuk memutar/jeda
+    else if (e.code === 'Space') {
+      e.preventDefault();
+      iframe.focus();
+      ui.showToast('Pemutar difokuskan. Tekan Spasi untuk Putar/Jeda.');
+    }
   });
 }
 
@@ -122,7 +307,6 @@ function setupScrollTopButton() {
  * Inisialisasi global element listeners (Sidebar, Search, Theme)
  */
 function initGlobalEvents() {
-  // 1. Sidebar toggles (Desktop Collapsible & Mobile Slide)
   const menuBtn = document.getElementById('menu-btn');
   const sidebar = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -146,7 +330,6 @@ function initGlobalEvents() {
     });
   }
 
-  // 2. Sticky Search Bar Input (Aman dari query kosong)
   const searchInput = document.getElementById('header-search-input');
   const searchBtn = document.getElementById('header-search-btn');
   
@@ -169,7 +352,6 @@ function initGlobalEvents() {
     searchBtn.addEventListener('click', handleSearchSubmit);
   }
 
-  // 3. Theme Toggle Button (Dark / Light)
   const themeBtn = document.getElementById('theme-toggle-btn');
   if (themeBtn) {
     themeBtn.addEventListener('click', () => {
@@ -177,10 +359,8 @@ function initGlobalEvents() {
     });
   }
   
-  // Pulihkan tema tersimpan (default dark)
   ui.initTheme();
 
-  // Bersihkan overlay sidebar mobile saat navigasi hash berubah
   window.addEventListener('hashchange', () => {
     if (sidebar) {
       sidebar.classList.remove('mobile-open');
@@ -194,10 +374,10 @@ function initGlobalEvents() {
 // Bootstrap router saat halaman dimuat
 document.addEventListener('DOMContentLoaded', () => {
   initGlobalEvents();
-  setupScrollTopButton(); // Suntikkan tombol scroll-to-top
+  setupScrollTopButton();   // Injeksi tombol scroll-to-top
+  setupFloatingPlayerDOM(); // Injeksi pemutar melayang (PiP)
+  setupKeyboardHotkeys();   // Daftarkan hotkeys keyboard
   
   window.addEventListener('hashchange', () => navigate(window.location.hash));
-  
-  // Jalankan navigasi pertama kali untuk memicu pemuatan feed awal
   navigate(window.location.hash || '#/');
 });

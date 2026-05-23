@@ -1,5 +1,5 @@
 /**
- * Roxy Reels — Search Page & Live Debounce (Secured & Optimized)
+ * MISSAV-J — Search Page & Live Debounce (Secured & Optimized)
  * Mengelola pemuatan pencarian, penundaan eksekusi keyboard (debounce 400ms),
  * perayapan infinite scroll, penyorotan kata kunci yang aman dari XSS, dan staggered delay.
  */

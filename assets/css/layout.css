@@ -1,5 +1,5 @@
 /*
- * Roxy Reels — Layout, Grid, and Breakpoints Stylesheet (Optimized)
+ * MISSAV-J — Layout, Grid, and Breakpoints Stylesheet (Optimized)
  * Mengatur kerangka aplikasi (Header glassmorphism, Collapsible Sidebar premium, dan Scroll-to-top).
  */
 
@@ -58,9 +58,10 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 700;
-  font-size: var(--text-base);
-  letter-spacing: -0.5px;
+  font-family: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
+  font-weight: 900;
+  font-size: 1.55rem;
+  letter-spacing: 0.5px;
   color: var(--color-text);
   cursor: pointer;
 }

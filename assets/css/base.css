@@ -1,5 +1,5 @@
 /*
- * Roxy Reels — CSS Reset, Typography, & Theme Tokens (Optimized)
+ * MISSAV-J — CSS Reset, Typography, & Theme Tokens (Optimized)
  * Mengatur variabel global (Light & Dark dengan glassmorphism), font, scrollbar, dan reset.
  */
 
@@ -13,9 +13,9 @@
   --color-text: #f1f1f1;
   --color-text-muted: #aaaaaa;
   --color-text-faint: #717171;
-  --color-accent: #ff0000;          /* YouTube red */
-  --color-accent-hover: #cc0000;
-  --color-accent-soft: rgba(255, 0, 0, 0.15);
+  --color-accent: #ff527b;          /* MISSAV-J Premium Hot Pink */
+  --color-accent-hover: #d83a60;
+  --color-accent-soft: rgba(255, 82, 123, 0.15);
   --color-blue: #3ea6ff;            /* Link color */
   --color-success: #4caf50;
   --color-warning: #ffb300;
@@ -71,9 +71,9 @@
   --color-text: #0f0f0f;
   --color-text-muted: #606060;
   --color-text-faint: #909090;
-  --color-accent: #ff0000;
-  --color-accent-hover: #cc0000;
-  --color-accent-soft: rgba(255, 0, 0, 0.08);
+  --color-accent: #ff527b;
+  --color-accent-hover: #d83a60;
+  --color-accent-soft: rgba(255, 82, 123, 0.08);
   --color-blue: #065fd4;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08);
   --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);

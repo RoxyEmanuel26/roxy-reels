@@ -1,5 +1,5 @@
 /**
- * Roxy Reels — API Client Wrapper
+ * MISSAV-J — API Client Wrapper
  * Mengintegrasikan front-end dengan apiJAV REST API.
  * Menyediakan fungsi-fungsi fetch terbungkus dengan penanganan error.
  */

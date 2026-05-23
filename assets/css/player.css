@@ -1,19 +1,41 @@
 /*
- * Roxy Reels — Video Player Page Stylesheet
- * Mengatur tata letak halaman pemutaran video (Watch page 2-kolom seperti YouTube),
- * detail metadata, panel interaksi, dan daftar rekomendasi terkait.
+ * MISSAV-J — Video Player Page Stylesheet (Advanced Edition)
+ * Mengatur tata letak halaman watch teater, detail metadata, rekomendasi sidebar,
+ * pendaran Ambient Mode, dan kerangka pemutar melayang (PiP) YouTube-style.
  */
 
 .player-page-layout {
   display: flex;
   gap: var(--space-6);
   width: 100%;
+  position: relative;
 }
 
-/* 1. Kolom Kiri: Player Utama & Metadata */
+/* ==========================================
+   1. AMBIENT THEATER MODE BACKDROP
+   ========================================== */
+.player-ambient-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 480px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(100px) saturate(2);
+  opacity: 0.16;
+  pointer-events: none;
+  z-index: -1;
+  transform: translate3d(0, 0, 0); /* Akselerasi hardware GPU */
+  transition: background-image 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================
+   2. KOLOM UTAMA PLAYER & INFO
+   ========================================== */
 .player-main-column {
   flex: 1;
-  min-width: 0; /* Cegah flex item meluap ke luar kontainer */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -27,7 +49,7 @@
   background-color: #000;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .player-iframe-container {
@@ -54,7 +76,7 @@
   background-color: var(--color-surface);
 }
 
-/* 2. Metadata & Judul Video */
+/* Metadata & Judul Video */
 .player-title {
   font-size: var(--text-lg);
   font-weight: 700;
@@ -111,12 +133,11 @@
   color: var(--color-accent);
 }
 
-/* Border pemisah antar tombol dalam group */
 .player-buttons button + button {
   border-left: 1px solid var(--color-border);
 }
 
-/* 3. Kotak Metadata Detail (Premium Box) */
+/* Kotak Metadata Detail (Premium Box) */
 .player-meta-box {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -218,13 +239,16 @@
   font-style: italic;
 }
 
-/* 4. Kolom Kanan: Rekomendasi Sidebar */
+/* ==========================================
+   3. KOLOM KANAN: REKOMENDASI SIDEBAR
+   ========================================== */
 .player-sidebar-column {
   width: 400px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  z-index: 10;
 }
 
 .player-sidebar-column h3 {
@@ -247,11 +271,13 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   padding: var(--space-1);
-  transition: background-color var(--transition);
+  border: 1px solid transparent;
+  transition: background-color var(--transition), border-color var(--transition);
 }
 
 .related-video-card:hover {
   background-color: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .related-thumb {
@@ -268,7 +294,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .related-video-card:hover .related-thumb img {
@@ -280,7 +306,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 0; /* Cegah judul meluap keluar grid */
+  min-width: 0;
   gap: var(--space-1);
 }
 
@@ -307,6 +333,106 @@
   color: var(--color-text-muted);
 }
 
+/* ==========================================
+   4. PERSISTENT MINI FLOATING PLAYER (PiP)
+   ========================================== */
+.floating-player-wrapper {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 320px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: floatSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+.floating-player-wrapper.hidden {
+  display: none !important;
+}
+
+@keyframes floatSlideUp {
+  from {
+    transform: translateY(40px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.floating-player-header {
+  background-color: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  user-select: none;
+}
+
+#floating-player-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  max-width: 180px;
+}
+
+.floating-player-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.floating-player-controls button {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.floating-player-controls button:hover {
+  background-color: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+#floating-player-close:hover {
+  background-color: var(--color-accent);
+  color: #fff;
+}
+
+.floating-player-body {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background-color: #000;
+}
+
+.floating-player-body #player-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* NEAT STACKING LOGIC USING CSS :has SELECTOR
+   Ketika pemutar melayang sedang aktif (tidak hidden), tombol scroll-to-top naik 235px di atasnya! */
+body:has(#floating-player-wrapper:not(.hidden)) .scroll-top-btn {
+  bottom: 235px;
+}
+
 /* Media Queries untuk Kolom Watch */
 @media (max-width: 1199px) {
   .player-page-layout {
@@ -320,6 +446,11 @@
 }
 
 @media (max-width: 767px) {
+  .player-ambient-glow {
+    height: 300px;
+    filter: blur(60px);
+  }
+
   .player-title {
     font-size: var(--text-base);
   }
@@ -354,5 +485,20 @@
   .related-thumb {
     width: 120px;
     height: 68px;
+  }
+
+  /* PiP Melayang pada Mobile mengecil agar tidak mengganggu layout */
+  .floating-player-wrapper {
+    width: 240px;
+    bottom: var(--space-4);
+    right: var(--space-4);
+  }
+  
+  #floating-player-title {
+    max-width: 120px;
+  }
+
+  body:has(#floating-player-wrapper:not(.hidden)) .scroll-top-btn {
+    bottom: 180px;
   }
 }
