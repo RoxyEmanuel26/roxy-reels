@@ -97,6 +97,10 @@ const routes = {
   '/studio':    () => import('./feed.js').then(m => m.init({ studio: getParam('name') })),
   '/tag':       () => import('./feed.js').then(m => m.init({ tag: getParam('name') })),
   
+  // Rute baru untuk taksonomi aktor & studio
+  '/actors':    () => import('./actors.js').then(m => m.init()),
+  '/studios':   () => import('./studios.js').then(m => m.init()),
+  
   // Rute baru untuk playlists in-memory
   '/watch-later': () => Promise.resolve(renderSavedVideosPage('Tonton Nanti', window.missavJState.watchLater, 'Daftar tonton nanti Anda masih kosong. Simpan video dari halaman pemutaran!')),
   '/history':     () => Promise.resolve(renderSavedVideosPage('Riwayat Tontonan Sesi', window.missavJState.history, 'Riwayat tontonan sesi Anda kosong. Silakan putar video terlebih dahulu!'))

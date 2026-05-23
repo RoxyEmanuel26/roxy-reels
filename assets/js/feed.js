@@ -164,9 +164,72 @@ export async function init(filters = {}) {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
 
+  // Bangun Banner Taksonomi dinamis jika filter khusus aktif
+  let taxonomyBannerHtml = '';
+  if (currentFilters.actor) {
+    const actorName = ui.escapeHTML(currentFilters.actor);
+    taxonomyBannerHtml = `
+      <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
+        <div class="banner-icon">🎭</div>
+        <div class="banner-content">
+          <span class="banner-label">Aktris JAV</span>
+          <h2 class="banner-title">${actorName}</h2>
+          <p class="banner-desc">Menampilkan koleksi video streaming terbaik yang diperankan oleh aktris ${actorName}</p>
+        </div>
+        <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+      </div>
+    `;
+  } else if (currentFilters.studio) {
+    const studioName = ui.escapeHTML(currentFilters.studio);
+    taxonomyBannerHtml = `
+      <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
+        <div class="banner-icon">🎬</div>
+        <div class="banner-content">
+          <span class="banner-label">Studio Produksi</span>
+          <h2 class="banner-title">${studioName}</h2>
+          <p class="banner-desc">Menampilkan semua video rilis eksklusif dari studio ${studioName}</p>
+        </div>
+        <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+      </div>
+    `;
+  } else if (currentFilters.tag) {
+    const tagName = ui.escapeHTML(currentFilters.tag);
+    taxonomyBannerHtml = `
+      <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
+        <div class="banner-icon">🏷️</div>
+        <div class="banner-content">
+          <span class="banner-label">Tag / Label</span>
+          <h2 class="banner-title">${tagName}</h2>
+          <p class="banner-desc">Menampilkan semua video dengan tag/label ${tagName}</p>
+        </div>
+        <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+      </div>
+    `;
+  } else if (currentFilters.category) {
+    const catName = ui.escapeHTML(currentFilters.category);
+    // Tampilkan banner hanya jika kategori bukan salah satu kategori terkurasi beranda
+    const isSpecialCategory = ['Uncensored', 'Amateur', 'Subtitled', 'Creampie', 'Cosplay', 'Mosaic', 'POV'].indexOf(catName) === -1;
+    if (isSpecialCategory) {
+      taxonomyBannerHtml = `
+        <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
+          <div class="banner-icon">📁</div>
+          <div class="banner-content">
+            <span class="banner-label">Kategori</span>
+            <h2 class="banner-title">${catName}</h2>
+            <p class="banner-desc">Menampilkan semua video streaming dalam kategori ${catName}</p>
+          </div>
+          <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
+        </div>
+      `;
+    }
+  }
+
   mainApp.innerHTML = `
     <!-- Sticky Horizontal Filter Bar Container -->
     <div id="filter-bar-container" class="filter-bar-container"></div>
+    
+    <!-- Dynamic Taxonomy Banner -->
+    ${taxonomyBannerHtml}
     
     <!-- Info bar & total video count -->
     <div class="feed-info-bar">
