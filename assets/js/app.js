@@ -548,12 +548,17 @@ const HEADER_CATEGORIES = [
   }
 ];
 
-/**
- * Renders the 4 categories dropdown menus in the header and registers their interaction bounds
- */
 window.missavJRenderCategories = function() {
   const container = document.getElementById('header-categories-nav');
   if (!container) return;
+
+  // Detect if any dropdown is currently open before rendering
+  let openDropdownId = null;
+  document.querySelectorAll('.header-dropdown').forEach(el => {
+    if (el.classList.contains('open')) {
+      openDropdownId = el.id;
+    }
+  });
 
   container.innerHTML = HEADER_CATEGORIES.map(cat => {
     const displayName = i18n.t(cat.labelKey) || cat.defaultLabel;
@@ -563,13 +568,15 @@ window.missavJRenderCategories = function() {
       return `<button class="header-dropdown-item" data-route="${item.route}">${itemDisplayName}</button>`;
     }).join('');
 
+    const isOpen = `dropdown-${cat.id}` === openDropdownId;
+
     return `
-      <div class="header-dropdown" id="dropdown-${cat.id}">
-        <button class="header-dropdown-trigger" data-route="${cat.route}">
+      <div class="header-dropdown ${isOpen ? 'open' : ''}" id="dropdown-${cat.id}">
+        <button class="header-dropdown-trigger" data-route="${cat.route}" aria-expanded="${isOpen}">
           <span>${displayName}</span>
           <span class="dropdown-caret">▼</span>
         </button>
-        <div class="header-dropdown-menu hidden">
+        <div class="header-dropdown-menu ${isOpen ? '' : 'hidden'}">
           ${itemsHtml}
         </div>
       </div>
@@ -610,12 +617,14 @@ window.missavJRenderCategories = function() {
       if (item) {
         e.stopPropagation();
         const targetRoute = item.dataset.route;
-        window.missavJNavigate(targetRoute);
 
-        // Close dropdown bounds
+        // Close dropdown bounds immediately before triggering navigation
+        // so that the next render doesn't restore it as open.
         dropdownEl.classList.remove('open');
         menu.classList.add('hidden');
         trigger.setAttribute('aria-expanded', 'false');
+
+        window.missavJNavigate(targetRoute);
       }
     });
   });
