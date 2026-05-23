@@ -41,10 +41,14 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
 }
 
 .video-card:hover .card-thumb img {
-  transform: scale(1.06);
+  transform: scale(1.06) translate3d(0, 0, 0);
 }
 
 /* Badges pada thumbnail */

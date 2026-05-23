@@ -473,37 +473,9 @@ function startLivePreview(card, embedUrl) {
   thumb.appendChild(iframe);
 }
 
-/**
- * Attaches high-performance event listeners on grids for card hover live previews
- */
 export function bindHoverPreviews(grid) {
-  if (!grid) return;
-
-  grid.addEventListener('mouseover', (e) => {
-    const card = e.target.closest('.video-card');
-    if (!card || card.classList.contains('skeleton-card') || card === activeCard) return;
-
-    clearActivePreview();
-
-    activeCard = card;
-    const embedUrl = card.dataset.embedUrl;
-    if (!embedUrl) return;
-
-    // Engages 800ms debounce checks before firing heavy preview iframe loadings for clean scrolling experiences
-    activeHoverTimeout = setTimeout(() => {
-      startLivePreview(card, embedUrl);
-    }, 800);
-  });
-
-  grid.addEventListener('mouseout', (e) => {
-    const card = e.target.closest('.video-card');
-    if (card && !card.contains(e.relatedTarget)) {
-      clearActivePreview();
-    }
-  });
-
-  // Automatically dispose of active previews when scrolling events fire
-  window.addEventListener('scroll', clearActivePreview, { passive: true });
+  // Disabled as per user request to remove live video playback preview on hover
+  return;
 }
 
 export default { init, renderVideoCard, bindHoverPreviews, clearActivePreview };
