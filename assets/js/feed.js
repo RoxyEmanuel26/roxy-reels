@@ -1,8 +1,8 @@
 /**
  * MISSAV-J — Homepage Feed & Infinite Scroll (Secured & Optimized)
- * Mengelola pemuatan dan perendatan daftar video utama di homepage,
- * navigasi tak terbatas (infinite scroll), filter listing terintegrasi,
- * dengan pencegahan XSS penuh, gambar cadangan SVG, dan animasi staggered.
+ * Manages loading and rendering of primary video listings on the homepage,
+ * infinite scrolling navigations, integrated horizontal filter listing triggers,
+ * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
 import api from './api.js';
@@ -10,7 +10,7 @@ import ui from './ui.js';
 import filter from './filter.js';
 import i18n from './i18n.js';
 
-// State Feed (In-memory, terisolasi per siklus muat)
+// Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
 let totalPages = 1;
 let isLoading = false;
@@ -18,17 +18,17 @@ let hasMore = true;
 let currentFilters = {};
 let intersectionObserver = null;
 
-// Premium inline SVG fallback ketika thumbnail gagal dimuat
+// Premium inline SVG fallback used when video thumbnail fails to load
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2213%22>NO IMAGE</text></svg>`;
 
 /**
- * Menghasilkan durasi video yang realistis dan konsisten secara deterministik berdasarkan post ID jika durasi kosong/nol.
- * @param {string|number} id - ID Post / Video
- * @returns {string} Durasi dalam format HH:MM:SS
+ * Deterministically generates realistic and consistent video duration strings based on post ID if empty or zero.
+ * @param {string|number} id - Post / Video ID reference
+ * @returns {string} Duration formatted as HH:MM:SS
  */
 export function getDeterministicDuration(id) {
   const numId = parseInt(id) || 12345;
-  const hours = (numId % 2) + 1; // 1 atau 2 jam
+  const hours = (numId % 2) + 1; // 1 or 2 hours
   const minutes = numId % 60;
   const seconds = (numId * 7) % 60;
   const pad = (n) => String(n).padStart(2, '0');
@@ -36,27 +36,30 @@ export function getDeterministicDuration(id) {
 }
 
 /**
- * Merender markup kartu video tunggal sesuai standar YouTube + apiJAV (Aman XSS & Staggered Delay)
- * @param {Object} post - Objek video/post dari API
- * @param {number} [index=0] - Indeks kartu untuk staggered animation delay
- * @returns {string} Markup HTML
+ * Renders single video card markup adhering to YouTube + apiJAV clean layout guidelines (Safe from XSS, featuring Staggered Delay)
+ * @param {Object} post - API Video/post data object
+ * @param {number} [index=0] - Card order index utilized for staggered animation delays
+ * @returns {string} Sanitized HTML markup template string
  */
 export function renderVideoCard(post, index = 0) {
-  // 1. Sanitasi data API untuk menangkal XSS
+  // 1. Sanitize API data to defeat XSS and translate the title dynamically
+  const originalTitle = post.title || '';
+  const translatedTitle = i18n.translateVideoTitle(originalTitle);
   const safeId = ui.escapeHTML(post.id);
-  const safeTitle = ui.escapeHTML(post.title);
+  const safeTitle = ui.escapeHTML(translatedTitle);
   const safeStudio = ui.escapeHTML(post.studio || '');
   const safeCode = ui.escapeHTML(post.code || '');
   const safeThumbnail = ui.escapeHTML(post.thumbnail || '');
   
-  // Ambil durasi, jika kosong atau 00:00:00, gunakan deterministic generator
+  // Resolve duration fallback if missing or invalid
   let duration = post.duration || '';
   if (!duration || duration === '00:00:00') {
     duration = getDeterministicDuration(post.id);
   }
   const safeDuration = ui.escapeHTML(duration);
 
-  // Deteksi jika video tanpa sensor (Uncensored)
+  // Uncensored badge detection (run on original title to guarantee correct matches regardless of language)
+  const safeOriginalTitle = originalTitle.toLowerCase();
   const isUncensored = 
     (post.categories && post.categories.some(c => {
       const s = String(c).toLowerCase();
@@ -66,18 +69,18 @@ export function renderVideoCard(post, index = 0) {
       const s = String(t).toLowerCase();
       return s.includes('uncensored') || s.includes('tanpa sensor') || s.includes('no sensor') || s.includes('mosaic-less') || s.includes('mosaicless');
     })) ||
-    safeTitle.toLowerCase().includes('uncensored') || 
-    safeTitle.toLowerCase().includes('tanpa sensor') || 
-    safeTitle.toLowerCase().includes('no sensor') || 
-    safeTitle.toLowerCase().includes('leak') ||
-    safeTitle.toLowerCase().includes('tanpa-sensor') ||
-    safeTitle.toLowerCase().includes('no-sensor') ||
-    safeTitle.toLowerCase().includes('no-mosaic') ||
-    safeTitle.toLowerCase().includes('nomosaic');
+    safeOriginalTitle.includes('uncensored') || 
+    safeOriginalTitle.includes('tanpa sensor') || 
+    safeOriginalTitle.includes('no sensor') || 
+    safeOriginalTitle.includes('leak') ||
+    safeOriginalTitle.includes('tanpa-sensor') ||
+    safeOriginalTitle.includes('no-sensor') ||
+    safeOriginalTitle.includes('no-mosaic') ||
+    safeOriginalTitle.includes('nomosaic');
 
   const uncensoredBadge = isUncensored ? `<span class="card-uncensored">${i18n.t('badge_uncensored')}</span>` : '';
 
-  // Sanitasi daftar aktor
+  // Sanitize actor listings (Limit to first 3 chips for UX clarity)
   const actors = Array.isArray(post.actors) ? post.actors : (post.actors ? [post.actors] : []);
   const actorsMarkup = actors
     .slice(0, 3) 
@@ -87,14 +90,14 @@ export function renderVideoCard(post, index = 0) {
     })
     .join('');
 
-  // Tampilkan badge HD jika ada kata 'hd' di judul
-  const isHD = safeTitle.toLowerCase().includes('hd') || (post.tags && post.tags.some(t => String(t).toLowerCase() === 'hd'));
+  // Render HD badge indicator if present in titles/tags
+  const isHD = safeOriginalTitle.includes('hd') || (post.tags && post.tags.some(t => String(t).toLowerCase() === 'hd'));
   const hdBadge = isHD ? `<span class="card-hd">HD</span>` : '';
   
-  // Format durasi
+  // Format Duration indicator
   const durationBadge = safeDuration ? `<span class="card-duration">${safeDuration}</span>` : '';
 
-  // Studio
+  // Format Studio link
   const studioMarkup = safeStudio 
     ? `<span class="card-studio" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</span>`
     : `<span class="card-studio text-muted">${i18n.t('unknown_studio')}</span>`;
@@ -103,10 +106,10 @@ export function renderVideoCard(post, index = 0) {
   const viewsCount = post.views ? parseInt(post.views, 10) : 0;
   const viewsFormatted = viewsCount.toLocaleString(i18n.getLang());
 
-  // Staggered animation delay: masing-masing kartu dimunculkan dengan jeda 40ms secara beruntun
+  // Staggered animation delay: cascades cards sequentially at 45ms offsets
   const animationStyle = `style="animation-delay: calc(${index % 24} * 45ms);"`;
 
-  // Sanitasi & bersihkan ampersand untuk parameter URL cuplikan video hover
+  // Sanitize and clean up ampersands inside embed URLs
   const rawEmbedUrl = (post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&');
   const safeEmbedUrl = ui.escapeHTML(rawEmbedUrl);
 
@@ -143,17 +146,17 @@ export function renderVideoCard(post, index = 0) {
 }
 
 /**
- * Inisialisasi Feed halaman
- * @param {Object} [filters] - Filter eksternal (misal category dari route #/category)
+ * Initializes the homepage feed listing
+ * @param {Object} [filters] - Route filter overrides (e.g. category parsed from relative routing paths)
  */
 export async function init(filters = {}) {
-  // Bersihkan observer yang mungkin masih berjalan dari halaman sebelumnya
+  // Dispose of active IntersectionObservers running from prior SPA page context loops
   if (intersectionObserver) {
     intersectionObserver.disconnect();
     intersectionObserver = null;
   }
 
-  // Reset in-memory state
+  // Reset local page cycle memory states
   currentPage = 1;
   totalPages = 1;
   isLoading = false;
@@ -165,11 +168,11 @@ export async function init(filters = {}) {
     ...filters
   };
 
-  // 1. Persiapkan Layout Dasar Halaman Feed
+  // 1. Prepare Base Feed layout templates
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
 
-  // Bangun Banner Taksonomi dinamis jika filter khusus aktif
+  // Build Taxonomy banner layouts dynamically if specialized filters are engaged
   let taxonomyBannerHtml = '';
   if (currentFilters.actor) {
     const actorName = ui.escapeHTML(currentFilters.actor);
@@ -181,7 +184,7 @@ export async function init(filters = {}) {
           <h2 class="banner-title">${actorName}</h2>
           <p class="banner-desc">${i18n.t('banner_actor_desc', { name: actorName })}</p>
         </div>
-        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
+        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
       </div>
     `;
   } else if (currentFilters.studio) {
@@ -194,7 +197,7 @@ export async function init(filters = {}) {
           <h2 class="banner-title">${studioName}</h2>
           <p class="banner-desc">${i18n.t('banner_studio_desc', { name: studioName })}</p>
         </div>
-        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
+        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
       </div>
     `;
   } else if (currentFilters.tag) {
@@ -207,12 +210,15 @@ export async function init(filters = {}) {
           <h2 class="banner-title">${tagName}</h2>
           <p class="banner-desc">${i18n.t('banner_tag_desc', { name: tagName })}</p>
         </div>
-        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
+        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
       </div>
     `;
   } else if (currentFilters.category) {
     const catName = ui.escapeHTML(currentFilters.category);
-    // Tampilkan banner hanya jika kategori bukan salah satu kategori terkurasi beranda
+    const dictKey = `category_${catName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    const displayName = i18n.t(dictKey) || catName;
+    
+    // Render taxonomy banners only if category clicked is a non-standard curated header category
     const isSpecialCategory = ['Uncensored', 'Amateur', 'Subtitled', 'Creampie', 'Cosplay', 'Mosaic', 'POV'].indexOf(catName) === -1;
     if (isSpecialCategory) {
       taxonomyBannerHtml = `
@@ -220,10 +226,10 @@ export async function init(filters = {}) {
           <div class="banner-icon">📁</div>
           <div class="banner-content">
             <span class="banner-label">${i18n.t('banner_category_label')}</span>
-            <h2 class="banner-title">${catName}</h2>
-            <p class="banner-desc">${i18n.t('banner_category_desc', { name: catName })}</p>
+            <h2 class="banner-title">${displayName}</h2>
+            <p class="banner-desc">${i18n.t('banner_category_desc', { name: displayName })}</p>
           </div>
-          <button class="banner-close" onclick="window.missavJNavigate('/')" title="Hapus Filter">✕</button>
+          <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
         </div>
       `;
     }
@@ -236,16 +242,16 @@ export async function init(filters = {}) {
     <!-- Dynamic Taxonomy Banner -->
     ${taxonomyBannerHtml}
     
-    <!-- Info bar & total video count -->
+    <!-- Info bar & total video count tracking -->
     <div class="feed-info-bar">
       <div class="video-total-count" id="video-total-count">${i18n.t('loading_videos_count')}</div>
       <div class="page-track" id="page-track">${i18n.t('page_format', { current: 1, total: 1 })}</div>
     </div>
     
-    <!-- Main Video Grid -->
+    <!-- Main Video Grid container -->
     <div class="video-grid" id="video-grid"></div>
 
-    <!-- Infinite Scroll Sentinel & Loader -->
+    <!-- Infinite Scroll Sentinel & Loading indicator -->
     <div id="infinite-loader" class="infinite-loader hidden">
       <div class="spinner"></div>
       <span>${i18n.t('loading_more_videos')}</span>
@@ -253,29 +259,29 @@ export async function init(filters = {}) {
     <div id="scroll-sentinel" class="scroll-sentinel"></div>
   `;
 
-  // 2. Tampilkan Skeletons di dalam grid yang baru dibuat
+  // 2. Render initial page skeletal loaders
   const grid = document.getElementById('video-grid');
   ui.showSkeletonsInElement(grid, 8);
 
-  // 3. Inisialisasi horizontal filter bar
+  // 3. Mount homepage horizontal filter bar orchestration states
   filter.init(document.getElementById('filter-bar-container'), currentFilters, updateFeedFilters);
 
-  // 4. Lakukan fetch pertama kali
+  // 4. Fire initial listings fetch
   await fetchAndRenderFeed(true);
 
-  // 5. Setup IntersectionObserver untuk Infinite Scroll
+  // 5. Setup IntersectionObserver configurations for infinite scrolls
   setupInfiniteScroll();
   
-  // 6. Pasang click listener di grid untuk menangani rute SPA terintegrasi
+  // 6. Connect delegators for grid actions
   bindGridClicks(grid);
 
-  // 7. Pasang hover listeners untuk cuplikan video dinamis (Live Preview)
+  // 7. Mount hover listeners for dynamic Picture-in-Picture previews
   bindHoverPreviews(grid);
 }
 
 /**
- * Mengambil data video dari API dan merendernya ke grid
- * @param {boolean} isInitial - Apakah pemuatan pertama kali (menimpa konten grid)
+ * Fetch and render listings from API endpoints
+ * @param {boolean} isInitial - Overwrites existing grid list markup if true
  */
 async function fetchAndRenderFeed(isInitial = false) {
   isLoading = true;
@@ -290,25 +296,24 @@ async function fetchAndRenderFeed(isInitial = false) {
     totalPages = data.totalPages;
     hasMore = currentPage < totalPages;
 
-    // Tampilkan total video count di UI
+    // Render total listings count tracks in UI
     if (totalCountEl) {
       totalCountEl.textContent = i18n.t('video_available', { total: data.total.toLocaleString(i18n.getLang()) });
     }
     
-    // Update halaman pelacakan
+    // Update pages tracking index
     if (pageTrackEl) {
       pageTrackEl.textContent = i18n.t('page_format', { current: currentPage, total: totalPages });
     }
 
     if (data.posts.length === 0 && isInitial) {
-      // Jika hasil pencarian/filter kosong
       const querySearch = currentFilters.search || '';
       ui.showEmpty(querySearch, grid);
       hasMore = false;
       return;
     }
 
-    // Gunakan staggered animation delay untuk kartu video yang dirender
+    // Build cards list markup applying cascade staggered delays
     const cardsHtml = data.posts
       .map((post, idx) => renderVideoCard(post, idx))
       .join('');
@@ -333,7 +338,7 @@ async function fetchAndRenderFeed(isInitial = false) {
 }
 
 /**
- * Setup IntersectionObserver untuk memantau scroll-sentinel di bawah grid
+ * Attaches IntersectionObserver handlers pointing to scroll-sentinels below the grid
  */
 function setupInfiniteScroll() {
   const sentinel = document.getElementById('scroll-sentinel');
@@ -357,7 +362,7 @@ function setupInfiniteScroll() {
 }
 
 /**
- * Handler pemutakhiran filter yang dipanggil dari filter.js
+ * Filter updates handler invoked by the horizontal filter bar engine
  */
 async function updateFeedFilters(updatedFilters) {
   currentFilters = { ...currentFilters, ...updatedFilters };
@@ -373,7 +378,7 @@ async function updateFeedFilters(updatedFilters) {
 }
 
 /**
- * Delegasi click event di grid untuk mereduksi jumlah event listener
+ * Attaches click event delegations to video card grids
  */
 function bindGridClicks(grid) {
   if (!grid) return;
@@ -403,12 +408,12 @@ function bindGridClicks(grid) {
   });
 }
 
-// Variabel state global terisolasi untuk hover live preview
+// Hover live previews isolators variables
 let activeHoverTimeout = null;
 let activeCard = null;
 
 /**
- * Menghapus cuplikan video aktif yang sedang berjalan dan membersihkan DOM
+ * Clears active iframe previews and destroys dynamic DOM structures cleanly
  */
 export function clearActivePreview() {
   if (activeHoverTimeout) {
@@ -419,11 +424,9 @@ export function clearActivePreview() {
   if (activeCard) {
     const thumb = activeCard.querySelector('.card-thumb');
     if (thumb) {
-      // Hapus iframe cuplikan jika ada
       const iframe = thumb.querySelector('.card-preview-iframe');
       if (iframe) iframe.remove();
 
-      // Hapus loader jika ada
       const loader = thumb.querySelector('.preview-loader');
       if (loader) loader.remove();
     }
@@ -433,32 +436,31 @@ export function clearActivePreview() {
 }
 
 /**
- * Memulai pengunduhan dan pemutaran cuplikan bisu live di kartu video
+ * Spawns dynamic iframe source triggers to execute muted visual playback on hovered cards
  */
 function startLivePreview(card, embedUrl) {
   const thumb = card.querySelector('.card-thumb');
   if (!thumb) return;
 
-  // Cek apakah sudah ada iframe aktif untuk mencegah duplikasi
   if (thumb.querySelector('.card-preview-iframe')) return;
 
-  // Tambahkan micro loader spinner di tengah thumbnail
+  // Mount visual loader spinner
   const loader = document.createElement('div');
   loader.className = 'preview-loader';
   thumb.appendChild(loader);
 
-  // Buat iframe pemutar cuplikan
+  // Mount preview iframe elements
   const iframe = document.createElement('iframe');
   iframe.className = 'card-preview-iframe';
   
-  // Suntikkan query parameters autoplay=1 dan muted=1 untuk mematuhi kebijakan autoplay browser
+  // Inject autoplay and muted parameters to comply with standard browser media engagement bounds
   const previewUrl = embedUrl.includes('?') ? `${embedUrl}&autoplay=1&muted=1` : `${embedUrl}?autoplay=1&muted=1`;
   iframe.src = previewUrl;
   iframe.allow = 'autoplay; encrypted-media';
   iframe.setAttribute('scrolling', 'no');
   iframe.setAttribute('frameborder', '0');
 
-  // Transisi visual saat pemutar siap (loaded)
+  // Trigger loading complete transits
   iframe.addEventListener('load', () => {
     if (loader) loader.remove();
     iframe.classList.add('loaded');
@@ -469,7 +471,7 @@ function startLivePreview(card, embedUrl) {
 }
 
 /**
- * Mengikat hover listeners untuk live video preview pada kartu video menggunakan delegasi event berkinerja tinggi
+ * Attaches high-performance event listeners on grids for card hover live previews
  */
 export function bindHoverPreviews(grid) {
   if (!grid) return;
@@ -478,14 +480,13 @@ export function bindHoverPreviews(grid) {
     const card = e.target.closest('.video-card');
     if (!card || card.classList.contains('skeleton-card') || card === activeCard) return;
 
-    // Bersihkan hover sebelumnya jika kursor bergeser langsung ke kartu lain
     clearActivePreview();
 
     activeCard = card;
     const embedUrl = card.dataset.embedUrl;
     if (!embedUrl) return;
 
-    // Sensor penundaan 800ms demi kenyamanan navigasi
+    // Engages 800ms debounce checks before firing heavy preview iframe loadings for clean scrolling experiences
     activeHoverTimeout = setTimeout(() => {
       startLivePreview(card, embedUrl);
     }, 800);
@@ -493,13 +494,12 @@ export function bindHoverPreviews(grid) {
 
   grid.addEventListener('mouseout', (e) => {
     const card = e.target.closest('.video-card');
-    // Matikan preview hanya jika mouse meninggalkan kontainer kartu video sepenuhnya
     if (card && !card.contains(e.relatedTarget)) {
       clearActivePreview();
     }
   });
 
-  // Pastikan membersihkan preview jika halaman di-scroll (infinite scroll/user actions)
+  // Automatically dispose of active previews when scrolling events fire
   window.addEventListener('scroll', clearActivePreview, { passive: true });
 }
 

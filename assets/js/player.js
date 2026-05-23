@@ -177,7 +177,7 @@ export async function init(id) {
       window.missavJState.isFloating = false;
       
       // Render metadata langsung (UX super kilat)
-      document.title = `${post.title} — MISSAV-J`;
+      document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       renderPostMeta(post, id);
       loadRelatedVideos(post);
       
@@ -217,7 +217,7 @@ export async function init(id) {
         playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
       }
       
-      document.title = `${post.title} — MISSAV-J`;
+      document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       renderPostMeta(post, id);
       loadRelatedVideos(post);
     }
@@ -266,7 +266,8 @@ function renderPostMeta(post, id) {
   }
 
   // Sanitasi & render Title & views
-  const safeTitle = ui.escapeHTML(post.title);
+  const translatedTitle = i18n.translateVideoTitle(post.title);
+  const safeTitle = ui.escapeHTML(translatedTitle);
   if (titleEl) titleEl.textContent = safeTitle;
   
   if (viewsEl) {
@@ -311,7 +312,13 @@ function renderPostMeta(post, id) {
     listEl.innerHTML = itemsArr
       .map(item => {
         const safeItem = ui.escapeHTML(item);
-        return `<a href="#/${routePrefix}?name=${encodeURIComponent(safeItem)}" class="meta-tag-chip">${safeItem}</a>`;
+        let displayName = safeItem;
+        if (routePrefix === 'category') {
+          const dictKey = `category_${safeItem.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+          const translated = i18n.t(dictKey);
+          if (translated) displayName = translated;
+        }
+        return `<a href="#/${routePrefix}?name=${encodeURIComponent(safeItem)}" class="meta-tag-chip">${displayName}</a>`;
       })
       .join('');
   };
@@ -485,8 +492,10 @@ async function loadRelatedVideos(post) {
  * Merender markup kartu video baris kecil untuk rekomendasi sidebar (Aman XSS & Staggered)
  */
 function renderRelatedRowCard(post, index) {
+  const originalTitle = post.title || '';
+  const translatedTitle = i18n.translateVideoTitle(originalTitle);
   const safeId = ui.escapeHTML(post.id);
-  const safeTitle = ui.escapeHTML(post.title);
+  const safeTitle = ui.escapeHTML(translatedTitle);
   const safeStudio = ui.escapeHTML(post.studio || 'Unknown');
   const safeThumbnail = ui.escapeHTML(post.thumbnail || '');
   
@@ -498,6 +507,7 @@ function renderRelatedRowCard(post, index) {
   const safeDuration = ui.escapeHTML(duration);
 
   // Deteksi jika video tanpa sensor (Uncensored)
+  const safeOriginalTitle = originalTitle.toLowerCase();
   const isUncensored = 
     (post.categories && post.categories.some(c => {
       const s = String(c).toLowerCase();
@@ -507,14 +517,14 @@ function renderRelatedRowCard(post, index) {
       const s = String(t).toLowerCase();
       return s.includes('uncensored') || s.includes('tanpa sensor') || s.includes('no sensor') || s.includes('mosaic-less') || s.includes('mosaicless');
     })) ||
-    safeTitle.toLowerCase().includes('uncensored') || 
-    safeTitle.toLowerCase().includes('tanpa sensor') || 
-    safeTitle.toLowerCase().includes('no sensor') || 
-    safeTitle.toLowerCase().includes('leak') ||
-    safeTitle.toLowerCase().includes('tanpa-sensor') ||
-    safeTitle.toLowerCase().includes('no-sensor') ||
-    safeTitle.toLowerCase().includes('no-mosaic') ||
-    safeTitle.toLowerCase().includes('nomosaic');
+    safeOriginalTitle.includes('uncensored') || 
+    safeOriginalTitle.includes('tanpa sensor') || 
+    safeOriginalTitle.includes('no sensor') || 
+    safeOriginalTitle.includes('leak') ||
+    safeOriginalTitle.includes('tanpa-sensor') ||
+    safeOriginalTitle.includes('no-sensor') ||
+    safeOriginalTitle.includes('no-mosaic') ||
+    safeOriginalTitle.includes('nomosaic');
 
   const uncensoredBadge = isUncensored ? `<span class="card-uncensored" style="font-size: 0.6rem; padding: 1px 4px; bottom: 4px; left: 4px;">${i18n.t('badge_uncensored')}</span>` : '';
 

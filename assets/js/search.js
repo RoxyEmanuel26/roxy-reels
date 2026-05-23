@@ -49,15 +49,16 @@ function highlightText(text, keyword) {
  * @returns {string} Markup HTML
  */
 function renderSearchVideoCard(post, index) {
-  // 1. renderVideoCard secara default sudah melakukan sanitasi penuh terhadap judul,
-  // sehingga kita menerima string kartu yang aman dengan judul tersanitasi di dalamnya.
-  const cardHtml = renderVideoCard(post, index);
+  // Pre-translate title so cardHtml and highlight target match perfectly
+  const translatedTitle = i18n.translateVideoTitle(post.title);
+  const safeTitle = ui.escapeHTML(translatedTitle);
   
-  // 2. Ambil judul tersanitasi dan terapkan penyorotan kata kunci di atas teks aman tersebut
-  const safeTitle = ui.escapeHTML(post.title);
+  // Pass the pre-translated title into renderVideoCard
+  const cardHtml = renderVideoCard({ ...post, title: translatedTitle }, index);
+  
+  // Highlight query inside the translated safe title
   const highlightedTitle = highlightText(safeTitle, currentQuery);
   
-  // Ganti title asli dalam DOM string dengan title hasil sorotan aman
   return cardHtml.replace(
     `class="card-title" title="${safeTitle}">${safeTitle}`,
     `class="card-title" title="${safeTitle}">${highlightedTitle}`

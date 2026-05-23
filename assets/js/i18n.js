@@ -311,34 +311,137 @@ const DICTIONARY = {
   },
   error_title: {
     en: 'Oops! Something went wrong', id: 'Oops! Terjadi kesalahan', 'zh-TW': 'Oops! 發生錯誤', 'zh-CN': 'Oops! 发生错误', ja: 'おっと！エラーが発生しました', ko: '앗! 오류가 발생했습니다', ms: 'Oops! Berlaku ralat', th: 'อุ๊ย! เกิดข้อผิดพลาด', de: 'Oops! Etwas ist schief gelaufen', fr: 'Oops! Quelque chose s\'est mal passé', vi: 'Rất tiếc! Đã xảy ra lỗi', fil: 'Oops! May nagkamali', pt: 'Oops! Algo deu errado'
+  },
+  category_uncensored: {
+    en: 'Uncensored', id: 'Tanpa Sensor', 'zh-TW': '無修正', 'zh-CN': '无修正', ja: '無修正', ko: '무삭제', ms: 'Tanpa Sensor', th: 'ไม่มีเซ็นเซอร์', de: 'Zensurfrei', fr: 'Non censuré', vi: 'Không che', fil: 'Walang sensor', pt: 'Sem censura'
+  },
+  category_amateur: {
+    en: 'Amateur', id: 'Amatir', 'zh-TW': '素人', 'zh-CN': '素人', ja: '素人', ko: '아마추어', ms: 'Amatir', th: 'มือสมัครเล่น', de: 'Amateur', fr: 'Amateur', vi: 'Nghiệp dư', fil: 'Amateur', pt: 'Amador'
+  },
+  category_subtitled: {
+    en: 'Subtitled', id: 'Dengan Subtitle', 'zh-TW': '中文字幕', 'zh-CN': '中文字幕', ja: '字幕付き', ko: '자막', ms: 'Sari Kata', th: 'มีซับไตเติล', de: 'Untertitelt', fr: 'Sous-titré', vi: 'Phụ đề', fil: 'May subtitle', pt: 'Legendado'
+  },
+  category_creampie: {
+    en: 'Creampie', id: 'Creampie', 'zh-TW': '中出', 'zh-CN': '中出', ja: '中出し', ko: '질내사정', ms: 'Creampie', th: 'ครีมพาย', de: 'Creampie', fr: 'Creampie', vi: 'Xuất trong', fil: 'Creampie', pt: 'Creampie'
+  },
+  category_cosplay: {
+    en: 'Cosplay', id: 'Cosplay', 'zh-TW': '角色扮演', 'zh-CN': '角色扮演', ja: 'コスプレ', ko: '코스프레', ms: 'Kosplay', th: 'คอสเพลย์', de: 'Cosplay', fr: 'Cosplay', vi: 'Cosplay', fil: 'Cosplay', pt: 'Cosplay'
+  },
+  category_mosaic: {
+    en: 'Mosaic', id: 'Sensor Mosaik', 'zh-TW': '有修正', 'zh-CN': '有修正', ja: 'モザイク', ko: '모자イク', ms: 'Mosaik', th: 'โมเสก', de: 'Mosaik', fr: 'Mosaïque', vi: 'Mờ che', fil: 'Mosaiko', pt: 'Mosaico'
+  }
+};
+
+// Common JAV tags/words dictionary for dynamic title translations
+const TITLE_DICTIONARY = {
+  uncensored: {
+    en: 'Uncensored', id: 'Tanpa Sensor', 'zh-TW': '無修正', 'zh-CN': '无修正', ja: '無修正', ko: '무삭제', ms: 'Tanpa Sensor', th: 'ไม่มีเซ็นเซอร์', de: 'Zensurfrei', fr: 'Non censuré', vi: 'Không che', fil: 'Walang sensor', pt: 'Sem censura'
+  },
+  subtitled: {
+    en: 'Subtitled', id: 'Subtitle', 'zh-TW': '中文字幕', 'zh-CN': '中文字幕', ja: '字幕付き', ko: '자막', ms: 'Sari Kata', th: 'มีซับไตเติล', de: 'Untertitelt', fr: 'Sous-titré', vi: 'Phụ đề', fil: 'May subtitle', pt: 'Legendado'
+  },
+  sub: {
+    en: 'Sub', id: 'Sub', 'zh-TW': '字幕', 'zh-CN': '字幕', ja: '字幕', ko: '자막', ms: 'Sari', th: 'ซับ', de: 'Sub', fr: 'Sous', vi: 'Phụ đề', fil: 'Sub', pt: 'Legenda'
+  },
+  amateur: {
+    en: 'Amateur', id: 'Amatir', 'zh-TW': '素人', 'zh-CN': '素人', ja: '素人', ko: '아마추어', ms: 'Amatir', th: 'มือสมัครเล่น', de: 'Amateur', fr: 'Amateur', vi: 'Nghiệp dư', fil: 'Amateur', pt: 'Amador'
+  },
+  creampie: {
+    en: 'Creampie', id: 'Creampie', 'zh-TW': '中出', 'zh-CN': '中出', ja: '中出し', ko: '질내사정', ms: 'Creampie', th: 'ครีมพาย', de: 'Creampie', fr: 'Creampie', vi: 'Xuất dalam', fil: 'Creampie', pt: 'Creampie'
+  },
+  cosplay: {
+    en: 'Cosplay', id: 'Cosplay', 'zh-TW': '角色扮演', 'zh-CN': '角色扮演', ja: 'コスプレ', ko: '코스프레', ms: 'Kosplay', th: 'คอสเพลย์', de: 'Cosplay', fr: 'Cosplay', vi: 'Cosplay', fil: 'Cosplay', pt: 'Cosplay'
+  },
+  mosaic: {
+    en: 'Mosaic', id: 'Mosaik', 'zh-TW': '有修正', 'zh-CN': '有修正', ja: 'モザイク', ko: '모자イク', ms: 'Mosaik', th: 'โมเสก', de: 'Mosaik', fr: 'Mosaïque', vi: 'Mờ che', fil: 'Mosaiko', pt: 'Mosaico'
+  },
+  leaked: {
+    en: 'Leaked', id: 'Bocor', 'zh-TW': '流出', 'zh-CN': '流出', ja: '流出', ko: '유출됨', ms: 'Bocor', th: 'หลุด', de: 'Geleakt', fr: 'Fuité', vi: 'Bị rò rỉ', fil: 'Naleak', pt: 'Vazado'
+  },
+  leak: {
+    en: 'Leak', id: 'Bocor', 'zh-TW': '流出', 'zh-CN': '流出', ja: '流出', ko: '유출', ms: 'Bocor', th: 'หลุด', de: 'Leak', fr: 'Fuite', vi: 'Rò rỉ', fil: 'Leak', pt: 'Vazamento'
   }
 };
 
 /**
- * Mengambil kode bahasa aktif dari localStorage dengan default 'en'
- * @returns {string} Kode bahasa (contoh: 'en', 'id', 'ja')
+ * Dynamically translates common JAV bracket tags and standalone words inside video titles
+ * @param {string} title - The original video title
+ * @returns {string} The translated video title
+ */
+export function translateVideoTitle(title) {
+  if (!title) return '';
+  const lang = getLang();
+  let translatedTitle = title;
+  const words = ['uncensored', 'subtitled', 'amateur', 'creampie', 'cosplay', 'mosaic', 'leaked', 'leak', 'sub'];
+
+  for (const word of words) {
+    const translations = TITLE_DICTIONARY[word];
+    if (!translations) continue;
+    const targetTranslation = translations[lang] || translations['en'] || word;
+
+    // 1. Bracketed tags case-insensitive matching e.g., [Uncensored]
+    const bracketRegex = new RegExp(`\\[(${word})\\]`, 'gi');
+    translatedTitle = translatedTitle.replace(bracketRegex, (match, matchedWord) => {
+      let replacement = targetTranslation;
+      const isAllUpper = matchedWord === matchedWord.toUpperCase();
+      const isAllLower = matchedWord === matchedWord.toLowerCase();
+      const isTitleCase = matchedWord.charAt(0) === matchedWord.charAt(0).toUpperCase() && matchedWord.slice(1) === matchedWord.slice(1).toLowerCase();
+
+      if (isAllUpper) {
+        replacement = targetTranslation.toUpperCase();
+      } else if (isTitleCase) {
+        replacement = targetTranslation.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      } else if (isAllLower) {
+        replacement = targetTranslation.toLowerCase();
+      }
+      return `[${replacement}]`;
+    });
+
+    // 2. Standalone words case-insensitive matching with word boundaries
+    const wordRegex = new RegExp(`\\b(${word})\\b`, 'gi');
+    translatedTitle = translatedTitle.replace(wordRegex, (match, matchedWord) => {
+      let replacement = targetTranslation;
+      const isAllUpper = matchedWord === matchedWord.toUpperCase();
+      const isAllLower = matchedWord === matchedWord.toLowerCase();
+      const isTitleCase = matchedWord.charAt(0) === matchedWord.charAt(0).toUpperCase() && matchedWord.slice(1) === matchedWord.slice(1).toLowerCase();
+
+      if (isAllUpper) {
+        replacement = targetTranslation.toUpperCase();
+      } else if (isTitleCase) {
+        replacement = targetTranslation.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      } else if (isAllLower) {
+        replacement = targetTranslation.toLowerCase();
+      }
+      return replacement;
+    });
+  }
+
+  return translatedTitle;
+}
+
+/**
+ * Fetch active language code from localStorage with a default fallback to 'en'
+ * @returns {string} Language code (e.g. 'en', 'id', 'ja')
  */
 export function getLang() {
   return localStorage.getItem('missav_lang') || 'en';
 }
 
 /**
- * Menyimpan kode bahasa terpilih dan merender ulang UI statik + memicu routing untuk muat ulang feed
- * @param {string} langCode - Kode bahasa baru
+ * Save selected language preference, re-render UI translation and trigger routing to reload feed
+ * @param {string} langCode - New language code
+ * @param {boolean} [triggerRedirect=true] - Trigger URL rewrite and popstate dispatch
  */
 export function setLang(langCode, triggerRedirect = true) {
   localStorage.setItem('missav_lang', langCode);
   
-  // Terjemahkan seluruh UI statik seketika
+  // Translate static UI elements immediately
   translateStaticUI();
   
-  // Jika triggerRedirect bernilai true, kita perbarui sub-path bahasa pada URL pathname dan pemicu rerender
   if (triggerRedirect) {
     const pathname = window.location.pathname;
-    const cleanPath = pathname.replace(/^\//, ''); // Contoh: "en/trending"
+    const cleanPath = pathname.replace(/^\//, '');
     const segments = cleanPath.split('/');
-    
-    // Periksa jika segmen pertama adalah kode bahasa yang valid
     const firstSegment = segments[0] || '';
     const isLangSegment = LANGS.some(l => l.code === firstSegment);
     
@@ -350,14 +453,10 @@ export function setLang(langCode, triggerRedirect = true) {
       newPathname = '/' + langCode + (pathname.startsWith('/') ? '' : '/') + pathname + window.location.search;
     }
     
-    // Update URL tanpa reload halaman
     history.pushState(null, '', newPathname);
-    
-    // Picu event popstate agar SPA router mendeteksi rute baru dalam bahasa baru
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
   
-  // Tampilkan toast konfirmasi bahasa
   const activeLang = LANGS.find(l => l.code === langCode);
   if (activeLang) {
     ui.showToast(`Language set to ${activeLang.label}`);
@@ -365,10 +464,10 @@ export function setLang(langCode, triggerRedirect = true) {
 }
 
 /**
- * Mengambil teks terjemahan berdasarkan kunci dan melakukan substitusi variabel dinamis jika ada
- * @param {string} key - Kunci terjemahan (contoh: 'search_results')
- * @param {Object} [params={}] - Parameter variabel (contoh: { query: 'Yua', total: '12' })
- * @returns {string} String terjemahan hasil format
+ * Retrieve translation string for a key and dynamically replace variables if provided
+ * @param {string} key - Dictionary key (e.g. 'search_results')
+ * @param {Object} [params={}] - Interpolation variables (e.g. { query: 'Yua', total: '12' })
+ * @returns {string} Parsed translation string
  */
 export function t(key, params = {}) {
   const lang = getLang();
@@ -377,7 +476,6 @@ export function t(key, params = {}) {
 
   let text = translations[lang] || translations['en'] || '';
   
-  // Lakukan penggantian variabel seperti {query} atau {total} secara dinamis
   Object.keys(params).forEach(pKey => {
     text = text.replace(new RegExp(`{${pKey}}`, 'g'), params[pKey]);
   });
@@ -386,12 +484,12 @@ export function t(key, params = {}) {
 }
 
 /**
- * Menterjemahkan seluruh UI statik berdasar elemen ber-atribut 'data-i18n' dan 'data-i18n-placeholder'
+ * Translate all static text elements containing 'data-i18n', 'data-i18n-placeholder' or 'data-i18n-title' attributes
  */
 export function translateStaticUI() {
   const activeLang = getLang();
   
-  // 1. Terjemahkan elemen-elemen teks statik
+  // 1. Translate static text elements
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     const translation = t(key);
@@ -400,7 +498,7 @@ export function translateStaticUI() {
     }
   });
 
-  // 2. Terjemahkan elemen placeholder input
+  // 2. Translate input placeholders
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.dataset.i18nPlaceholder;
     const translation = t(key);
@@ -409,7 +507,7 @@ export function translateStaticUI() {
     }
   });
 
-  // 3. Terjemahkan atribut title
+  // 3. Translate title attributes
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     const key = el.dataset.i18nTitle;
     const translation = t(key);
@@ -418,7 +516,13 @@ export function translateStaticUI() {
     }
   });
 
-  // 3. Perbarui visual tombol trigger bendera di header
+  // 4. Update the floating player title in real-time if visible and playing
+  const floatTitle = document.getElementById('floating-player-title');
+  if (floatTitle && window.missavJState && window.missavJState.activeVideo) {
+    floatTitle.textContent = translateVideoTitle(window.missavJState.activeVideo.title);
+  }
+
+  // 5. Update header flag button visual trigger
   const triggerImg = document.getElementById('lang-trigger-flag');
   const activeLangObj = LANGS.find(l => l.code === activeLang);
   if (triggerImg && activeLangObj) {
@@ -432,5 +536,5 @@ export function translateStaticUI() {
   }
 }
 
-window.i18n = { LANGS, getLang, setLang, t, translateStaticUI };
-export default { LANGS, getLang, setLang, t, translateStaticUI };
+window.i18n = { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle };
+export default { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle };

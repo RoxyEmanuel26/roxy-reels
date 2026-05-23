@@ -1,35 +1,35 @@
 /**
  * MISSAV-J — App Orchestrator & SPA Router (Advanced Edition)
- * Mengelola perutean SPA berbasis hash, penanganan transpalasi pemutar melayang (PiP)
- * tanpa reload iframe, hotkey keyboard, dan playlist in-memory (Watch Later & History).
+ * Manages History API relative pathname routing, Picture-in-Picture (PiP) iframe DOM transplantation,
+ * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
 import ui from './ui.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
 import i18n from './i18n.js';
 
-// Inisialisasi State Global In-Memory
+// Initialize Global In-Memory SPA States
 window.missavJState = {
-  watchLater: [],   // Menyimpan objek post tonton nanti
-  history: [],      // Menyimpan riwayat video yang dibuka
-  activeVideo: null, // Menyimpan detail video yang sedang diputar
-  isFloating: false, // Menandai apakah pemutar video sedang melayang
-  currentPath: ''    // Menyimpan path rute aktif
+  watchLater: [],   // Stores post objects saved to Watch Later list
+  history: [],      // Session play history for recent video plays
+  activeVideo: null, // Holds details of the currently active playing video
+  isFloating: false, // Flag to trace if the player is currently in Picture-in-Picture (PiP) mode
+  currentPath: ''    // Holds the currently active SPA route path
 };
 
-// Parameter Helper: Mengambil nilai parameter dari query string URL
+// Parameter Helper: Extracts value from query string parameters securely
 function getParam(name) {
   const searchParams = new URLSearchParams(window.location.search);
   return searchParams.get(name);
 }
 
 /**
- * Memecah URL pathname untuk mengekstrak kode bahasa aktif dan sub-rute SPA (Aman)
+ * Parses URL path segments to extract active language subpath prefix and SPA internal route (Safe Segment parsing)
  * @param {string} urlPath - window.location.pathname
- * @returns {{lang: string, routePath: string}}
+ * @returns {{lang: string, routePath: string}} Separated segments
  */
 function parseUrl(urlPath) {
-  const cleanPath = urlPath.replace(/^\//, ''); // Contoh: "en/trending"
+  const cleanPath = urlPath.replace(/^\//, ''); // e.g. "en/trending"
   const segments = cleanPath.split('?')[0].split('/'); // ["en", "trending"]
   
   let lang = segments[0] || '';
@@ -43,7 +43,7 @@ function parseUrl(urlPath) {
     routePath = '/' + segments.join('/');
   }
   
-  // Bersihkan rute dari trailing slash
+  // Clean trailing slashes on routing paths
   if (routePath.length > 1 && routePath.endsWith('/')) {
     routePath = routePath.slice(0, -1);
   }
@@ -52,14 +52,14 @@ function parseUrl(urlPath) {
 }
 
 /**
- * Melakukan navigasi rute SPA baru menggunakan History API
- * @param {string} routePath - Rute internal (contoh: '/watch?id=123' atau '/trending')
+ * Navigates to a new relative SPA route segment using the History API (dispatching clean URLs)
+ * @param {string} routePath - The internal route destination (e.g. '/watch?id=123' or '/trending')
  */
 window.missavJNavigate = function(routePath) {
   const currentLang = i18n.getLang();
   const cleanPath = routePath.startsWith('/') ? routePath : '/' + routePath;
   
-  // Pisahkan pathname dan query string agar aman
+  // Safely split pathnames and search query segments
   const [pathPart, queryPart] = cleanPath.split('?');
   const fullPath = `/${currentLang}${pathPart}` + (queryPart ? `?${queryPart}` : '');
   
@@ -67,7 +67,7 @@ window.missavJNavigate = function(routePath) {
   navigate(fullPath);
 };
 
-// Custom Renderer untuk Tonton Nanti dan Riwayat Tontonan
+// Custom playlist grid renderer for Watch Later & Session History
 function renderSavedVideosPage(title, postsList, emptyMessage) {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
@@ -79,16 +79,16 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
       </div>
       <div class="empty-state">
         <div class="empty-icon">📁</div>
-        <h3 data-i18n="empty_state_title">Daftar Kosong</h3>
+        <h3 data-i18n="empty_state_title">Empty List</h3>
         <p>${emptyMessage}</p>
-        <button onclick="window.missavJNavigate('/')" class="btn-primary" data-i18n="empty_clear_btn">Telusuri Video</button>
+        <button onclick="window.missavJNavigate('/')" class="btn-primary" data-i18n="empty_clear_btn">Browse Videos</button>
       </div>
     `;
     i18n.translateStaticUI();
     return;
   }
 
-  // Render daftar video dengan grid dan staggered delay
+  // Render cards grid with staggered animation delay
   mainApp.innerHTML = `
     <div class="saved-list-header" style="margin-bottom: var(--space-6);">
       <h2 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-1);">${title}</h2>
@@ -99,7 +99,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
     </div>
   `;
 
-  // Hubungkan event click untuk navigasi card
+  // Hub card click events using high performance delegation
   const grid = document.getElementById('saved-video-grid');
   if (grid) {
     grid.addEventListener('click', (e) => {
@@ -126,14 +126,14 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
       }
     });
 
-    // Pasang hover listeners untuk cuplikan video dinamis (Live Preview)
+    // Attach high-performance dynamic hover listeners for video previews
     bindHoverPreviews(grid);
   }
   
   i18n.translateStaticUI();
 }
 
-// Daftar rute aplikasi MISSAV-J berbasis hash
+// In-Memory routing map for SPA page handlers
 const routes = {
   '/':          () => import('./feed.js').then(m => m.init()),
   '/trending':  () => import('./trending.js').then(m => m.init()),
@@ -145,31 +145,31 @@ const routes = {
   '/studio':    () => import('./feed.js').then(m => m.init({ studio: getParam('name') })),
   '/tag':       () => import('./feed.js').then(m => m.init({ tag: getParam('name') })),
   
-  // Rute baru untuk taksonomi aktor & studio
+  // Taxonomy browsing routes for Actors & Studios
   '/actors':    () => import('./actors.js').then(m => m.init()),
   '/studios':   () => import('./studios.js').then(m => m.init()),
   
-  // Rute baru untuk playlists in-memory
+  // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
   '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')))
 };
 
 /**
- * Fungsi navigasi utama yang dipanggil saat rute berubah (Dengan Logika Transpalasi PiP)
+ * Main relative page lifecycle trigger (includes picture-in-picture DOM transplantation logic)
  * @param {string} urlPath - window.location.pathname + window.location.search
  */
 function navigate(urlPath) {
   const { lang, routePath } = parseUrl(urlPath);
   
-  // Sinkronisasi bahasa secara dinamis jika berbeda dari preferensi i18n aktif saat ini
+  // Sync selected language dynamically if it differs from current i18n states
   if (lang && lang !== i18n.getLang()) {
-    i18n.setLang(lang, false); // Setel bahasa tanpa memicu redirect loop
+    i18n.setLang(lang, false); // Set active language segment without invoking popstate routing loops
   }
 
   const prevPath = window.missavJState.currentPath;
   window.missavJState.currentPath = routePath;
 
-  // 1. Logika Transpalasi LEAVE WATCH (Watch -> Halaman Lain): Pindahkan player ke mode floating
+  // 1. LEAVE WATCH TRANSPLANTATION: Move running player element to picture-in-picture mode
   if (prevPath === '/watch' && routePath !== '/watch') {
     const playerContainer = document.getElementById('player-container');
     if (playerContainer && window.missavJState.activeVideo) {
@@ -179,8 +179,8 @@ function navigate(urlPath) {
       
       if (floatBody && floatTitle && floatWrapper) {
         floatBody.innerHTML = '';
-        floatBody.appendChild(playerContainer); // Pindahkan elemen DOM player tanpa reload iframe!
-        floatTitle.textContent = window.missavJState.activeVideo.title;
+        floatBody.appendChild(playerContainer); // Transplant player DOM directly without reloading iframe state!
+        floatTitle.textContent = i18n.translateVideoTitle(window.missavJState.activeVideo.title);
         floatWrapper.classList.remove('hidden');
         window.missavJState.isFloating = true;
         ui.showToast(i18n.t('playing_floating_player'));
@@ -188,20 +188,19 @@ function navigate(urlPath) {
     }
   }
 
-  // 2. Logika Transpalasi ENTER WATCH (Halaman Lain -> Watch): Jika ID video sama dengan yang melayang, transplant balik!
+  // 2. ENTER WATCH TRANSPLANTATION: If target watch ID matches floating ID, transplant it back!
   const targetId = getParam('id');
   if (routePath === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
-    // Sembunyikan floating player karena kita akan memindahkannya kembali ke watch area
     const floatWrapper = document.getElementById('floating-player-wrapper');
     if (floatWrapper) floatWrapper.classList.add('hidden');
     window.missavJState.isFloating = false;
   } 
-  // Jika membuka video watch yang BERBEDA dari yang sedang melayang, matikan pemutar melayang
+  // If launching a watch page of a DIFFERENT video, dispose of active floating session
   else if (routePath === '/watch' && window.missavJState.isFloating) {
     closeFloatingPlayer();
   }
 
-  // Ambil rute pencocokan atau default ke beranda
+  // Retrieve routing module or default back to home feed
   const route = routes[routePath] || routes['/'];
   
   const mainApp = document.getElementById('app-content');
@@ -209,16 +208,16 @@ function navigate(urlPath) {
     mainApp.innerHTML = '';
   }
   
-  // Tampilkan skeleton loader
+  // Show page shimmer skeletal states
   ui.showSkeletons(8);
   
-  // Highlight sidebar
+  // Highlight active sidebar navigation indicators
   highlightActiveSidebarItem(routePath);
   
-  // Scroll halaman ke atas secara instan saat rute berubah
+  // Scroll instantly to page top bounds
   window.scrollTo({ top: 0, behavior: 'instant' });
 
-  // Panggil modul halaman terkait
+  // Load and execute module script
   route().then(() => {
     i18n.translateStaticUI();
   }).catch(err => {
@@ -228,7 +227,7 @@ function navigate(urlPath) {
 }
 
 /**
- * Menutup pemutar melayang sepenuhnya
+ * Cleanly disposes of the active Picture-in-Picture floating player session
  */
 export function closeFloatingPlayer() {
   const float = document.getElementById('floating-player-wrapper');
@@ -242,7 +241,7 @@ export function closeFloatingPlayer() {
 }
 
 /**
- * Memberikan class active pada link menu sidebar yang sesuai dengan rute aktif
+ * Synchronizes selected visual state styling highlights on sidebar items
  */
 function highlightActiveSidebarItem(activePath) {
   const sidebarLinks = document.querySelectorAll('.sidebar-nav a, .sidebar-nav button');
@@ -259,7 +258,7 @@ function highlightActiveSidebarItem(activePath) {
 }
 
 /**
- * Menyuntikkan tombol Scroll-to-Top mengambang secara dinamis
+ * Dynamically injects and binds scroll-to-top floating elements
  */
 function setupScrollTopButton() {
   if (document.getElementById('scroll-top-btn')) return;
@@ -267,7 +266,7 @@ function setupScrollTopButton() {
   const scrollTopBtn = document.createElement('button');
   scrollTopBtn.id = 'scroll-top-btn';
   scrollTopBtn.className = 'scroll-top-btn';
-  scrollTopBtn.setAttribute('title', 'Kembali ke Atas');
+  scrollTopBtn.setAttribute('title', 'Back to Top');
   scrollTopBtn.setAttribute('aria-label', 'Scroll to top');
   
   scrollTopBtn.innerHTML = `
@@ -292,7 +291,7 @@ function setupScrollTopButton() {
 }
 
 /**
- * Menyuntikkan struktur DOM Pemutar Melayang (PiP) secara dinamis
+ * Dynamically injects floating Picture-in-Picture player wrapper to the page document body
  */
 function setupFloatingPlayerDOM() {
   if (document.getElementById('floating-player-wrapper')) return;
@@ -302,67 +301,67 @@ function setupFloatingPlayerDOM() {
   float.className = 'floating-player-wrapper hidden';
   float.innerHTML = `
     <div class="floating-player-header">
-      <span id="floating-player-title" class="text-ellipsis" data-i18n="now_playing">Sedang Memutar...</span>
+      <span id="floating-player-title" class="text-ellipsis" data-i18n="now_playing">Now Playing...</span>
       <div class="floating-player-controls">
-        <button id="floating-player-maximize" data-i18n-title="restore_full_screen" title="Kembali ke Layar Penuh">🗖</button>
-        <button id="floating-player-close" data-i18n-title="close_player" title="Tutup Pemutar">✕</button>
+        <button id="floating-player-maximize" data-i18n-title="restore_full_screen" title="Restore to Full Screen">🗖</button>
+        <button id="floating-player-close" data-i18n-title="close_player" title="Close Player">✕</button>
       </div>
     </div>
     <div id="floating-player-body" class="floating-player-body"></div>
   `;
   document.body.appendChild(float);
 
-  // Klik Maximize: Transplant balik ke watch page penuh
+  // Click Maximize: Re-navigate to the full-size watch layout and transplant DOM back
   document.getElementById('floating-player-maximize').addEventListener('click', () => {
     if (window.missavJState.activeVideo) {
       window.missavJNavigate(`/watch?id=${window.missavJState.activeVideo.id}`);
     }
   });
 
-  // Klik Close: Hancurkan pemutar melayang
+  // Click Close: Dispose player elements
   document.getElementById('floating-player-close').addEventListener('click', closeFloatingPlayer);
 }
 
 /**
- * Mendaftarkan Pintasan Keyboard Desktop (Hotkeys)
+ * Registers global keyboard shortcut hotkeys
  */
 function setupKeyboardHotkeys() {
   window.addEventListener('keydown', (e) => {
-    // Abaikan jika user sedang mengetik di input bar
+    // Escape keyboard listening if active element is an input bar
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
     
     const iframe = document.querySelector('iframe');
     if (!iframe) return;
 
-    // F: Layar Penuh (Fullscreen) untuk wrapper pemutar
+    // F: Toggle fullscreen presentation bounds on the player wrapper
     if (e.key.toLowerCase() === 'f') {
       e.preventDefault();
       const wrapper = document.querySelector('.player-container-wrapper');
       if (wrapper) {
         if (!document.fullscreenElement) {
           wrapper.requestFullscreen().catch(() => {});
-          ui.showToast('Mode Layar Penuh Aktif 🖥️');
+          ui.showToast('Fullscreen Mode Activated 🖥️');
         } else {
           document.exitFullscreen().catch(() => {});
         }
       }
     }
-    // M: Fokus pemutar untuk membisukan (Mute) via standard keyboard
+    // M: Focus frame mute keys
     else if (e.key.toLowerCase() === 'm') {
       iframe.focus();
-      ui.showToast('Pemutar difokuskan. Tekan M untuk Mute.');
+      ui.showToast('Player focused. Press M to Mute.');
     }
-    // Spasi: Fokus pemutar untuk memutar/jeda
+    // Space: Play/Pause trigger frame bounds
     else if (e.code === 'Space') {
       e.preventDefault();
       iframe.focus();
-      ui.showToast('Pemutar difokuskan. Tekan Spasi untuk Putar/Jeda.');
+      ui.showToast('Player focused. Press Space to Play/Pause.');
     }
   });
 }
 
 /**
- * Inisialisasi global element listeners (Sidebar, Search, Theme)
+ * Initializes global click events and mobile sidebar states
  */
 function initGlobalEvents() {
   const menuBtn = document.getElementById('menu-btn');
@@ -430,14 +429,14 @@ function initGlobalEvents() {
 }
 
 /**
- * Menyusun dropdown pilihan bahasa dan event listener-nya
+ * Sets up the language selector dropdown and triggers setLang
  */
 function setupLanguageDropdown() {
   const trigger = document.getElementById('lang-dropdown-trigger');
   const menu = document.getElementById('lang-dropdown-menu');
   if (!trigger || !menu) return;
 
-  // Render list bahasa dari i18n.LANGS secara dinamis
+  // Render language selections from configuration data structures
   menu.innerHTML = i18n.LANGS.map(lang => `
     <button class="lang-item" data-lang="${lang.code}">
       <img class="lang-item-flag" src="${lang.flag}" alt="${lang.label}">
@@ -445,7 +444,7 @@ function setupLanguageDropdown() {
     </button>
   `).join('');
 
-  // Toggle dropdown menu saat trigger diklik
+  // Dropdown expanding toggle
   trigger.addEventListener('click', (e) => {
     e.stopPropagation();
     const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
@@ -454,21 +453,21 @@ function setupLanguageDropdown() {
     trigger.parentElement.classList.toggle('open');
   });
 
-  // Event handler ketika item bahasa dipilih
+  // Catch select item triggers
   menu.addEventListener('click', (e) => {
     const item = e.target.closest('.lang-item');
     if (item) {
       const selectedLang = item.dataset.lang;
       i18n.setLang(selectedLang);
       
-      // Tutup menu
+      // Close bounds
       menu.classList.add('hidden');
       trigger.setAttribute('aria-expanded', 'false');
       trigger.parentElement.classList.remove('open');
     }
   });
 
-  // Tutup dropdown jika mengklik di luar area dropdown
+  // Auto-close dropdown when cursor clicks out of bounds
   document.addEventListener('click', (e) => {
     if (!trigger.parentElement.contains(e.target)) {
       menu.classList.add('hidden');
@@ -478,9 +477,9 @@ function setupLanguageDropdown() {
   });
 }
 
-// Bootstrap router saat halaman dimuat
+// Bootstrap router elements when page finishes parsing DOM
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Backward Compatibility: Tangkap rute hash lama dan alihkan ke pathname rute bersih baru secara instan
+  // 1. Backward Compatibility: Catch hash-based legacy paths and replace state to localized URL path segments
   if (window.location.hash) {
     const hashPath = window.location.hash.replace('#', '') || '/';
     const lang = i18n.getLang();
@@ -488,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // 2. Interseptor Klik Tautan Global (Mendukung link hash lama dan link pathname relatif baru)
+  // 2. Global SPA Anchor click interception bounds
   document.addEventListener('click', (e) => {
     const link = e.target.closest('a');
     if (link) {
@@ -505,30 +504,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 3. Jika rute pathname saat ini kosong atau tidak memiliki subpath bahasa, lakukan redirect
+  // 3. Fallback redirects if root domain is loaded directly
   const currentPathname = window.location.pathname;
   const { lang, routePath } = parseUrl(currentPathname);
   
-  // Deteksi jika pengguna membuka root URL "/" secara langsung
   if (currentPathname === '/' || currentPathname === '') {
     const activeLang = i18n.getLang();
     history.replaceState(null, '', `/${activeLang}/`);
   }
 
   initGlobalEvents();
-  setupLanguageDropdown();  // Inisialisasi dropdown bahasa
-  setupScrollTopButton();   // Injeksi tombol scroll-to-top
-  setupFloatingPlayerDOM(); // Injeksi pemutar melayang (PiP)
-  setupKeyboardHotkeys();   // Daftarkan hotkeys keyboard
+  setupLanguageDropdown();
+  setupScrollTopButton();
+  setupFloatingPlayerDOM();
+  setupKeyboardHotkeys();
   
-  // Sinkronkan preferensi bahasa aktif
+  // Sync selected language segmentation state
   if (lang) {
     i18n.setLang(lang, false);
   }
   
-  i18n.translateStaticUI(); // Pelokalan pertama kali
+  i18n.translateStaticUI();
   
-  // Daftarkan event popstate untuk tombol back/forward browser
+  // Register browser popstate triggers
   window.addEventListener('popstate', () => {
     navigate(window.location.pathname + window.location.search);
   });
