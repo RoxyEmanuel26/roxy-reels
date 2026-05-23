@@ -17,6 +17,47 @@ const dislikedVideos = new Set();
 // Premium inline SVG fallback ketika thumbnail gagal dimuat
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22168%22 height=%2294%22 viewBox=%220 0 168 94%22><rect width=%22168%22 height=%2294%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2210%22>NO IMAGE</text></svg>`;
 
+let placeholderObserver = null;
+
+export function syncPlayerPosition() {
+  const placeholder = document.getElementById('player-placeholder');
+  const globalPlayer = document.getElementById('global-player-container');
+  if (!placeholder || !globalPlayer || globalPlayer.classList.contains('floating-mode') || globalPlayer.classList.contains('global-player-hidden')) return;
+
+  const rect = placeholder.getBoundingClientRect();
+  const scrollY = window.scrollY;
+  const scrollX = window.scrollX;
+
+  globalPlayer.style.top = `${rect.top + scrollY}px`;
+  globalPlayer.style.left = `${rect.left + scrollX}px`;
+  globalPlayer.style.width = `${rect.width}px`;
+  globalPlayer.style.height = `${rect.height}px`;
+}
+
+export function observePlaceholder() {
+  const placeholder = document.getElementById('player-placeholder');
+  const globalPlayer = document.getElementById('global-player-container');
+  if (!placeholder || !globalPlayer) return;
+
+  if (placeholderObserver) {
+    placeholderObserver.disconnect();
+  }
+
+  placeholderObserver = new ResizeObserver(() => {
+    syncPlayerPosition();
+  });
+
+  placeholderObserver.observe(placeholder);
+  syncPlayerPosition();
+}
+
+export function disconnectPlaceholderObserver() {
+  if (placeholderObserver) {
+    placeholderObserver.disconnect();
+    placeholderObserver = null;
+  }
+}
+
 /**
  * Mengekstrak src dari HTML iframe mentah dan membangun iframe baru dengan sandboxing ketat (Mitigasi XSS)
  */
@@ -68,7 +109,7 @@ export async function init(id) {
       <div class="player-main-column">
         <!-- Responsive video frame container (16:9) -->
         <div class="player-container-wrapper">
-          <div class="player-iframe-container" id="player-container">
+          <div class="player-iframe-placeholder" id="player-placeholder">
             <div class="player-loading-shimmer">
               <div class="spinner"></div>
               <span>${i18n.t('loading_player_embed')}</span>
@@ -160,22 +201,22 @@ export async function init(id) {
     const isCurrentlyPlaying = window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(id);
 
     if (isCurrentlyPlaying) {
-      // 2. MASTERCLASS DOM TRANSPLANT BACK: Video sudah berjalan di float! Tarik balik ke watch page tanpa reload
+      // 2. MASTERCLASS TRANSPLANT BACK WITHOUT RELOAD: Video sudah berjalan di float!
       post = window.missavJState.activeVideo;
       
-      const wrapper = document.querySelector('.player-container-wrapper');
-      const oldPlayer = document.getElementById('floating-player-body')?.firstElementChild;
       const floatWrapper = document.getElementById('floating-player-wrapper');
-      
-      if (wrapper && oldPlayer) {
-        wrapper.innerHTML = ''; // Hapus shimmer loader baru
-        wrapper.appendChild(oldPlayer); // Pindahkan kembali elemen player asli beserta iframe-nya!
-      }
       if (floatWrapper) {
         floatWrapper.classList.add('hidden'); // Sembunyikan float wrapper
       }
       window.missavJState.isFloating = false;
       
+      // Kembalikan global player container ke mode tonton dan jalankan observer
+      const globalPlayer = document.getElementById('global-player-container');
+      if (globalPlayer) {
+        globalPlayer.className = 'global-player-container watch-mode';
+        observePlaceholder();
+      }
+
       // Render metadata langsung (UX super kilat)
       document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       renderPostMeta(post, id);
@@ -210,11 +251,20 @@ export async function init(id) {
       // Simpan objek ke active state sesi
       window.missavJState.activeVideo = post;
       
-      // Render iframe segar dengan fallback berlapis
-      const playerContainer = document.getElementById('player-container');
-      if (playerContainer) {
+      // Render iframe segar dengan fallback berlapis di global player container
+      const globalPlayer = document.getElementById('global-player-container');
+      if (globalPlayer) {
         const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
-        playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
+        globalPlayer.innerHTML = getSecureIframeMarkup(iframeMarkup);
+        globalPlayer.className = 'global-player-container watch-mode';
+        
+        // Reset inline styling layout positioning
+        globalPlayer.style.top = '';
+        globalPlayer.style.left = '';
+        globalPlayer.style.width = '';
+        globalPlayer.style.height = '';
+        
+        observePlaceholder();
       }
       
       document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;

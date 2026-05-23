@@ -211,15 +211,24 @@ function navigate(urlPath) {
 
   // 1. LEAVE WATCH TRANSPLANTATION: Move running player element to picture-in-picture mode
   if (prevPath === '/watch' && routePath !== '/watch') {
-    const playerContainer = document.getElementById('player-container');
-    if (playerContainer && window.missavJState.activeVideo) {
-      const floatBody = document.getElementById('floating-player-body');
+    const globalPlayer = document.getElementById('global-player-container');
+    if (globalPlayer && window.missavJState.activeVideo) {
       const floatTitle = document.getElementById('floating-player-title');
       const floatWrapper = document.getElementById('floating-player-wrapper');
       
-      if (floatBody && floatTitle && floatWrapper) {
-        floatBody.innerHTML = '';
-        floatBody.appendChild(playerContainer); // Transplant player DOM directly without reloading iframe state!
+      if (floatTitle && floatWrapper) {
+        // Disconnect placeholder observer in player.js
+        import('./player.js').then(m => {
+          if (m.disconnectPlaceholderObserver) m.disconnectPlaceholderObserver();
+        }).catch(() => {});
+
+        // Switch global player container to floating mode
+        globalPlayer.className = 'global-player-container floating-mode';
+        globalPlayer.style.top = '';
+        globalPlayer.style.left = '';
+        globalPlayer.style.width = '';
+        globalPlayer.style.height = '';
+        
         floatTitle.textContent = i18n.translateVideoTitle(window.missavJState.activeVideo.title);
         floatWrapper.classList.remove('hidden');
         window.missavJState.isFloating = true;
@@ -233,6 +242,11 @@ function navigate(urlPath) {
     const floatWrapper = document.getElementById('floating-player-wrapper');
     if (floatWrapper) floatWrapper.classList.add('hidden');
     window.missavJState.isFloating = false;
+    
+    const globalPlayer = document.getElementById('global-player-container');
+    if (globalPlayer) {
+      globalPlayer.className = 'global-player-container watch-mode';
+    }
   } 
   // If launching a watch page of a DIFFERENT video, dispose of active floating session
   else if (routePath === '/watch' && window.missavJState.isFloating) {
@@ -272,11 +286,22 @@ export function closeFloatingPlayer() {
   const float = document.getElementById('floating-player-wrapper');
   if (float) float.classList.add('hidden');
   
-  const body = document.getElementById('floating-player-body');
-  if (body) body.innerHTML = '';
+  const globalPlayer = document.getElementById('global-player-container');
+  if (globalPlayer) {
+    globalPlayer.innerHTML = '';
+    globalPlayer.className = 'global-player-hidden';
+    globalPlayer.style.top = '';
+    globalPlayer.style.left = '';
+    globalPlayer.style.width = '';
+    globalPlayer.style.height = '';
+  }
   
   window.missavJState.activeVideo = null;
   window.missavJState.isFloating = false;
+
+  import('./player.js').then(m => {
+    if (m.disconnectPlaceholderObserver) m.disconnectPlaceholderObserver();
+  }).catch(() => {});
 }
 
 /**
@@ -384,7 +409,7 @@ function setupKeyboardHotkeys() {
     // F: Toggle fullscreen presentation bounds on the player wrapper
     if (e.key.toLowerCase() === 'f') {
       e.preventDefault();
-      const wrapper = document.querySelector('.player-container-wrapper');
+      const wrapper = document.getElementById('global-player-container');
       if (wrapper) {
         if (!document.fullscreenElement) {
           wrapper.requestFullscreen().catch(() => {});
