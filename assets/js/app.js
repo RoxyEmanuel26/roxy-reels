@@ -242,11 +242,6 @@ function navigate(urlPath) {
     const floatWrapper = document.getElementById('floating-player-wrapper');
     if (floatWrapper) floatWrapper.classList.add('hidden');
     window.missavJState.isFloating = false;
-    
-    const globalPlayer = document.getElementById('global-player-container');
-    if (globalPlayer) {
-      globalPlayer.className = 'global-player-container watch-mode';
-    }
   } 
   // If launching a watch page of a DIFFERENT video, dispose of active floating session
   else if (routePath === '/watch' && window.missavJState.isFloating) {

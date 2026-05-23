@@ -63,11 +63,7 @@
   background-color: #000;
   overflow: hidden;
   pointer-events: auto;
-  transition: top 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              left 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              border-radius 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: border-radius 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -398,11 +394,11 @@
 
 @keyframes floatSlideUp {
   from {
-    transform: translateY(40px) scale(0.95);
+    transform: translateY(40px);
     opacity: 0;
   }
   to {
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     opacity: 1;
   }
 }
