@@ -1,8 +1,4 @@
-/**
- * MISSAV-J — Filter Bar System
- * Mengelola komponen sticky horizontal filter bar yang berisi kategori chips,
- * pengurutan dropdown (sort), dan filter tanggal (date range dengan ISO 8601).
- */
+import i18n from './i18n.js';
 
 // List kategori terkurasi untuk chip filter horizontal
 const POPULAR_CATEGORIES = [
@@ -25,31 +21,31 @@ export function init(container, currentFilters, onFilterChange) {
   if (!container) return;
 
   // 1. Deduce the active label and state value based on currentFilters
-  let activeLabel = 'Tanggal rilis';
+  let activeLabel = i18n.t('sort_date_release');
   let activeValue = 'date|DESC|';
   
   if (currentFilters.orderby === 'modified') {
-    activeLabel = 'Recent update';
+    activeLabel = i18n.t('sort_recent_update');
     activeValue = 'modified|DESC|';
   } else if (currentFilters.orderby === 'likes') {
-    activeLabel = 'Diselamatkan';
+    activeLabel = i18n.t('sort_likes');
     activeValue = 'likes|DESC|';
   } else if (currentFilters.orderby === 'views') {
     if (currentFilters.after) {
       const afterDate = new Date(currentFilters.after);
       const diffDays = Math.round((Date.now() - afterDate.getTime()) / (24 * 60 * 60 * 1000));
       if (diffDays <= 2) {
-        activeLabel = 'Tampilan hari ini';
+        activeLabel = i18n.t('sort_views_today');
         activeValue = 'views|DESC|day';
       } else if (diffDays <= 8) {
-        activeLabel = 'Tampilan mingguan';
+        activeLabel = i18n.t('sort_views_weekly');
         activeValue = 'views|DESC|week';
       } else {
-        activeLabel = 'Tampilan bulanan';
+        activeLabel = i18n.t('sort_views_monthly');
         activeValue = 'views|DESC|month';
       }
     } else {
-      activeLabel = 'Jumlah penayangan';
+      activeLabel = i18n.t('sort_views_total');
       activeValue = 'views|DESC|';
     }
   }
@@ -59,24 +55,24 @@ export function init(container, currentFilters, onFilterChange) {
     <div class="filter-bar">
       <!-- Custom Unified Sorting Dropdown Popover -->
       <div class="custom-dropdown" id="sort-dropdown">
-        <button class="dropdown-trigger" id="sort-dropdown-trigger" title="Urutkan Video" aria-haspopup="true" aria-expanded="false">
-          <span>Sortir dengan: <strong id="sort-current-label">${activeLabel}</strong></span>
+        <button class="dropdown-trigger" id="sort-dropdown-trigger" title="${i18n.t('sort_videos_title')}" aria-haspopup="true" aria-expanded="false">
+          <span>${i18n.t('sort_by')} <strong id="sort-current-label">${activeLabel}</strong></span>
           <span class="dropdown-caret">▲</span>
         </button>
         <div class="dropdown-menu hidden" id="sort-dropdown-menu">
-          <button class="dropdown-item ${activeValue === 'date|DESC|' ? 'active' : ''}" data-value="date|DESC|">Tanggal rilis</button>
-          <button class="dropdown-item ${activeValue === 'modified|DESC|' ? 'active' : ''}" data-value="modified|DESC|">Recent update</button>
-          <button class="dropdown-item ${activeValue === 'likes|DESC|' ? 'active' : ''}" data-value="likes|DESC|">Diselamatkan</button>
-          <button class="dropdown-item ${activeValue === 'views|DESC|day' ? 'active' : ''}" data-value="views|DESC|day">Tampilan hari ini</button>
-          <button class="dropdown-item ${activeValue === 'views|DESC|week' ? 'active' : ''}" data-value="views|DESC|week">Tampilan mingguan</button>
-          <button class="dropdown-item ${activeValue === 'views|DESC|month' ? 'active' : ''}" data-value="views|DESC|month">Tampilan bulanan</button>
-          <button class="dropdown-item ${activeValue === 'views|DESC|' ? 'active' : ''}" data-value="views|DESC|">Jumlah penayangan</button>
+          <button class="dropdown-item ${activeValue === 'date|DESC|' ? 'active' : ''}" data-value="date|DESC|">${i18n.t('sort_date_release')}</button>
+          <button class="dropdown-item ${activeValue === 'modified|DESC|' ? 'active' : ''}" data-value="modified|DESC|">${i18n.t('sort_recent_update')}</button>
+          <button class="dropdown-item ${activeValue === 'likes|DESC|' ? 'active' : ''}" data-value="likes|DESC|">${i18n.t('sort_likes')}</button>
+          <button class="dropdown-item ${activeValue === 'views|DESC|day' ? 'active' : ''}" data-value="views|DESC|day">${i18n.t('sort_views_today')}</button>
+          <button class="dropdown-item ${activeValue === 'views|DESC|week' ? 'active' : ''}" data-value="views|DESC|week">${i18n.t('sort_views_weekly')}</button>
+          <button class="dropdown-item ${activeValue === 'views|DESC|month' ? 'active' : ''}" data-value="views|DESC|month">${i18n.t('sort_views_monthly')}</button>
+          <button class="dropdown-item ${activeValue === 'views|DESC|' ? 'active' : ''}" data-value="views|DESC|">${i18n.t('sort_views_total')}</button>
         </div>
       </div>
 
       <!-- Scrollable Category Chips -->
       <div class="filter-chips-scroll" id="filter-chips-scroll">
-        <button class="filter-chip ${!currentFilters.category ? 'active' : ''}" data-category="">Semua</button>
+        <button class="filter-chip ${!currentFilters.category ? 'active' : ''}" data-category="">${i18n.t('category_all')}</button>
         ${POPULAR_CATEGORIES.map(cat => {
           const isActive = currentFilters.category === cat.value;
           return `<button class="filter-chip ${isActive ? 'active' : ''}" data-category="${cat.value}">${cat.label}</button>`;

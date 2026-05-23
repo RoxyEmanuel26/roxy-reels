@@ -240,11 +240,41 @@ const DICTIONARY = {
   studio_not_found: {
     en: 'Studio Not Found', id: 'Studio Tidak Ditemukan', ja: 'メーカーが見つかりません', ko: '스튜디오를 찾을 수 없음', 'zh-TW': '找不到片商', 'zh-CN': '找不到片商'
   },
-  studio_not_found_desc: {
+    studio_not_found_desc: {
     en: 'Studio "{query}" was not found in our curated list. Would you like to search videos from this studio directly on the server database?', id: 'Studio "{query}" tidak ada di daftar lokal kami. Apakah Anda ingin mencari video dengan studio ini langsung di database server?', ja: 'メーカー「{query}」は厳選リストに見つかりませんでした。サーバーのデータベースでこのメーカーの動画を直接検索しますか？', ko: '스튜디오 "{query}"을(를) 추천 목록에서 찾을 수 없습니다. 서버 데이터베이스에서 이 스튜디오의 비디오를 직접 검색하시겠습니까?', 'zh-TW': '在我們的精選清單中找不到片商「{query}」。您想直接在伺服器資料庫中搜尋此片商的影片嗎？', 'zh-CN': '在我们的精选清单中找不到片商“{query}”。您想直接在服务器数据库中搜索此片商的视频吗？'
   },
   search_studio_on_server: {
     en: 'Search Studio: "{query}" on Server', id: 'Cari Studio: "{query}" di Server', ja: 'サーバーでメーカー「{query}」を検索', ko: '서버에서 스튜디오 "{query}" 검색', 'zh-TW': '在伺服器搜尋片商：「{query}」', 'zh-CN': '在服务器搜索片商：“{query}”'
+  },
+  sort_videos_title: {
+    en: 'Sort Videos', id: 'Urutkan Video', 'zh-TW': '排序影片', 'zh-CN': '排序影片', ja: '動画を並べ替え', ko: '동영상 정렬', ms: 'Isih Video', th: 'จัดเรียงวิดีโอ', de: 'Videos sortieren', fr: 'Trier les vidéos', vi: 'Sắp xếp video', fil: 'I-sort ang mga Video', pt: 'Ordenar Vídeos'
+  },
+  sort_by: {
+    en: 'Sort by:', id: 'Sortir dengan:', 'zh-TW': '排序方式：', 'zh-CN': '排序方式：', ja: '並べ替え：', ko: '정렬 기준:', ms: 'Isih mengikut:', th: 'จัดเรียงตาม:', de: 'Sortieren nach:', fr: 'Trier par :', vi: 'Sắp xếp theo:', fil: 'I-sort ayon sa:', pt: 'Ordenar por:'
+  },
+  sort_date_release: {
+    en: 'Release date', id: 'Tanggal rilis', 'zh-TW': '發佈日期', 'zh-CN': '发布日期', ja: '公開日', ko: '출시일', ms: 'Tarikh keluaran', th: 'วันที่เปิดตัว', de: 'Veröffentlichungsdatum', fr: 'Date de sortie', vi: 'Ngày phát hành', fil: 'Petsa ng paglabas', pt: 'Data de lançamento'
+  },
+  sort_recent_update: {
+    en: 'Recent update', id: 'Recent update', 'zh-TW': '最近更新', 'zh-CN': '最近更新', ja: '最近の更新', ko: '최근 업데이트', ms: 'Kemas kini terkini', th: 'อัปเดตล่าสุด', de: 'Kürzliches Update', fr: 'Mise à jour récente', vi: 'Cập nhật gần đây', fil: 'Kamakailang update', pt: 'Atualização recente'
+  },
+  sort_likes: {
+    en: 'Saved', id: 'Diselamatkan', 'zh-TW': '已保存', 'zh-CN': '已保存', ja: '保存済み', ko: '저장됨', ms: 'Diselamatkan', th: 'บันทึกแล้ว', de: 'Gespeichert', fr: 'Enregistré', vi: 'Đã lưu', fil: 'Nailigtas', pt: 'Salvo'
+  },
+  sort_views_today: {
+    en: 'Views today', id: 'Tampilan hari ini', 'zh-TW': '今日觀看', 'zh-CN': '今日观看', ja: '今日の視聴回数', ko: '오늘의 조회수', ms: 'Tontonan hari ini', th: 'ยอดดูวันนี้', de: 'Aufrufe heute', fr: 'Vues aujourd\'hui', vi: 'Xem hôm nay', fil: 'Mga panonood ngayon', pt: 'Visualizações hoje'
+  },
+  sort_views_weekly: {
+    en: 'Weekly views', id: 'Tampilan mingguan', 'zh-TW': '本週觀看', 'zh-CN': '本周观看', ja: '今週 of 視聴回数', ko: '이번 주 조회수', ms: 'Tontonan mingguan', th: 'ยอดดูรายสัปดาห์', de: 'Wöchentliche Aufrufe', fr: 'Vues de la semaine', vi: 'Xem hàng tuần', fil: 'Lingguhang panonood', pt: 'Visualizações semanais'
+  },
+  sort_views_monthly: {
+    en: 'Monthly views', id: 'Tampilan bulanan', 'zh-TW': '本月觀看', 'zh-CN': '本月观看', ja: '今月の視聴回数', ko: '이번 달 조회수', ms: 'Tontonan bulanan', th: 'ยอดดูรายเดือน', de: 'Monatliche Aufrufe', fr: 'Vues du mois', vi: 'Xem hàng tháng', fil: 'Buwanang panonood', pt: 'Visualizações mensais'
+  },
+  sort_views_total: {
+    en: 'Total views', id: 'Jumlah penayangan', 'zh-TW': '總觀看次數', 'zh-CN': '总观看次数', ja: '総視聴回数', ko: '총 조회수', ms: 'Jumlah tontonan', th: 'ยอดดูทั้งหมด', de: 'Gesamte Aufrufe', fr: 'Vues totales', vi: 'Tổng lượt xem', fil: 'Kabuuang panonood', pt: 'Visualizações totais'
+  },
+  category_all: {
+    en: 'All', id: 'Semua', 'zh-TW': '全部', 'zh-CN': '全部', ja: 'すべて', ko: '전체', ms: 'Semua', th: 'ทั้งหมด', de: 'Alle', fr: 'Tout', vi: 'Tất cả', fil: 'Lahat', pt: 'Tudo'
   }
 };
 
