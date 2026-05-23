@@ -4,7 +4,9 @@
  * Menyediakan fungsi-fungsi fetch terbungkus dengan penanganan error.
  */
 
-const BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const BASE = (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'https://server.apijav.com/wp-json/myvideo/v1'
+  : '/api';
 
 const api = {
   /**
