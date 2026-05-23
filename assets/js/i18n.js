@@ -6,21 +6,21 @@
 
 import ui from './ui.js';
 
-// Konfigurasi 13 Bahasa dengan Ikon Bendera Lingkaran dari assets/pics
+// 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
-  { code: 'zh-TW', label: '繁體中文', flag: 'assets/pics/hong-kong.png' },
-  { code: 'zh-CN', label: '简体中文', flag: 'assets/pics/china.png' },
-  { code: 'en', label: 'English', flag: 'assets/pics/united-kingdom.png' },
-  { code: 'ja', label: '日本語', flag: 'assets/pics/japan.png' },
-  { code: 'ko', label: '한국의', flag: 'assets/pics/south-korea.png' },
-  { code: 'ms', label: 'Melayu', flag: 'assets/pics/malaysia.png' },
-  { code: 'th', label: 'ไทย', flag: 'assets/pics/thailand.png' },
-  { code: 'de', label: 'Deutsch', flag: 'assets/pics/germany.png' },
-  { code: 'fr', label: 'Français', flag: 'assets/pics/france.png' },
-  { code: 'vi', label: 'Tiếng Việt', flag: 'assets/pics/vietnam.png' },
-  { code: 'id', label: 'Bahasa Indonesia', flag: 'assets/pics/indonesia.png' },
-  { code: 'fil', label: 'Filipino', flag: 'assets/pics/philippines.png' },
-  { code: 'pt', label: 'Português', flag: 'assets/pics/brazil.png' }
+  { code: 'zh-TW', label: '繁體中文', flag: '/assets/pics/hong-kong.png' },
+  { code: 'zh-CN', label: '简体中文', flag: '/assets/pics/china.png' },
+  { code: 'en', label: 'English', flag: '/assets/pics/united-kingdom.png' },
+  { code: 'ja', label: '日本語', flag: '/assets/pics/japan.png' },
+  { code: 'ko', label: '한국의', flag: '/assets/pics/south-korea.png' },
+  { code: 'ms', label: 'Melayu', flag: '/assets/pics/malaysia.png' },
+  { code: 'th', label: 'ไทย', flag: '/assets/pics/thailand.png' },
+  { code: 'de', label: 'Deutsch', flag: '/assets/pics/germany.png' },
+  { code: 'fr', label: 'Français', flag: '/assets/pics/france.png' },
+  { code: 'vi', label: 'Tiếng Việt', flag: '/assets/pics/vietnam.png' },
+  { code: 'id', label: 'Bahasa Indonesia', flag: '/assets/pics/indonesia.png' },
+  { code: 'fil', label: 'Filipino', flag: '/assets/pics/philippines.png' },
+  { code: 'pt', label: 'Português', flag: '/assets/pics/brazil.png' }
 ];
 
 // Kamus Terjemahan Komprehensif
