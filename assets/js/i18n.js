@@ -52,6 +52,15 @@ const DICTIONARY = {
   sidebar_main_categories: {
     en: 'Main Categories', id: 'Kategori Utama', 'zh-TW': '主分類', 'zh-CN': '主分类', ja: 'カテゴリー', ko: '주요 카테고리', ms: 'Kategori Utama', th: 'หมวดหมู่หลัก', de: 'Hauptkategorien', fr: 'Catégories Principales', vi: 'Danh mục chính', fil: 'Pangunahing Kategorya', pt: 'Categorias Principais'
   },
+  sidebar_explore: {
+    en: 'Explore', id: 'Jelajahi', 'zh-TW': '探索', 'zh-CN': '探索', ja: '探索', ko: '탐색', ms: 'Jelajahi', th: 'สำรวจ', de: 'Erkunden', fr: 'Explorer', vi: 'Khám phá', fil: 'Galugarin', pt: 'Explorar'
+  },
+  nav_all_actors: {
+    en: 'All Actors', id: 'Semua Aktor', 'zh-TW': '所有演員', 'zh-CN': '所有演员', ja: 'すべての女優', ko: '모든 배우', ms: 'Semua Pelakon', th: 'นักแสดงทั้งหมด', de: 'Alle Schauspieler', fr: 'Tous les acteurs', vi: 'Tất cả diễn viên', fil: 'Lahat ng Aktor', pt: 'Todos os atores'
+  },
+  nav_all_categories: {
+    en: 'All Categories', id: 'Semua Kategori', 'zh-TW': '所有分類', 'zh-CN': '所有分类', ja: 'すべてのカテゴリー', ko: '모든 카테고리', ms: 'Semua Kategori', th: 'หมวดหมู่ทั้งหมด', de: 'Alle Kategorien', fr: 'Toutes les catégories', vi: 'Tất cả danh mục', fil: 'Lahat ng Kategorya', pt: 'Todas as categorias'
+  },
   category_watch_jav: {
     en: 'Watch JAV', id: 'Tonton JAV', 'zh-TW': '觀看 JAV', 'zh-CN': '观看 JAV', ja: 'JAVを見る', ko: 'JAV 보기', ms: 'Tonton JAV', th: 'ดู JAV', de: 'JAV ansehen', fr: 'Regarder JAV', vi: 'Xem JAV', fil: 'Panoorin ang JAV', pt: 'Assistir JAV'
   },
