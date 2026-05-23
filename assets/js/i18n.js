@@ -52,6 +52,42 @@ const DICTIONARY = {
   sidebar_main_categories: {
     en: 'Main Categories', id: 'Kategori Utama', 'zh-TW': '主分類', 'zh-CN': '主分类', ja: 'カテゴリー', ko: '주요 카테고리', ms: 'Kategori Utama', th: 'หมวดหมู่หลัก', de: 'Hauptkategorien', fr: 'Catégories Principales', vi: 'Danh mục chính', fil: 'Pangunahing Kategorya', pt: 'Categorias Principais'
   },
+  category_watch_jav: {
+    en: 'Watch JAV', id: 'Tonton JAV', 'zh-TW': '觀看 JAV', 'zh-CN': '观看 JAV', ja: 'JAVを見る', ko: 'JAV 보기', ms: 'Tonton JAV', th: 'ดู JAV', de: 'JAV ansehen', fr: 'Regarder JAV', vi: 'Xem JAV', fil: 'Panoorin ang JAV', pt: 'Assistir JAV'
+  },
+  category_asia_av: {
+    en: 'Asia AV', id: 'Asia AV', 'zh-TW': '亞洲 AV', 'zh-CN': '亚洲 AV', ja: 'アジア AV', ko: '아시아 AV', ms: 'AV Asia', th: 'เอเชีย AV', de: 'Asiatische AV', fr: 'AV Asiatique', vi: 'AV Châu Á', fil: 'Asia AV', pt: 'AV Asiático'
+  },
+  sub_new_releases: {
+    en: 'New Releases', id: 'Rilis Baru', 'zh-TW': '最新發佈', 'zh-CN': '最新发布', ja: '最新リリース', ko: '최신 출시', ms: 'Keluaran Baru', th: 'เปิดตัวใหม่', de: 'Neue Veröffentlichungen', fr: 'Nouvelles sorties', vi: 'Bản phát hành mới', fil: 'Mga Bagong Releases', pt: 'Novos Lançamentos'
+  },
+  sub_uncensored_leak: {
+    en: 'Uncensored leak', id: 'Bocoran Tanpa Sensor', 'zh-TW': '無碼流出', 'zh-CN': '无码流出', ja: '無修正流出', ko: '무삭제 유출', ms: 'Bocoran Tanpa Sensor', th: 'หลุดไม่มีเซ็นเซอร์', de: 'Zensurlose Leaks', fr: 'Fuites sans censure', vi: 'Rò rỉ không che', fil: 'Katas ng Walang Sensor', pt: 'Vazamentos sem censura'
+  },
+  sub_actress_list: {
+    en: 'Actress list', id: 'Daftar Aktris', 'zh-TW': '女優列表', 'zh-CN': '女优列表', ja: '女優一覧', ko: '여배우 목록', ms: 'Senarai Aktris', th: 'รายชื่อนักแสดงหญิง', de: 'Schauspielerinnenliste', fr: 'Liste des actrices', vi: 'Danh sách diễn viên', fil: 'Listahan ng Aktris', pt: 'Lista de atrizes'
+  },
+  sub_actress_ranking: {
+    en: 'Actress ranking MAY 2026', id: 'Peringkat Aktris MEI 2026', 'zh-TW': '女優排行 2026年5月', 'zh-CN': '女优排行 2026年5月', ja: '女優ランキング 2026年5月', ko: '여배우 순위 2026년 5월', ms: 'Kedudukan Aktris MEI 2026', th: 'จัดอันดับนักแสดงหญิง พ.ค. 2026', de: 'Schauspielerinnen-Ranking MAI 2026', fr: 'Classement des actrices MAI 2026', vi: 'Bảng xếp hạng diễn viên 05/2026', fil: 'Ranking ng Aktris MAY 2026', pt: 'Ranking de atrizes MAIO 2026'
+  },
+  sub_genre: {
+    en: 'Genre', id: 'Genre', 'zh-TW': '類型', 'zh-CN': '类型', ja: 'ジャンル', ko: '장르', ms: 'Genre', th: 'ประเภท', de: 'Genre', fr: 'Genre', vi: 'Thể loại', fil: 'Genre', pt: 'Gênero'
+  },
+  sub_maker: {
+    en: 'Maker', id: 'Pembuat / Maker', 'zh-TW': '片商', 'zh-CN': '片商', ja: 'メーカー', ko: '메이ker', ms: 'Pembuat', th: 'ผู้ผลิต', de: 'Hersteller', fr: 'Producteur', vi: 'Nhà sản xuất', fil: 'Maker', pt: 'Produtor'
+  },
+  sub_vr: {
+    en: 'VR', id: 'VR', 'zh-TW': 'VR', 'zh-CN': 'VR', ja: 'VR', ko: 'VR', ms: 'VR', th: 'VR', de: 'VR', fr: 'VR', vi: 'VR', fil: 'VR', pt: 'VR'
+  },
+  sub_married_slash: {
+    en: 'Married Slash', id: 'Pernikahan / Selingkuh', 'zh-TW': '人妻 / 外遇', 'zh-CN': '人妻 / 外遇', ja: '人妻・不倫', ko: '유부녀 / 불륜', ms: 'Kahwin / Curang', th: 'ภรรยา / นอกใจ', de: 'Verheiratet / Affäre', fr: 'Marié / Liaison', vi: 'Nhân thê / Ngoại tình', fil: 'May Asawa / Pagtataksil', pt: 'Casada / Caso'
+  },
+  sub_korean_live: {
+    en: 'Korean Live', id: 'Siaran Langsung Korea', 'zh-TW': '韓國直播', 'zh-CN': '韩国直播', ja: '韓国ライブ', ko: '한국 라이브', ms: 'Siaran Langsung Korea', th: 'ไลฟ์สดเกาหลี', de: 'Koreanisch Live', fr: 'Live Coréen', vi: 'Trực tiếp Hàn Quốc', fil: 'Korean Live', pt: 'Live Coreano'
+  },
+  sub_chinese_live: {
+    en: 'Chinese Live', id: 'Siaran Langsung China', 'zh-TW': '華語直播', 'zh-CN': '华语直播', ja: '中華ライブ', ko: '중국 라이브', ms: 'Siaran Langsung China', th: 'ไลฟ์สดจีน', de: 'Chinesisch Live', fr: 'Live Chinois', vi: 'Trực tiếp Trung Quốc', fil: 'Chinese Live', pt: 'Live Chinês'
+  },
   sidebar_my_collections: {
     en: 'My Collection', id: 'Koleksi Saya', 'zh-TW': '我的收藏', 'zh-CN': '我的收藏', ja: 'マイコレクション', ko: '내 보관함', ms: 'Koleksi Saya', th: 'คอลเลกชันของฉัน', de: 'Meine Sammlung', fr: 'Ma Collection', vi: 'Bộ sưu tập', fil: 'Aking Koleksyon', pt: 'Minha Coleção'
   },
@@ -627,6 +663,11 @@ export function translateStaticUI() {
     if (triggerBtn) {
       triggerBtn.setAttribute('title', `Change Language (Current: ${activeLangObj.label})`);
     }
+  }
+
+  // 6. Update header categories navigation
+  if (typeof window.missavJRenderCategories === 'function') {
+    window.missavJRenderCategories();
   }
 }
 

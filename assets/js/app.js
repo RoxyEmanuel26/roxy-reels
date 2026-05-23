@@ -476,6 +476,162 @@ function initGlobalEvents() {
   });
 }
 
+// Curated menu taxonomy configuration for the 4 header categories and subcategories/tags
+const HEADER_CATEGORIES = [
+  {
+    id: 'watch_jav',
+    labelKey: 'category_watch_jav',
+    defaultLabel: 'Watch JAV',
+    route: '/',
+    items: [
+      { labelKey: 'sort_recent_update', defaultLabel: 'Recent update', route: '/recent' },
+      { labelKey: 'sub_new_releases', defaultLabel: 'New Releases', route: '/' },
+      { labelKey: 'sub_uncensored_leak', defaultLabel: 'Uncensored leak', route: '/tag?name=Uncensored%20leak' },
+      { labelKey: 'sub_actress_list', defaultLabel: 'Actress list', route: '/actors' },
+      { labelKey: 'sub_actress_ranking', defaultLabel: 'Actress ranking MAY 2026', route: '/actors' },
+      { labelKey: 'sub_genre', defaultLabel: 'Genre', route: '/categories' },
+      { labelKey: 'sub_maker', defaultLabel: 'Maker', route: '/studios' },
+      { labelKey: 'sub_vr', defaultLabel: 'VR', route: '/tag?name=VR' },
+      { labelKey: 'sort_views_today', defaultLabel: 'Most viewed today', route: '/trending' },
+      { labelKey: 'sort_views_weekly', defaultLabel: 'Most viewed by week', route: '/trending' },
+      { labelKey: 'sort_views_monthly', defaultLabel: 'Most viewed by month', route: '/trending' }
+    ]
+  },
+  {
+    id: 'amateur',
+    labelKey: 'category_amateur',
+    defaultLabel: 'Amateur',
+    route: '/category?name=Amateur',
+    items: [
+      { labelKey: 'tag_siro', defaultLabel: 'SIRO', route: '/tag?name=SIRO' },
+      { labelKey: 'tag_luxu', defaultLabel: 'LUXU', route: '/tag?name=LUXU' },
+      { labelKey: 'tag_gana', defaultLabel: 'GANA', route: '/tag?name=GANA' },
+      { labelKey: 'tag_prestige_premium', defaultLabel: 'PRESTIGE PREMIUM', route: '/tag?name=PRESTIGE%20PREMIUM' },
+      { labelKey: 'tag_s_cute', defaultLabel: 'S-CUTE', route: '/tag?name=S-CUTE' },
+      { labelKey: 'tag_ara', defaultLabel: 'ARA', route: '/tag?name=ARA' }
+    ]
+  },
+  {
+    id: 'uncensored',
+    labelKey: 'category_uncensored',
+    defaultLabel: 'Uncensored',
+    route: '/category?name=Uncensored',
+    items: [
+      { labelKey: 'sub_uncensored_leak', defaultLabel: 'Uncensored leak', route: '/tag?name=Uncensored%20leak' },
+      { labelKey: 'tag_fc2', defaultLabel: 'FC2', route: '/tag?name=FC2' },
+      { labelKey: 'tag_heyzo', defaultLabel: 'HEYZO', route: '/tag?name=HEYZO' },
+      { labelKey: 'tag_tokyo_hot', defaultLabel: 'Tokyo Hot', route: '/tag?name=Tokyo%20Hot' },
+      { labelKey: 'tag_1pondo', defaultLabel: '1pondo', route: '/tag?name=1pondo' },
+      { labelKey: 'tag_caribbeancom', defaultLabel: 'Caribbeancom', route: '/tag?name=Caribbeancom' },
+      { labelKey: 'tag_caribbeancompr', defaultLabel: 'Caribbeancompr', route: '/tag?name=Caribbeancompr' },
+      { labelKey: 'tag_10musume', defaultLabel: '10musume', route: '/tag?name=10musume' },
+      { labelKey: 'tag_pacopacomama', defaultLabel: 'pacopacomama', route: '/tag?name=pacopacomama' },
+      { labelKey: 'tag_gachinco', defaultLabel: 'Gachinco', route: '/tag?name=Gachinco' },
+      { labelKey: 'tag_xxx_av', defaultLabel: 'XXX-AV', route: '/tag?name=XXX-AV' },
+      { labelKey: 'sub_married_slash', defaultLabel: 'Married Slash', route: '/tag?name=Married%20Slash' },
+      { labelKey: 'tag_naughty_4610', defaultLabel: 'Naughty 4610', route: '/tag?name=Naughty%204610' },
+      { labelKey: 'tag_naughty_0930', defaultLabel: 'Naughty 0930', route: '/tag?name=Naughty%200930' }
+    ]
+  },
+  {
+    id: 'asia_av',
+    labelKey: 'category_asia_av',
+    defaultLabel: 'Asia AV',
+    route: '/category?name=Asia%20AV',
+    items: [
+      { labelKey: 'tag_madou', defaultLabel: 'Madou', route: '/tag?name=Madou' },
+      { labelKey: 'tag_twav', defaultLabel: 'TWAV', route: '/tag?name=TWAV' },
+      { labelKey: 'tag_furuke', defaultLabel: 'Furuke', route: '/tag?name=Furuke' },
+      { labelKey: 'sub_korean_live', defaultLabel: 'Korean Live', route: '/tag?name=Korean%20Live' },
+      { labelKey: 'sub_chinese_live', defaultLabel: 'Chinese Live', route: '/tag?name=Chinese%20Live' }
+    ]
+  }
+];
+
+/**
+ * Renders the 4 categories dropdown menus in the header and registers their interaction bounds
+ */
+window.missavJRenderCategories = function() {
+  const container = document.getElementById('header-categories-nav');
+  if (!container) return;
+
+  container.innerHTML = HEADER_CATEGORIES.map(cat => {
+    const displayName = i18n.t(cat.labelKey) || cat.defaultLabel;
+    
+    const itemsHtml = cat.items.map(item => {
+      const itemDisplayName = i18n.t(item.labelKey) || item.defaultLabel;
+      return `<button class="header-dropdown-item" data-route="${item.route}">${itemDisplayName}</button>`;
+    }).join('');
+
+    return `
+      <div class="header-dropdown" id="dropdown-${cat.id}">
+        <button class="header-dropdown-trigger" data-route="${cat.route}">
+          <span>${displayName}</span>
+          <span class="dropdown-caret">▼</span>
+        </button>
+        <div class="header-dropdown-menu hidden">
+          ${itemsHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Bind clicks and toggles for dropdown items
+  HEADER_CATEGORIES.forEach(cat => {
+    const dropdownEl = document.getElementById(`dropdown-${cat.id}`);
+    if (!dropdownEl) return;
+
+    const trigger = dropdownEl.querySelector('.header-dropdown-trigger');
+    const menu = dropdownEl.querySelector('.header-dropdown-menu');
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      // Close all other dropdown menus first
+      document.querySelectorAll('.header-dropdown').forEach(el => {
+        if (el !== dropdownEl) {
+          el.classList.remove('open');
+          el.querySelector('.header-dropdown-menu')?.classList.add('hidden');
+          el.querySelector('.header-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      const isOpen = dropdownEl.classList.toggle('open');
+      menu.classList.toggle('hidden');
+      trigger.setAttribute('aria-expanded', isOpen);
+
+      // Perform SPA navigation to the selected category page
+      const targetRoute = trigger.dataset.route;
+      window.missavJNavigate(targetRoute);
+    });
+
+    menu.addEventListener('click', (e) => {
+      const item = e.target.closest('.header-dropdown-item');
+      if (item) {
+        e.stopPropagation();
+        const targetRoute = item.dataset.route;
+        window.missavJNavigate(targetRoute);
+
+        // Close dropdown bounds
+        dropdownEl.classList.remove('open');
+        menu.classList.add('hidden');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+};
+
+// Global click dismiss handler for category dropdown menus
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.header-dropdown').forEach(dropdownEl => {
+    if (!dropdownEl.contains(e.target)) {
+      dropdownEl.classList.remove('open');
+      dropdownEl.querySelector('.header-dropdown-menu')?.classList.add('hidden');
+      dropdownEl.querySelector('.header-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+    }
+  });
+});
+
 /**
  * Sets up the language selector dropdown and triggers setLang
  */
