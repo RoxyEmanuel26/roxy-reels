@@ -605,6 +605,15 @@ export function alignGlobalPlayerWithPlaceholder() {
     container.style.left = (rect.left + window.scrollX) + 'px';
     container.style.width = rect.width + 'px';
     container.style.height = rect.height + 'px';
+    
+    // Scale the player-container from 960px fixed reference to match the placeholder width.
+    // This prevents actual iframe resize events that would trigger DevTools detection
+    // inside the embed player from apijav.com.
+    const playerContainer = document.getElementById('player-container');
+    if (playerContainer) {
+      const scale = rect.width / 960;
+      playerContainer.style.transform = `scale(${scale})`;
+    }
   }
 }
 
