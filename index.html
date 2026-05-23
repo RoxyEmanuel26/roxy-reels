@@ -51,6 +51,7 @@
           id="header-search-input" 
           class="search-input" 
           placeholder="Cari video, aktor, studio, kode..." 
+          data-i18n-placeholder="search_placeholder"
           autocomplete="off" 
           spellcheck="false"
         >
@@ -73,14 +74,15 @@
         </svg>
       </button>
       
-      <!-- Info Icon Button -->
-      <button class="header-action-btn" id="info-btn" title="Tentang MISSAV-J" onclick="alert('MISSAV-J — Premium JAV Stream SPA\nVanilla JS + WordPress API\nDeveloped by Antigravity AI Client')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-      </button>
+      <!-- Flag Language Dropdown Popover (Premium circular style) -->
+      <div class="lang-dropdown" id="lang-dropdown">
+        <button class="lang-trigger" id="lang-dropdown-trigger" title="Change Language" aria-haspopup="true" aria-expanded="false">
+          <img id="lang-trigger-flag" src="assets/pics/united-kingdom.png" alt="English">
+        </button>
+        <div class="lang-menu hidden" id="lang-dropdown-menu">
+          <!-- Diisi secara dinamis oleh app.js berdasarkan i18n.LANGS -->
+        </div>
+      </div>
     </div>
   </header>
 
@@ -93,21 +95,21 @@
         <!-- Rute utama -->
         <a href="#/" class="active">
           <span class="nav-icon">🏠</span>
-          <span class="nav-text">Beranda</span>
+          <span class="nav-text" data-i18n="nav_home">Beranda</span>
         </a>
         <a href="#/trending">
           <span class="nav-icon">🔥</span>
-          <span class="nav-text">Populer (Trending)</span>
+          <span class="nav-text" data-i18n="nav_trending">Populer (Trending)</span>
         </a>
         <a href="#/recent">
           <span class="nav-icon">🕐</span>
-          <span class="nav-text">Terbaru</span>
+          <span class="nav-text" data-i18n="nav_recent">Terbaru</span>
         </a>
         
         <div class="sidebar-divider"></div>
         
         <!-- Accordion Kategori Utama -->
-        <div class="sidebar-section-title">Kategori Utama</div>
+        <div class="sidebar-section-title" data-i18n="sidebar_main_categories">Kategori Utama</div>
         <a href="#/category?name=Uncensored">
           <span class="nav-icon">📁</span>
           <span class="nav-text">Uncensored</span>
@@ -136,27 +138,27 @@
         <div class="sidebar-divider"></div>
 
         <!-- Section Koleksi Saya -->
-        <div class="sidebar-section-title">Koleksi Saya</div>
+        <div class="sidebar-section-title" data-i18n="sidebar_my_collections">Koleksi Saya</div>
         <a href="#/watch-later">
           <span class="nav-icon">📁</span>
-          <span class="nav-text">Tonton Nanti</span>
+          <span class="nav-text" data-i18n="nav_watch_later">Tonton Nanti</span>
         </a>
         <a href="#/history">
           <span class="nav-icon">🕐</span>
-          <span class="nav-text">Riwayat Sesi</span>
+          <span class="nav-text" data-i18n="nav_history">Riwayat Sesi</span>
         </a>
 
         <div class="sidebar-divider"></div>
 
         <!-- Section Info Tambahan -->
-        <div class="sidebar-section-title">Informasi Lain</div>
+        <div class="sidebar-section-title" data-i18n="sidebar_other_info">Informasi Lain</div>
         <a href="#/actors">
           <span class="nav-icon">🎭</span>
-          <span class="nav-text">Aktor Populer</span>
+          <span class="nav-text" data-i18n="nav_actors">Aktor Populer</span>
         </a>
         <a href="#/studios">
           <span class="nav-icon">🎬</span>
-          <span class="nav-text">Studio Populer</span>
+          <span class="nav-text" data-i18n="nav_studios">Studio Populer</span>
         </a>
       </nav>
     </aside>

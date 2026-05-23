@@ -8,6 +8,7 @@
 import api from './api.js';
 import ui from './ui.js';
 import filter from './filter.js';
+import i18n from './i18n.js';
 
 // State Feed (In-memory, terisolasi per siklus muat)
 let currentPage = 1;
@@ -74,7 +75,7 @@ export function renderVideoCard(post, index = 0) {
     safeTitle.toLowerCase().includes('no-mosaic') ||
     safeTitle.toLowerCase().includes('nomosaic');
 
-  const uncensoredBadge = isUncensored ? `<span class="card-uncensored">Tanpa sensor</span>` : '';
+  const uncensoredBadge = isUncensored ? `<span class="card-uncensored">${i18n.t('badge_uncensored')}</span>` : '';
 
   // Sanitasi daftar aktor
   const actors = Array.isArray(post.actors) ? post.actors : (post.actors ? [post.actors] : []);
@@ -96,11 +97,11 @@ export function renderVideoCard(post, index = 0) {
   // Studio
   const studioMarkup = safeStudio 
     ? `<span class="card-studio" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</span>`
-    : '<span class="card-studio text-muted">Unknown Studio</span>';
+    : `<span class="card-studio text-muted">${i18n.t('unknown_studio')}</span>`;
 
   // Format views
   const viewsCount = post.views ? parseInt(post.views, 10) : 0;
-  const viewsFormatted = viewsCount.toLocaleString('id-ID');
+  const viewsFormatted = viewsCount.toLocaleString(i18n.getLang());
 
   // Staggered animation delay: masing-masing kartu dimunculkan dengan jeda 40ms secara beruntun
   const animationStyle = `style="animation-delay: calc(${index % 24} * 45ms);"`;
@@ -123,14 +124,14 @@ export function renderVideoCard(post, index = 0) {
         ${uncensoredBadge}
         ${durationBadge}
         ${hdBadge}
-        <div class="card-hover-overlay">▶ Putar Video</div>
+        <div class="card-hover-overlay">▶ ${i18n.t('play_video')}</div>
       </div>
       <div class="card-info">
         <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
         <div class="card-meta">
           ${studioMarkup}
           <span class="card-dot">•</span>
-          <span class="card-views">${viewsFormatted} views</span>
+          <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
         </div>
         <div class="card-actors">
           ${actorsMarkup}
@@ -176,9 +177,9 @@ export async function init(filters = {}) {
       <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
         <div class="banner-icon">🎭</div>
         <div class="banner-content">
-          <span class="banner-label">Aktris JAV</span>
+          <span class="banner-label">${i18n.t('banner_actor_label')}</span>
           <h2 class="banner-title">${actorName}</h2>
-          <p class="banner-desc">Menampilkan koleksi video streaming terbaik yang diperankan oleh aktris ${actorName}</p>
+          <p class="banner-desc">${i18n.t('banner_actor_desc', { name: actorName })}</p>
         </div>
         <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
       </div>
@@ -189,9 +190,9 @@ export async function init(filters = {}) {
       <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
         <div class="banner-icon">🎬</div>
         <div class="banner-content">
-          <span class="banner-label">Studio Produksi</span>
+          <span class="banner-label">${i18n.t('banner_studio_label')}</span>
           <h2 class="banner-title">${studioName}</h2>
-          <p class="banner-desc">Menampilkan semua video rilis eksklusif dari studio ${studioName}</p>
+          <p class="banner-desc">${i18n.t('banner_studio_desc', { name: studioName })}</p>
         </div>
         <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
       </div>
@@ -202,9 +203,9 @@ export async function init(filters = {}) {
       <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
         <div class="banner-icon">🏷️</div>
         <div class="banner-content">
-          <span class="banner-label">Tag / Label</span>
+          <span class="banner-label">${i18n.t('banner_tag_label')}</span>
           <h2 class="banner-title">${tagName}</h2>
-          <p class="banner-desc">Menampilkan semua video dengan tag/label ${tagName}</p>
+          <p class="banner-desc">${i18n.t('banner_tag_desc', { name: tagName })}</p>
         </div>
         <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
       </div>
@@ -218,9 +219,9 @@ export async function init(filters = {}) {
         <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
           <div class="banner-icon">📁</div>
           <div class="banner-content">
-            <span class="banner-label">Kategori</span>
+            <span class="banner-label">${i18n.t('banner_category_label')}</span>
             <h2 class="banner-title">${catName}</h2>
-            <p class="banner-desc">Menampilkan semua video streaming dalam kategori ${catName}</p>
+            <p class="banner-desc">${i18n.t('banner_category_desc', { name: catName })}</p>
           </div>
           <button class="banner-close" onclick="window.location.hash='#/'" title="Hapus Filter">✕</button>
         </div>
@@ -237,8 +238,8 @@ export async function init(filters = {}) {
     
     <!-- Info bar & total video count -->
     <div class="feed-info-bar">
-      <div class="video-total-count" id="video-total-count">Memuat jumlah video...</div>
-      <div class="page-track" id="page-track">Halaman 1</div>
+      <div class="video-total-count" id="video-total-count">${i18n.t('loading_videos_count')}</div>
+      <div class="page-track" id="page-track">${i18n.t('page_format', { current: 1, total: 1 })}</div>
     </div>
     
     <!-- Main Video Grid -->
@@ -247,7 +248,7 @@ export async function init(filters = {}) {
     <!-- Infinite Scroll Sentinel & Loader -->
     <div id="infinite-loader" class="infinite-loader hidden">
       <div class="spinner"></div>
-      <span>Memuat video lainnya...</span>
+      <span>${i18n.t('loading_more_videos')}</span>
     </div>
     <div id="scroll-sentinel" class="scroll-sentinel"></div>
   `;
@@ -291,12 +292,12 @@ async function fetchAndRenderFeed(isInitial = false) {
 
     // Tampilkan total video count di UI
     if (totalCountEl) {
-      totalCountEl.textContent = `${data.total.toLocaleString('id-ID')} video tersedia`;
+      totalCountEl.textContent = i18n.t('video_available', { total: data.total.toLocaleString(i18n.getLang()) });
     }
     
     // Update halaman pelacakan
     if (pageTrackEl) {
-      pageTrackEl.textContent = `Halaman ${currentPage} dari ${totalPages}`;
+      pageTrackEl.textContent = i18n.t('page_format', { current: currentPage, total: totalPages });
     }
 
     if (data.posts.length === 0 && isInitial) {
@@ -324,7 +325,7 @@ async function fetchAndRenderFeed(isInitial = false) {
     if (isInitial) {
       ui.showError(error.message, grid);
     } else {
-      ui.showToast('Gagal memuat video tambahan.');
+      ui.showToast(i18n.t('error_load_more'));
     }
   } finally {
     isLoading = false;

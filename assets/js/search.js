@@ -8,6 +8,7 @@ import api from './api.js';
 import ui from './ui.js';
 import filter from './filter.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
+import i18n from './i18n.js';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
@@ -101,8 +102,8 @@ export async function init(query = '') {
     <div id="filter-bar-container" class="filter-bar-container"></div>
     
     <div class="feed-info-bar">
-      <div class="video-total-count" id="search-total-count">Mencari video...</div>
-      <div class="page-track" id="search-page-track">Halaman 1</div>
+      <div class="video-total-count" id="search-total-count">${i18n.t('searching_videos')}</div>
+      <div class="page-track" id="search-page-track">${i18n.t('page_format', { current: 1, total: 1 })}</div>
     </div>
     
     <!-- Video Grid -->
@@ -111,7 +112,7 @@ export async function init(query = '') {
     <!-- Infinite Scroll Sentinel & Loader -->
     <div id="search-infinite-loader" class="infinite-loader hidden">
       <div class="spinner"></div>
-      <span>Memuat hasil pencarian lainnya...</span>
+      <span>${i18n.t('loading_more_search')}</span>
     </div>
     <div id="search-scroll-sentinel" class="scroll-sentinel"></div>
   `;
@@ -163,11 +164,11 @@ async function fetchAndRenderSearch(isInitial = false) {
 
     if (totalCountEl) {
       const safeQueryDisplay = ui.escapeHTML(currentQuery);
-      totalCountEl.textContent = `Hasil untuk "${safeQueryDisplay}" (${data.total.toLocaleString('id-ID')} video ditemukan)`;
+      totalCountEl.textContent = i18n.t('search_results', { query: safeQueryDisplay, total: data.total.toLocaleString(i18n.getLang()) });
     }
 
     if (pageTrackEl) {
-      pageTrackEl.textContent = `Halaman ${currentPage} dari ${totalPages}`;
+      pageTrackEl.textContent = i18n.t('page_format', { current: currentPage, total: totalPages });
     }
 
     if (data.posts.length === 0 && isInitial) {
@@ -193,7 +194,7 @@ async function fetchAndRenderSearch(isInitial = false) {
     if (isInitial) {
       ui.showError(error.message, grid);
     } else {
-      ui.showToast('Gagal memuat hasil pencarian tambahan.');
+      ui.showToast(i18n.t('error_load_more'));
     }
   } finally {
     isLoading = false;

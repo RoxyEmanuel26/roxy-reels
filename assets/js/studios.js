@@ -5,6 +5,7 @@
  */
 
 import ui from './ui.js';
+import i18n from './i18n.js';
 
 // Daftar Studio JAV terkemuka terkurasi dengan nama singkatan/logo visual
 const POPULAR_STUDIOS = [
@@ -40,10 +41,10 @@ function renderStudiosGrid(studiosList, searchQuery = '') {
     grid.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1; width: 100%;">
         <div class="empty-icon">🎬</div>
-        <h3>Studio Tidak Ditemukan</h3>
-        <p>Studio "${escapedQuery}" tidak ada di daftar lokal kami. Apakah Anda ingin mencari video dengan studio ini langsung di database server?</p>
+        <h3>${i18n.t('studio_not_found')}</h3>
+        <p>${i18n.t('studio_not_found_desc', { query: escapedQuery })}</p>
         <button id="search-api-studio-btn" class="btn-primary" data-name="${encodeURIComponent(searchQuery)}">
-          Cari Studio: "${escapedQuery}" di Server
+          ${i18n.t('search_studio_on_server', { query: escapedQuery })}
         </button>
       </div>
     `;
@@ -87,8 +88,8 @@ export function init() {
   mainApp.innerHTML = `
     <div class="taxonomy-browse-header">
       <div>
-        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">🎬 Studio JAV Terpopuler</h2>
-        <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">Telusuri daftar rilis video eksklusif berdasarkan studio produksi favorit Anda</p>
+        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('studios_browse_title')}</h2>
+        <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('studios_browse_desc')}</p>
       </div>
       
       <!-- Input pencarian taksonomi -->
@@ -97,7 +98,7 @@ export function init() {
           type="text" 
           id="studio-search-input" 
           class="taxonomy-search-input" 
-          placeholder="Cari nama studio..." 
+          placeholder="${i18n.t('studio_search_placeholder')}" 
           autocomplete="off"
           spellcheck="false"
         >

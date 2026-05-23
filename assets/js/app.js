@@ -6,6 +6,7 @@
 
 import ui from './ui.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
+import i18n from './i18n.js';
 
 // Inisialisasi State Global In-Memory
 window.missavJState = {
@@ -37,11 +38,12 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
       </div>
       <div class="empty-state">
         <div class="empty-icon">📁</div>
-        <h3>Daftar Kosong</h3>
+        <h3 data-i18n="empty_state_title">Daftar Kosong</h3>
         <p>${emptyMessage}</p>
-        <button onclick="window.location.hash='#/'" class="btn-primary">Telusuri Video</button>
+        <button onclick="window.location.hash='#/'" class="btn-primary" data-i18n="empty_clear_btn">Telusuri Video</button>
       </div>
     `;
+    i18n.translateStaticUI();
     return;
   }
 
@@ -49,7 +51,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
   mainApp.innerHTML = `
     <div class="saved-list-header" style="margin-bottom: var(--space-6);">
       <h2 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-1);">${title}</h2>
-      <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">Menampilkan ${postsList.length} video dalam koleksi sesi</p>
+      <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('video_available', { total: postsList.length })}</p>
     </div>
     <div class="video-grid" id="saved-video-grid">
       ${postsList.map((post, idx) => renderVideoCard(post, idx)).join('')}
@@ -86,6 +88,8 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
     // Pasang hover listeners untuk cuplikan video dinamis (Live Preview)
     bindHoverPreviews(grid);
   }
+  
+  i18n.translateStaticUI();
 }
 
 // Daftar rute aplikasi MISSAV-J berbasis hash
@@ -105,8 +109,8 @@ const routes = {
   '/studios':   () => import('./studios.js').then(m => m.init()),
   
   // Rute baru untuk playlists in-memory
-  '/watch-later': () => Promise.resolve(renderSavedVideosPage('Tonton Nanti', window.missavJState.watchLater, 'Daftar tonton nanti Anda masih kosong. Simpan video dari halaman pemutaran!')),
-  '/history':     () => Promise.resolve(renderSavedVideosPage('Riwayat Tontonan Sesi', window.missavJState.history, 'Riwayat tontonan sesi Anda kosong. Silakan putar video terlebih dahulu!'))
+  '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
+  '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')))
 };
 
 /**
@@ -170,7 +174,9 @@ function navigate(hash) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 
   // Panggil modul halaman terkait
-  route().catch(err => {
+  route().then(() => {
+    i18n.translateStaticUI();
+  }).catch(err => {
     console.error(`Gagal memuat rute ${path}:`, err);
     ui.showError(`Gagal memuat halaman: ${err.message}`);
   });
@@ -378,12 +384,63 @@ function initGlobalEvents() {
   });
 }
 
+/**
+ * Menyusun dropdown pilihan bahasa dan event listener-nya
+ */
+function setupLanguageDropdown() {
+  const trigger = document.getElementById('lang-dropdown-trigger');
+  const menu = document.getElementById('lang-dropdown-menu');
+  if (!trigger || !menu) return;
+
+  // Render list bahasa dari i18n.LANGS secara dinamis
+  menu.innerHTML = i18n.LANGS.map(lang => `
+    <button class="lang-item" data-lang="${lang.code}">
+      <img class="lang-item-flag" src="${lang.flag}" alt="${lang.label}">
+      <span class="lang-item-label">${lang.label}</span>
+    </button>
+  `).join('');
+
+  // Toggle dropdown menu saat trigger diklik
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+    trigger.setAttribute('aria-expanded', !isExpanded);
+    menu.classList.toggle('hidden');
+    trigger.parentElement.classList.toggle('open');
+  });
+
+  // Event handler ketika item bahasa dipilih
+  menu.addEventListener('click', (e) => {
+    const item = e.target.closest('.lang-item');
+    if (item) {
+      const selectedLang = item.dataset.lang;
+      i18n.setLang(selectedLang);
+      
+      // Tutup menu
+      menu.classList.add('hidden');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.parentElement.classList.remove('open');
+    }
+  });
+
+  // Tutup dropdown jika mengklik di luar area dropdown
+  document.addEventListener('click', (e) => {
+    if (!trigger.parentElement.contains(e.target)) {
+      menu.classList.add('hidden');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.parentElement.classList.remove('open');
+    }
+  });
+}
+
 // Bootstrap router saat halaman dimuat
 document.addEventListener('DOMContentLoaded', () => {
   initGlobalEvents();
+  setupLanguageDropdown();  // Inisialisasi dropdown bahasa
   setupScrollTopButton();   // Injeksi tombol scroll-to-top
   setupFloatingPlayerDOM(); // Injeksi pemutar melayang (PiP)
   setupKeyboardHotkeys();   // Daftarkan hotkeys keyboard
+  i18n.translateStaticUI(); // Pelokalan pertama kali
   
   window.addEventListener('hashchange', () => navigate(window.location.hash));
   navigate(window.location.hash || '#/');

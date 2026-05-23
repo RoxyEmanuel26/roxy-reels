@@ -905,3 +905,113 @@
   box-shadow: 0 10px 30px rgba(255, 82, 123, 0.25) !important;
 }
 
+/* ==========================================
+   11. PREMIUM CIRCULAR FLAG DROPDOWN SYSTEM
+   ========================================== */
+.lang-dropdown {
+  position: relative;
+  display: inline-block;
+  z-index: 150;
+}
+
+.lang-trigger {
+  background: none;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: border-color var(--transition), transform var(--transition);
+}
+
+.lang-trigger:hover,
+.lang-dropdown.open .lang-trigger {
+  border-color: var(--color-accent);
+  transform: scale(1.05);
+}
+
+.lang-trigger img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: #11121d; /* Deep blue-charcoal mewah sesuai gambar */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hover), 0 10px 30px rgba(0, 0, 0, 0.6);
+  min-width: 190px;
+  max-height: 360px; /* Batasi tinggi & tampilkan scrollbar sesuai gambar */
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: dropdownSlideIn 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Scrollbar kustom untuk list bahasa melayang */
+.lang-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lang-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lang-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+}
+
+.lang-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+.lang-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 0.825rem;
+  font-weight: 500;
+  color: #e2e2f0;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.lang-item:hover {
+  background-color: rgba(255, 82, 123, 0.1);
+  color: var(--color-accent);
+}
+
+.lang-item.active {
+  background-color: rgba(255, 82, 123, 0.15);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.lang-item-flag {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  margin-right: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+

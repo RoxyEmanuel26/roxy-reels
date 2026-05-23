@@ -8,6 +8,7 @@
 import api from './api.js';
 import ui from './ui.js';
 import { renderVideoCard, getDeterministicDuration } from './feed.js';
+import i18n from './i18n.js';
 
 // State like/dislike lokal in-memory
 const likedVideos = new Set();
@@ -20,11 +21,11 @@ const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.
  * Mengekstrak src dari HTML iframe mentah dan membangun iframe baru dengan sandboxing ketat (Mitigasi XSS)
  */
 function getSecureIframeMarkup(iframeHtml) {
-  if (!iframeHtml) return '<div class="player-loading-shimmer">Pemutar tidak tersedia.</div>';
+  if (!iframeHtml) return `<div class="player-loading-shimmer">${i18n.t('player_not_available')}</div>`;
   
   const srcMatch = iframeHtml.match(/src=["']([^"']+)["']/i);
   if (!srcMatch) {
-    return '<div class="player-loading-shimmer">Format player tidak didukung.</div>';
+    return `<div class="player-loading-shimmer">${i18n.t('player_format_not_supported')}</div>`;
   }
   
   // Ganti HTML entity &#038; atau &amp; dengan ampersand asli (&) agar query parameter tidak rusak
@@ -50,7 +51,7 @@ function getSecureIframeMarkup(iframeHtml) {
  */
 export async function init(id) {
   if (!id) {
-    ui.showError('ID Video tidak valid');
+    ui.showError(i18n.t('invalid_video_id'));
     return;
   }
 
@@ -70,18 +71,18 @@ export async function init(id) {
           <div class="player-iframe-container" id="player-container">
             <div class="player-loading-shimmer">
               <div class="spinner"></div>
-              <span>Memuat Player Embed...</span>
+              <span>${i18n.t('loading_player_embed')}</span>
             </div>
           </div>
         </div>
         
         <!-- Metadata Video -->
         <div class="player-metadata-container">
-          <h1 class="player-title" id="player-title">Memuat judul video...</h1>
+          <h1 class="player-title" id="player-title">${i18n.t('loading_video_title')}</h1>
           
           <div class="player-action-row">
             <div class="player-stats">
-              <span id="player-views-count">0 views</span>
+              <span id="player-views-count">0 ${i18n.t('views')}</span>
               <span class="card-dot">•</span>
               <span id="player-publish-date">Dipublikasikan</span>
             </div>
@@ -97,11 +98,11 @@ export async function init(id) {
               </button>
               <button id="watch-later-btn" class="player-btn">
                 <span class="btn-icon">📁</span>
-                <span id="watch-later-label" class="btn-label">Tonton Nanti</span>
+                <span id="watch-later-label" class="btn-label">${i18n.t('btn_watch_later')}</span>
               </button>
               <button id="share-btn" class="player-btn">
                 <span class="btn-icon">🔗</span>
-                <span class="btn-label">Bagikan</span>
+                <span class="btn-label">${i18n.t('btn_share')}</span>
               </button>
             </div>
           </div>
@@ -117,23 +118,23 @@ export async function init(id) {
             
             <div class="meta-box-details">
               <div class="meta-section">
-                <h4>Aktor / Bintang:</h4>
+                <h4>${i18n.t('meta_actors')}</h4>
                 <div class="meta-chips-list" id="player-actors-list">
-                  <span class="chip-loading-placeholder">Memuat aktor...</span>
+                  <span class="chip-loading-placeholder">${i18n.t('loading_actors')}</span>
                 </div>
               </div>
               
               <div class="meta-section">
-                <h4>Kategori:</h4>
+                <h4>${i18n.t('meta_categories')}</h4>
                 <div class="meta-chips-list" id="player-categories-list">
-                  <span class="chip-loading-placeholder">Memuat kategori...</span>
+                  <span class="chip-loading-placeholder">${i18n.t('loading_categories')}</span>
                 </div>
               </div>
 
               <div class="meta-section">
-                <h4>Tags / Label:</h4>
+                <h4>${i18n.t('meta_tags')}</h4>
                 <div class="meta-chips-list" id="player-tags-list">
-                  <span class="chip-loading-placeholder">Memuat tags...</span>
+                  <span class="chip-loading-placeholder">${i18n.t('loading_tags')}</span>
                 </div>
               </div>
             </div>
@@ -143,7 +144,7 @@ export async function init(id) {
       
       <!-- Kolom Kanan: Rekomendasi Video Terkait -->
       <div class="player-sidebar-column">
-        <h3>Video Terkait</h3>
+        <h3>${i18n.t('related_videos')}</h3>
         <div class="related-videos-list" id="related-videos-list">
           <!-- Diisi video rekomendasi -->
         </div>
@@ -180,7 +181,7 @@ export async function init(id) {
       renderPostMeta(post, id);
       loadRelatedVideos(post);
       
-      ui.showToast('Memaksimalkan pemutar penuh 🖥️');
+      ui.showToast(i18n.t('maximize_player_toast'));
     } else {
       // 3. Video TIDAK sedang berjalan (Fresh Load) dengan Penanganan Error dan Fallback Berlapis
       const [fetchedPost, player] = await Promise.all([
@@ -226,7 +227,7 @@ export async function init(id) {
 
   } catch (error) {
     console.error('Gagal memuat Halaman Player:', error);
-    ui.showError(`Gagal memuat halaman watch: ${error.message}`);
+    ui.showError(i18n.t('error_load_watch_page', { message: error.message }));
   }
 }
 
@@ -270,12 +271,12 @@ function renderPostMeta(post, id) {
   
   if (viewsEl) {
     const viewsCount = post.views ? parseInt(post.views, 10) : 0;
-    viewsEl.textContent = `${viewsCount.toLocaleString('id-ID')} views`;
+    viewsEl.textContent = `${viewsCount.toLocaleString(i18n.getLang())} ${i18n.t('views')}`;
   }
   
   if (dateEl && post.date) {
     const pubDate = new Date(post.date);
-    dateEl.textContent = pubDate.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+    dateEl.textContent = pubDate.toLocaleDateString(i18n.getLang(), { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
   // Code & Studio
@@ -330,9 +331,9 @@ function renderPostMeta(post, id) {
     shareBtn.addEventListener('click', () => {
       const shareUrl = window.location.href;
       navigator.clipboard.writeText(shareUrl).then(() => {
-        ui.showToast('Tautan berhasil disalin ke clipboard! 📋');
+        ui.showToast(i18n.t('toast_share_success'));
       }).catch(() => {
-        ui.showToast('Gagal menyalin tautan.');
+        ui.showToast(i18n.t('toast_share_failed'));
       });
     });
   }
@@ -418,10 +419,10 @@ function setupWatchLaterLogic(post) {
     const isSaved = window.missavJState.watchLater.some(p => String(p.id) === String(post.id));
     if (isSaved) {
       watchLaterBtn.classList.add('active');
-      watchLaterLabel.textContent = 'Tersimpan';
+      watchLaterLabel.textContent = i18n.t('btn_saved');
     } else {
       watchLaterBtn.classList.remove('active');
-      watchLaterLabel.textContent = 'Tonton Nanti';
+      watchLaterLabel.textContent = i18n.t('btn_watch_later');
     }
   };
 
@@ -433,11 +434,11 @@ function setupWatchLaterLogic(post) {
     if (isSaved) {
       // Hapus dari tonton nanti
       window.missavJState.watchLater = window.missavJState.watchLater.filter(p => String(p.id) !== String(post.id));
-      ui.showToast('Dihapus dari Tonton Nanti 📁');
+      ui.showToast(i18n.t('toast_removed_watch_later'));
     } else {
       // Simpan ke tonton nanti
       window.missavJState.watchLater.push(post);
-      ui.showToast('Disimpan ke Tonton Nanti 📁');
+      ui.showToast(i18n.t('toast_saved_watch_later'));
     }
     updateButtonVisualState();
   });
@@ -514,12 +515,12 @@ function renderRelatedRowCard(post, index) {
     safeTitle.toLowerCase().includes('no-mosaic') ||
     safeTitle.toLowerCase().includes('nomosaic');
 
-  const uncensoredBadge = isUncensored ? `<span class="card-uncensored" style="font-size: 0.6rem; padding: 1px 4px; bottom: 4px; left: 4px;">Tanpa sensor</span>` : '';
+  const uncensoredBadge = isUncensored ? `<span class="card-uncensored" style="font-size: 0.6rem; padding: 1px 4px; bottom: 4px; left: 4px;">${i18n.t('badge_uncensored')}</span>` : '';
 
   const isHD = safeTitle.toLowerCase().includes('hd') || (post.tags && post.tags.some(t => String(t).toLowerCase() === 'hd'));
   const hdBadge = isHD ? `<span class="card-hd">HD</span>` : '';
   const durationBadge = safeDuration ? `<span class="card-duration">${safeDuration}</span>` : '';
-  const viewsFormatted = post.views ? parseInt(post.views, 10).toLocaleString('id-ID') : '0';
+  const viewsFormatted = post.views ? parseInt(post.views, 10).toLocaleString(i18n.getLang()) : '0';
 
   const animationStyle = `style="animation-delay: calc(${index} * 40ms);"`;
 
@@ -539,7 +540,7 @@ function renderRelatedRowCard(post, index) {
       <div class="related-info">
         <h4 class="related-title" title="${safeTitle}">${safeTitle}</h4>
         <span class="related-studio">${safeStudio}</span>
-        <span class="related-views">${viewsFormatted} views</span>
+        <span class="related-views">${viewsFormatted} ${i18n.t('views')}</span>
       </div>
     </div>
   `;
