@@ -406,6 +406,8 @@
   width: 100%;
   height: 100%;
   aspect-ratio: auto;
+  overflow: hidden;
+  position: relative;
 }
 
 @keyframes floatSlideUp {
@@ -471,9 +473,14 @@
    The iframe always renders at 960x540 internally. CSS transform: scale() handles
    visual resizing without triggering actual iframe resize events. */
 .floating-player-body #player-container {
-  width: 100%;
-  height: 100%;
+  width: 960px;
+  height: 540px;
+  transform-origin: top left;
+}
 
+/* Floating mode: scale the 960px reference down to 320px visual width */
+.floating-player-wrapper.mode-floating #player-container {
+  transform: scale(0.3333);
 }
 
 /* NEAT STACKING LOGIC USING CSS :has SELECTOR
