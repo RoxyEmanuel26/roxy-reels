@@ -7,7 +7,7 @@
 
 import api from './api.js';
 import ui from './ui.js';
-import { renderVideoCard } from './feed.js';
+import { renderVideoCard, getDeterministicDuration } from './feed.js';
 
 // State like/dislike lokal in-memory
 const likedVideos = new Set();
@@ -487,7 +487,34 @@ function renderRelatedRowCard(post, index) {
   const safeTitle = ui.escapeHTML(post.title);
   const safeStudio = ui.escapeHTML(post.studio || 'Unknown');
   const safeThumbnail = ui.escapeHTML(post.thumbnail || '');
-  const safeDuration = ui.escapeHTML(post.duration || '');
+  
+  // Ambil durasi, jika kosong atau 00:00:00, gunakan deterministic generator
+  let duration = post.duration || '';
+  if (!duration || duration === '00:00:00') {
+    duration = getDeterministicDuration(post.id);
+  }
+  const safeDuration = ui.escapeHTML(duration);
+
+  // Deteksi jika video tanpa sensor (Uncensored)
+  const isUncensored = 
+    (post.categories && post.categories.some(c => {
+      const s = String(c).toLowerCase();
+      return s.includes('uncensored') || s.includes('tanpa sensor') || s.includes('no sensor') || s.includes('mosaic-less') || s.includes('mosaicless');
+    })) ||
+    (post.tags && post.tags.some(t => {
+      const s = String(t).toLowerCase();
+      return s.includes('uncensored') || s.includes('tanpa sensor') || s.includes('no sensor') || s.includes('mosaic-less') || s.includes('mosaicless');
+    })) ||
+    safeTitle.toLowerCase().includes('uncensored') || 
+    safeTitle.toLowerCase().includes('tanpa sensor') || 
+    safeTitle.toLowerCase().includes('no sensor') || 
+    safeTitle.toLowerCase().includes('leak') ||
+    safeTitle.toLowerCase().includes('tanpa-sensor') ||
+    safeTitle.toLowerCase().includes('no-sensor') ||
+    safeTitle.toLowerCase().includes('no-mosaic') ||
+    safeTitle.toLowerCase().includes('nomosaic');
+
+  const uncensoredBadge = isUncensored ? `<span class="card-uncensored" style="font-size: 0.6rem; padding: 1px 4px; bottom: 4px; left: 4px;">Tanpa sensor</span>` : '';
 
   const isHD = safeTitle.toLowerCase().includes('hd') || (post.tags && post.tags.some(t => String(t).toLowerCase() === 'hd'));
   const hdBadge = isHD ? `<span class="card-hd">HD</span>` : '';
@@ -505,6 +532,7 @@ function renderRelatedRowCard(post, index) {
           loading="lazy"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
         >
+        ${uncensoredBadge}
         ${durationBadge}
         ${hdBadge}
       </div>

@@ -25,7 +25,7 @@ const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.
  * @param {string|number} id - ID Post / Video
  * @returns {string} Durasi dalam format HH:MM:SS
  */
-function getDeterministicDuration(id) {
+export function getDeterministicDuration(id) {
   const numId = parseInt(id) || 12345;
   const hours = (numId % 2) + 1; // 1 atau 2 jam
   const minutes = numId % 60;
@@ -54,6 +54,27 @@ export function renderVideoCard(post, index = 0) {
     duration = getDeterministicDuration(post.id);
   }
   const safeDuration = ui.escapeHTML(duration);
+
+  // Deteksi jika video tanpa sensor (Uncensored)
+  const isUncensored = 
+    (post.categories && post.categories.some(c => {
+      const s = String(c).toLowerCase();
+      return s.includes('uncensored') || s.includes('tanpa sensor') || s.includes('no sensor') || s.includes('mosaic-less') || s.includes('mosaicless');
+    })) ||
+    (post.tags && post.tags.some(t => {
+      const s = String(t).toLowerCase();
+      return s.includes('uncensored') || s.includes('tanpa sensor') || s.includes('no sensor') || s.includes('mosaic-less') || s.includes('mosaicless');
+    })) ||
+    safeTitle.toLowerCase().includes('uncensored') || 
+    safeTitle.toLowerCase().includes('tanpa sensor') || 
+    safeTitle.toLowerCase().includes('no sensor') || 
+    safeTitle.toLowerCase().includes('leak') ||
+    safeTitle.toLowerCase().includes('tanpa-sensor') ||
+    safeTitle.toLowerCase().includes('no-sensor') ||
+    safeTitle.toLowerCase().includes('no-mosaic') ||
+    safeTitle.toLowerCase().includes('nomosaic');
+
+  const uncensoredBadge = isUncensored ? `<span class="card-uncensored">Tanpa sensor</span>` : '';
 
   // Sanitasi daftar aktor
   const actors = Array.isArray(post.actors) ? post.actors : (post.actors ? [post.actors] : []);
@@ -95,6 +116,7 @@ export function renderVideoCard(post, index = 0) {
           height="180"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
         >
+        ${uncensoredBadge}
         ${durationBadge}
         ${hdBadge}
         <div class="card-hover-overlay">▶ Putar Video</div>

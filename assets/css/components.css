@@ -77,6 +77,21 @@
   z-index: 5;
 }
 
+.card-uncensored {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  background-color: #2563eb; /* Royal blue premium */
+  color: #fff;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+  z-index: 5;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
 /* Hover overlay play button */
 .card-hover-overlay {
   position: absolute;
