@@ -338,7 +338,32 @@
 /* ==========================================
    4. PERSISTENT MINI FLOATING PLAYER (PiP)
    ========================================== */
+/* Watch page player container placeholder */
+.player-container-placeholder {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ==========================================
+   4. PERSISTENT MINI FLOATING PLAYER (PiP)
+   ========================================== */
 .floating-player-wrapper {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.floating-player-wrapper.hidden {
+  display: none !important;
+}
+
+/* Floating Mode (PiP in bottom-right corner) */
+.floating-player-wrapper.mode-floating {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -348,15 +373,40 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   z-index: 999;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
   animation: floatSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   transition: opacity var(--transition), transform var(--transition);
 }
 
-.floating-player-wrapper.hidden {
+.floating-player-wrapper.mode-floating .floating-player-header {
+  display: flex;
+}
+
+.floating-player-wrapper.mode-floating .floating-player-body {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background-color: #000;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Theater Mode (Aligned with watch page placeholder) */
+.floating-player-wrapper.mode-theater {
+  position: absolute;
+  z-index: 80; /* Lower than header (100) and sidebar (90) to scroll behind correctly */
+  box-shadow: none;
+  border: none;
+  border-radius: var(--radius-lg);
+  background-color: #000;
+}
+
+.floating-player-wrapper.mode-theater .floating-player-header {
   display: none !important;
+}
+
+.floating-player-wrapper.mode-theater .floating-player-body {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
 }
 
 @keyframes floatSlideUp {
@@ -416,14 +466,6 @@
 #floating-player-close:hover {
   background-color: var(--color-accent);
   color: #fff;
-}
-
-.floating-player-body {
-  width: 100%;
-  aspect-ratio: 16/9;
-  background-color: #000;
-  overflow: hidden;
-  position: relative;
 }
 
 .floating-player-body #player-container {

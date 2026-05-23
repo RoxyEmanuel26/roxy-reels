@@ -70,7 +70,7 @@ export async function init(id) {
       <div class="player-main-column">
         <!-- Responsive video frame container (16:9) -->
         <div class="player-container-wrapper">
-          <div class="player-iframe-container" id="player-container">
+          <div class="player-container-placeholder">
             <div class="player-loading-shimmer">
               <div class="spinner"></div>
               <span>${i18n.t('loading_player_embed')}</span>
@@ -161,43 +161,37 @@ export async function init(id) {
     let post;
     const isCurrentlyPlaying = window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(id);
 
+    // Make sure global player wrapper has correct classes and is shown
+    const floatWrapper = document.getElementById('floating-player-wrapper');
+    if (floatWrapper) {
+      floatWrapper.classList.remove('hidden');
+      floatWrapper.classList.remove('mode-floating');
+      floatWrapper.classList.add('mode-theater');
+      alignGlobalPlayerWithPlaceholder();
+      setTimeout(alignGlobalPlayerWithPlaceholder, 50);
+      setTimeout(alignGlobalPlayerWithPlaceholder, 200);
+    }
+
     if (isCurrentlyPlaying) {
-      // 2. MASTERCLASS DOM TRANSPLANT BACK: Video sudah berjalan di float! Tarik balik ke watch page tanpa reload
       post = window.missavJState.activeVideo;
       
-      const wrapper = document.querySelector('.player-container-wrapper');
-      const oldPlayer = document.getElementById('floating-player-body')?.firstElementChild;
-      const floatWrapper = document.getElementById('floating-player-wrapper');
-      
-      if (wrapper && oldPlayer) {
-        wrapper.innerHTML = ''; // Hapus shimmer loader baru
-        wrapper.appendChild(oldPlayer); // Pindahkan kembali elemen player asli beserta iframe-nya!
-        
-        // Force autoplay when maximized
-        const iframe = oldPlayer.querySelector('iframe');
-        if (iframe) {
-          let src = iframe.getAttribute('src');
-          if (src) {
-            if (!src.includes('autoplay=1')) {
-              src += (src.includes('?') ? '&' : '?') + 'autoplay=1';
-            }
-            iframe.setAttribute('src', src);
-          }
-        }
+      // Hide the placeholder shimmer since player is already loaded and active
+      const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
+      if (shimmer) {
+        shimmer.style.display = 'none';
       }
-      if (floatWrapper) {
-        floatWrapper.classList.add('hidden'); // Sembunyikan float wrapper
-      }
-      window.missavJState.isFloating = false;
       
-      // Render metadata langsung (UX super kilat)
+      // Align positioning
+      alignGlobalPlayerWithPlaceholder();
+      
+      // Render metadata directly
       document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       renderPostMeta(post, id);
       loadRelatedVideos(post);
       
       ui.showToast(i18n.t('maximize_player_toast'));
     } else {
-      // 3. Video TIDAK sedang berjalan (Fresh Load) dengan Penanganan Error dan Fallback Berlapis
+      // Fresh load of a new video
       const [fetchedPost, player] = await Promise.all([
         api.getPost(id).catch(err => {
           console.warn('[API Warning] Failed to load post details, trying fallback...', err);
@@ -221,14 +215,25 @@ export async function init(id) {
         iframe_html: player ? player.iframe_html : ''
       };
       
-      // Simpan objek ke active state sesi
       window.missavJState.activeVideo = post;
       
-      // Render iframe segar dengan fallback berlapis
+      // Inject secure iframe markup into the global player container
       const playerContainer = document.getElementById('player-container');
       if (playerContainer) {
         const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
         playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
+        
+        // Hide the watch page loader shimmer when iframe is loaded
+        const iframe = playerContainer.querySelector('iframe');
+        if (iframe) {
+          const hideShimmer = () => {
+            console.log('IFRAME LOAD EVENT FIRED');
+            const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
+            if (shimmer) shimmer.style.display = 'none';
+          };
+          iframe.addEventListener('load', hideShimmer);
+          setTimeout(hideShimmer, 3000); // fallback timer
+        }
       }
       
       document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
@@ -583,4 +588,24 @@ function bindRelatedClicks(list) {
     }
   });
 }
-export default { init };
+/**
+ * Aligns the persistent floating-player-wrapper exactly over the watch page placeholder.
+ */
+export function alignGlobalPlayerWithPlaceholder() {
+  const container = document.getElementById('floating-player-wrapper');
+  if (!container || container.classList.contains('mode-floating') || container.classList.contains('hidden')) {
+    return;
+  }
+  
+  const placeholder = document.querySelector('.player-container-placeholder');
+  if (placeholder) {
+    const rect = placeholder.getBoundingClientRect();
+    container.style.position = 'absolute';
+    container.style.top = (rect.top + window.scrollY) + 'px';
+    container.style.left = (rect.left + window.scrollX) + 'px';
+    container.style.width = rect.width + 'px';
+    container.style.height = rect.height + 'px';
+  }
+}
+
+export default { init, alignGlobalPlayerWithPlaceholder };

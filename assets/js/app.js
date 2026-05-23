@@ -209,46 +209,41 @@ function navigate(urlPath) {
     return; // Early exit — player iframe is preserved!
   }
 
-  // 1. LEAVE WATCH TRANSPLANTATION: Move running player element to picture-in-picture mode
+  // 1. LEAVE WATCH: Switch player container to floating mode (PiP)
   if (prevPath === '/watch' && routePath !== '/watch') {
-    const playerContainer = document.getElementById('player-container');
-    if (playerContainer && window.missavJState.activeVideo) {
-      const floatBody = document.getElementById('floating-player-body');
-      const floatTitle = document.getElementById('floating-player-title');
-      const floatWrapper = document.getElementById('floating-player-wrapper');
+    const floatWrapper = document.getElementById('floating-player-wrapper');
+    const floatTitle = document.getElementById('floating-player-title');
+    
+    if (floatWrapper && window.missavJState.activeVideo) {
+      // Transition class styles
+      floatWrapper.classList.remove('mode-theater');
+      floatWrapper.classList.add('mode-floating');
+      floatWrapper.classList.remove('hidden');
       
-      if (floatBody && floatTitle && floatWrapper) {
-        floatBody.innerHTML = '';
-        floatBody.appendChild(playerContainer); // Transplant player DOM directly
-        
-        // Force muted autoplay when going to PiP mode
-        const iframe = playerContainer.querySelector('iframe');
-        if (iframe) {
-          let src = iframe.getAttribute('src');
-          if (src) {
-            // Add autoplay and muted parameters
-            if (!src.includes('autoplay=1')) {
-              src += (src.includes('?') ? '&' : '?') + 'autoplay=1';
-            }
-            if (!src.includes('muted=1')) {
-              src += '&muted=1';
-            }
-            iframe.setAttribute('src', src);
-          }
-        }
-        
+      // Clear inline absolute positioning properties used in theater mode
+      floatWrapper.style.position = '';
+      floatWrapper.style.top = '';
+      floatWrapper.style.left = '';
+      floatWrapper.style.width = '';
+      floatWrapper.style.height = '';
+      
+      if (floatTitle) {
         floatTitle.textContent = i18n.translateVideoTitle(window.missavJState.activeVideo.title);
-        floatWrapper.classList.remove('hidden');
-        window.missavJState.isFloating = true;
-        ui.showToast(i18n.t('playing_floating_player'));
       }
+      
+      window.missavJState.isFloating = true;
+      ui.showToast(i18n.t('playing_floating_player'));
     }
   }
 
-  // 2. ENTER WATCH TRANSPLANTATION: If target watch ID matches floating ID, transplant it back!
+  // 2. ENTER WATCH: If target watch ID matches floating ID, switch player container to theater mode
   if (routePath === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
     const floatWrapper = document.getElementById('floating-player-wrapper');
-    if (floatWrapper) floatWrapper.classList.add('hidden');
+    if (floatWrapper) {
+      floatWrapper.classList.remove('mode-floating');
+      floatWrapper.classList.add('mode-theater');
+      floatWrapper.classList.remove('hidden');
+    }
     window.missavJState.isFloating = false;
   } 
   // If launching a watch page of a DIFFERENT video, dispose of active floating session
@@ -287,10 +282,21 @@ function navigate(urlPath) {
  */
 export function closeFloatingPlayer() {
   const float = document.getElementById('floating-player-wrapper');
-  if (float) float.classList.add('hidden');
+  if (float) {
+    float.classList.add('hidden');
+    float.classList.remove('mode-floating');
+    float.classList.remove('mode-theater');
+    float.style.position = '';
+    float.style.top = '';
+    float.style.left = '';
+    float.style.width = '';
+    float.style.height = '';
+  }
   
-  const body = document.getElementById('floating-player-body');
-  if (body) body.innerHTML = '';
+  const playerContainer = document.getElementById('player-container');
+  if (playerContainer) {
+    playerContainer.innerHTML = '';
+  }
   
   window.missavJState.activeVideo = null;
   window.missavJState.isFloating = false;
@@ -372,11 +378,13 @@ function setupFloatingPlayerDOM() {
         <button id="floating-player-close" data-i18n-title="close_player" title="Close Player">✕</button>
       </div>
     </div>
-    <div id="floating-player-body" class="floating-player-body"></div>
+    <div id="floating-player-body" class="floating-player-body">
+      <div class="player-iframe-container" id="player-container"></div>
+    </div>
   `;
   document.body.appendChild(float);
 
-  // Click Maximize: Re-navigate to the full-size watch layout and transplant DOM back
+  // Click Maximize: Re-navigate to the full-size watch layout
   document.getElementById('floating-player-maximize').addEventListener('click', () => {
     if (window.missavJState.activeVideo) {
       window.missavJNavigate(`/watch?id=${window.missavJState.activeVideo.id}`);
@@ -385,6 +393,18 @@ function setupFloatingPlayerDOM() {
 
   // Click Close: Dispose player elements
   document.getElementById('floating-player-close').addEventListener('click', closeFloatingPlayer);
+
+  // Re-align positioning dynamically when the viewport size changes (Theater Mode)
+  window.addEventListener('resize', () => {
+    const wrapper = document.getElementById('floating-player-wrapper');
+    if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
+      import('./player.js').then(m => {
+        if (m.alignGlobalPlayerWithPlaceholder) {
+          m.alignGlobalPlayerWithPlaceholder();
+        }
+      }).catch(() => {});
+    }
+  });
 }
 
 /**
