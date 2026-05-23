@@ -214,25 +214,35 @@ function navigate(urlPath) {
     const floatWrapper = document.getElementById('floating-player-wrapper');
     const floatTitle = document.getElementById('floating-player-title');
     
+    // Check if browser native Picture-in-Picture is active
+    const isNativePipActive = !!document.pictureInPictureElement;
+    
     if (floatWrapper && window.missavJState.activeVideo) {
-      // Transition class styles
-      floatWrapper.classList.remove('mode-theater');
-      floatWrapper.classList.add('mode-floating');
-      floatWrapper.classList.remove('hidden');
-      
-      // Clear inline absolute positioning properties used in theater mode
-      floatWrapper.style.position = '';
-      floatWrapper.style.top = '';
-      floatWrapper.style.left = '';
-      floatWrapper.style.width = '';
-      floatWrapper.style.height = '';
-      
-      if (floatTitle) {
-        floatTitle.textContent = i18n.translateVideoTitle(window.missavJState.activeVideo.title);
+      if (isNativePipActive) {
+        // Native PiP is active, so we hide our custom floating player visually to avoid duplicates,
+        // but we do NOT destroy the iframe so the native window keeps playing.
+        floatWrapper.classList.add('hidden');
+        window.missavJState.isFloating = true;
+      } else {
+        // Transition class styles
+        floatWrapper.classList.remove('mode-theater');
+        floatWrapper.classList.add('mode-floating');
+        floatWrapper.classList.remove('hidden');
+        
+        // Clear inline absolute positioning properties used in theater mode
+        floatWrapper.style.position = '';
+        floatWrapper.style.top = '';
+        floatWrapper.style.left = '';
+        floatWrapper.style.width = '';
+        floatWrapper.style.height = '';
+        
+        if (floatTitle) {
+          floatTitle.textContent = i18n.translateVideoTitle(window.missavJState.activeVideo.title);
+        }
+        
+        window.missavJState.isFloating = true;
+        ui.showToast(i18n.t('playing_floating_player'));
       }
-      
-      window.missavJState.isFloating = true;
-      ui.showToast(i18n.t('playing_floating_player'));
     }
   }
 
@@ -244,6 +254,12 @@ function navigate(urlPath) {
       floatWrapper.classList.add('mode-theater');
       floatWrapper.classList.remove('hidden');
     }
+    
+    // Programmatically exit browser native Picture-in-Picture if active
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+    }
+    
     window.missavJState.isFloating = false;
   } 
   // If launching a watch page of a DIFFERENT video, dispose of active floating session
