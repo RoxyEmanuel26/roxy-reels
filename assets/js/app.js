@@ -135,20 +135,20 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=1.0.4').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=1.0.4').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=1.0.4').then(m => m.init()),
-  '/search':    () => import('./search.js?v=1.0.4').then(m => m.init(getParam('q'))),
-  '/watch':     () => import('./player.js?v=1.0.4').then(m => m.init(getParam('id'))),
-  '/category':  () => import('./feed.js?v=1.0.4').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=1.0.4').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=1.0.4').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=1.0.4').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=1.0.5').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=1.0.5').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=1.0.5').then(m => m.init()),
+  '/search':    () => import('./search.js?v=1.0.5').then(m => m.init(getParam('q'))),
+  '/watch':     () => import('./player.js?v=1.0.5').then(m => m.init(getParam('id'))),
+  '/category':  () => import('./feed.js?v=1.0.5').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=1.0.5').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=1.0.5').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=1.0.5').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':      () => import('./actors.js?v=1.0.4').then(m => m.init()),
-  '/studios':     () => import('./studios.js?v=1.0.4').then(m => m.init()),
-  '/categories':  () => import('./categories.js?v=1.0.4').then(m => m.init()),
+  '/actors':      () => import('./actors.js?v=1.0.5').then(m => m.init()),
+  '/studios':     () => import('./studios.js?v=1.0.5').then(m => m.init()),
+  '/categories':  () => import('./categories.js?v=1.0.5').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -201,7 +201,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=1.0.4').then(m => {
+    import('./player.js?v=1.0.5').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -423,7 +423,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=1.0.4').then(m => {
+      import('./player.js?v=1.0.5').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
@@ -611,85 +611,8 @@ const HEADER_CATEGORIES = [
 ];
 
 window.missavJRenderCategories = function() {
-  const container = document.getElementById('header-categories-nav');
-  if (!container) return;
-
-  // Detect if any dropdown is currently open before rendering
-  let openDropdownId = null;
-  document.querySelectorAll('.header-dropdown').forEach(el => {
-    if (el.classList.contains('open')) {
-      openDropdownId = el.id;
-    }
-  });
-
-  container.innerHTML = HEADER_CATEGORIES.map(cat => {
-    const displayName = i18n.t(cat.labelKey) || cat.defaultLabel;
-    
-    const itemsHtml = cat.items.map(item => {
-      const itemDisplayName = i18n.t(item.labelKey) || item.defaultLabel;
-      return `<button class="header-dropdown-item" data-route="${item.route}">${itemDisplayName}</button>`;
-    }).join('');
-
-    const isOpen = `dropdown-${cat.id}` === openDropdownId;
-
-    return `
-      <div class="header-dropdown ${isOpen ? 'open' : ''}" id="dropdown-${cat.id}">
-        <button class="header-dropdown-trigger" data-route="${cat.route}" aria-expanded="${isOpen}">
-          <span>${displayName}</span>
-          <span class="dropdown-caret">▼</span>
-        </button>
-        <div class="header-dropdown-menu ${isOpen ? '' : 'hidden'}">
-          ${itemsHtml}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  // Bind clicks and toggles for dropdown items
-  HEADER_CATEGORIES.forEach(cat => {
-    const dropdownEl = document.getElementById(`dropdown-${cat.id}`);
-    if (!dropdownEl) return;
-
-    const trigger = dropdownEl.querySelector('.header-dropdown-trigger');
-    const menu = dropdownEl.querySelector('.header-dropdown-menu');
-
-    trigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-
-      // Close all other dropdown menus first
-      document.querySelectorAll('.header-dropdown').forEach(el => {
-        if (el !== dropdownEl) {
-          el.classList.remove('open');
-          el.querySelector('.header-dropdown-menu')?.classList.add('hidden');
-          el.querySelector('.header-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
-        }
-      });
-
-      const isOpen = dropdownEl.classList.toggle('open');
-      menu.classList.toggle('hidden');
-      trigger.setAttribute('aria-expanded', isOpen);
-
-      // Perform SPA navigation to the selected category page
-      const targetRoute = trigger.dataset.route;
-      window.missavJNavigate(targetRoute);
-    });
-
-    menu.addEventListener('click', (e) => {
-      const item = e.target.closest('.header-dropdown-item');
-      if (item) {
-        e.stopPropagation();
-        const targetRoute = item.dataset.route;
-
-        // Close dropdown bounds immediately before triggering navigation
-        // so that the next render doesn't restore it as open.
-        dropdownEl.classList.remove('open');
-        menu.classList.add('hidden');
-        trigger.setAttribute('aria-expanded', 'false');
-
-        window.missavJNavigate(targetRoute);
-      }
-    });
-  });
+  // Empty, categories dropdowns in header are removed
+  return;
 };
 
 // Global click dismiss handler for category dropdown menus
