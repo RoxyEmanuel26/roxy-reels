@@ -84,7 +84,7 @@ export async function init(id) {
             <div class="player-stats">
               <span id="player-views-count">0 ${i18n.t('views')}</span>
               <span class="card-dot">•</span>
-              <span id="player-publish-date">Dipublikasikan</span>
+              <span id="player-publish-date">${i18n.t('published')}</span>
             </div>
             
             <div class="player-buttons">
@@ -163,13 +163,13 @@ export async function init(id) {
       // 2. MASTERCLASS DOM TRANSPLANT BACK: Video sudah berjalan di float! Tarik balik ke watch page tanpa reload
       post = window.missavJState.activeVideo;
       
-      const watchWrapper = document.querySelector('.player-iframe-container');
-      const container = document.getElementById('player-container');
+      const wrapper = document.querySelector('.player-container-wrapper');
+      const oldPlayer = document.getElementById('floating-player-body')?.firstElementChild;
       const floatWrapper = document.getElementById('floating-player-wrapper');
       
-      if (watchWrapper && container) {
-        watchWrapper.innerHTML = '';
-        watchWrapper.appendChild(container); // Pindahkan kembali elemen player
+      if (wrapper && oldPlayer) {
+        wrapper.innerHTML = ''; // Hapus shimmer loader baru
+        wrapper.appendChild(oldPlayer); // Pindahkan kembali elemen player asli beserta iframe-nya!
       }
       if (floatWrapper) {
         floatWrapper.classList.add('hidden'); // Sembunyikan float wrapper
@@ -186,17 +186,17 @@ export async function init(id) {
       // 3. Video TIDAK sedang berjalan (Fresh Load) dengan Penanganan Error dan Fallback Berlapis
       const [fetchedPost, player] = await Promise.all([
         api.getPost(id).catch(err => {
-          console.warn('[API Warning] Gagal memuat detail post, mencoba fallback...', err);
+          console.warn('[API Warning] Failed to load post details, trying fallback...', err);
           return null;
         }),
         api.getPlayer(id).catch(err => {
-          console.warn('[API Warning] Gagal memuat player endpoint, mencoba fallback...', err);
+          console.warn('[API Warning] Failed to load player endpoint, trying fallback...', err);
           return null;
         })
       ]);
       
       if (!fetchedPost && !player) {
-        throw new Error('Gagal memuat data video maupun player dari server API.');
+        throw new Error(i18n.t('error_failed_fetch_video_player'));
       }
       
       post = fetchedPost || {
@@ -226,7 +226,7 @@ export async function init(id) {
     trackWatchHistory(post);
 
   } catch (error) {
-    console.error('Gagal memuat Halaman Player:', error);
+    console.error('Failed to load player page:', error);
     ui.showError(i18n.t('error_load_watch_page', { message: error.message }));
   }
 }
@@ -276,7 +276,8 @@ function renderPostMeta(post, id) {
   
   if (dateEl && post.date) {
     const pubDate = new Date(post.date);
-    dateEl.textContent = pubDate.toLocaleDateString(i18n.getLang(), { year: 'numeric', month: 'long', day: 'numeric' });
+    const dateFormatted = pubDate.toLocaleDateString(i18n.getLang(), { year: 'numeric', month: 'long', day: 'numeric' });
+    dateEl.textContent = `${i18n.t('published')} ${dateFormatted}`;
   }
 
   // Code & Studio
@@ -464,7 +465,7 @@ async function loadRelatedVideos(post) {
     const filteredPosts = data.posts.filter(p => p.id !== post.id);
 
     if (filteredPosts.length === 0) {
-      relatedList.innerHTML = '<span class="text-faint text-center py-4">Tidak ada video terkait</span>';
+      relatedList.innerHTML = `<span class="text-faint text-center py-4">${i18n.t('no_related_videos')}</span>`;
       return;
     }
 
@@ -476,7 +477,7 @@ async function loadRelatedVideos(post) {
 
   } catch (error) {
     console.error('Fetch Related Videos Error:', error);
-    relatedList.innerHTML = '<span class="text-faint text-center py-4">Gagal memuat video terkait</span>';
+    relatedList.innerHTML = `<span class="text-faint text-center py-4">${i18n.t('error_load_related')}</span>`;
   }
 }
 

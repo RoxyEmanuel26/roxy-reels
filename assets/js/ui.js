@@ -106,13 +106,16 @@ const ui = {
     if (!target) return;
 
     const safeMessage = this.escapeHTML(message);
+    const i18n = window.i18n;
+    const titleText = i18n ? i18n.t('error_title') : 'Oops! Terjadi kesalahan';
+    const btnText = i18n ? i18n.t('error_retry') : 'Coba Lagi';
 
     target.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
-        <h3>Oops! Terjadi kesalahan</h3>
+        <h3>${titleText}</h3>
         <p>${safeMessage}</p>
-        <button id="error-retry-btn" class="btn-primary">Coba Lagi</button>
+        <button id="error-retry-btn" class="btn-primary">${btnText}</button>
       </div>
     `;
 
@@ -134,13 +137,17 @@ const ui = {
     if (!target) return;
 
     const safeQuery = this.escapeHTML(query);
+    const i18n = window.i18n;
+    const titleText = i18n ? i18n.t('no_results_for', { query: safeQuery }) : `Tidak ada hasil untuk "${safeQuery}"`;
+    const descText = i18n ? i18n.t('no_results_desc') : 'Coba kata kunci yang berbeda, periksa ejaan, atau hapus filter aktif.';
+    const btnText = i18n ? i18n.t('empty_clear_btn') : 'Kembali ke Beranda';
 
     target.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
-        <h3>Tidak ada hasil untuk "${safeQuery}"</h3>
-        <p>Coba kata kunci yang berbeda, periksa ejaan, atau hapus filter aktif.</p>
-        <button id="empty-clear-btn" class="btn-primary">Kembali ke Beranda</button>
+        <h3>${titleText}</h3>
+        <p>${descText}</p>
+        <button id="empty-clear-btn" class="btn-primary">${btnText}</button>
       </div>
     `;
 

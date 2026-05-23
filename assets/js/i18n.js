@@ -219,6 +219,12 @@ const DICTIONARY = {
   error_load_watch_page: {
     en: 'Failed to load watch page: {message}', id: 'Gagal memuat halaman watch: {message}', ja: 'ウォッチページの読み込みに失敗しました: {message}', ko: '시청 페이지를 로드하지 못했습니다: {message}', 'zh-TW': '無法載入觀看頁面：{message}', 'zh-CN': '无法载入观看页面：{message}'
   },
+  error_load_page: {
+    en: 'Failed to load page: {message}', id: 'Gagal memuat halaman: {message}', ja: 'ページの読み込みに失敗しました: {message}', ko: '페이지를 로드하지 못했습니다: {message}', 'zh-TW': '無法載入頁面：{message}', 'zh-CN': '无法载入页面：{message}', ms: 'Gagal memuatkan halaman: {message}', th: 'โหลดหน้าเว็บล้มเหลว: {message}', de: 'Seite konnte nicht geladen werden: {message}', fr: 'Échec du chargement de la page : {message}', vi: 'Không tải được trang: {message}', fil: 'Bigo na i-load ang pahina: {message}', pt: 'Falha ao carregar a página: {message}'
+  },
+  error_failed_fetch_video_player: {
+    en: 'Failed to load video data or player from server API.', id: 'Gagal memuat data video maupun player dari server API.', 'zh-TW': '無法從伺服器 API 載入影片數據或播放器。', 'zh-CN': '无法从服务器 API 载入影片数据或播放器。', ja: 'サーバーAPIから動画データまたはプレイヤーを読み込めませんでした。', ko: '서버 API에서 비디오 데이터 또는 플레이어를 로드하지 못했습니다.', ms: 'Gagal memuatkan data video atau pemain daripada API pelayan.', th: 'โหลดข้อมูลวิดีโอหรือเครื่องเล่นจาก API เซิร์ฟเวอร์ล้มเหลว', de: 'Videodaten oder Player konnten nicht von der Server-API geladen werden.', fr: 'Échec du chargement des données vidéo ou du lecteur à partir de l\'API du serveur.', vi: 'Không tải được dữ liệu video hoặc trình phát từ API máy chủ.', fil: 'Bigo na i-load ang data ng video o player mula sa server API.', pt: 'Falha ao carregar dados do vídeo ou player da API do servidor.'
+  },
   toast_share_failed: {
     en: 'Failed to copy link.', id: 'Gagal menyalin tautan.', ja: 'リンクのコピーに失敗しました。', ko: '링크 복사 실패.', 'zh-TW': '複製連結失敗。', 'zh-CN': '复制链接失败。'
   },
@@ -275,6 +281,36 @@ const DICTIONARY = {
   },
   category_all: {
     en: 'All', id: 'Semua', 'zh-TW': '全部', 'zh-CN': '全部', ja: 'すべて', ko: '전체', ms: 'Semua', th: 'ทั้งหมด', de: 'Alle', fr: 'Tout', vi: 'Tất cả', fil: 'Lahat', pt: 'Tudo'
+  },
+  published: {
+    en: 'Published', id: 'Dipublikasikan', 'zh-TW': '發佈於', 'zh-CN': '发布于', ja: '公開日', ko: '게시일', ms: 'Diterbitkan', th: 'เผยแพร่เมื่อ', de: 'Veröffentlicht', fr: 'Publié', vi: 'Đã xuất bản', fil: 'Inilathala', pt: 'Publicado'
+  },
+  error_load_related: {
+    en: 'Failed to load related videos.', id: 'Gagal memuat video terkait.', 'zh-TW': '無法載入推薦影片。', 'zh-CN': '无法载入推荐视频。', ja: '関連動画の読み込みに失敗しました。', ko: '관련 비디오를 로드하지 못했습니다.', ms: 'Gagal memuatkan video berkaitan.', th: 'โหลดวิดีโอที่เกี่ยวข้องล้มเหลว', de: 'Ähnliche Videos konnten nicht geladen werden.', fr: 'Échec du chargement des vidéos connexes.', vi: 'Không tải được video liên quan.', fil: 'Bigo na i-load ang mga kaugnay na video.', pt: 'Falha ao carregar vídeos relacionados.'
+  },
+  now_playing: {
+    en: 'Now Playing...', id: 'Sedang Memutar...', 'zh-TW': '正在播放...', 'zh-CN': '正在播放...', ja: '再生中...', ko: '지금 재생 중...', ms: 'Sedang Memainkan...', th: 'กำลังเล่น...', de: 'Wird jetzt abgespielt...', fr: 'Lecture en cours...', vi: 'Đang phát...', fil: 'Kasalukuyang nagpe-play...', pt: 'Reproduzindo Agora...'
+  },
+  restore_full_screen: {
+    en: 'Restore to Full Screen', id: 'Kembali ke Layar Penuh', 'zh-TW': '還原至全螢幕', 'zh-CN': '还原至全屏幕', ja: 'フルスクリーンに戻す', ko: '전체 화면으로 복원', ms: 'Kembali ke Skrin Penuh', th: 'กลับสู่หน้าจอเต็ม', de: 'Vollbildmodus wiederherstellen', fr: 'Restaurer le plein écran', vi: 'Khôi phục toàn màn hình', fil: 'Ibalik sa Full Screen', pt: 'Restaurar para Tela Cheia'
+  },
+  close_player: {
+    en: 'Close Player', id: 'Tutup Pemutar', 'zh-TW': '關閉播放器', 'zh-CN': '关闭播放器', ja: 'プレイヤーを閉じる', ko: '플레이어 닫기', ms: 'Tutup Pemain', th: 'ปิดเครื่องเล่น', de: 'Player schließen', fr: 'Fermer le lecteur', vi: 'Đóng trình phát', fil: 'Isara ang Player', pt: 'Fechar Player'
+  },
+  playing_floating_player: {
+    en: 'Playing in floating player 📱', id: 'Memutar dalam pemutar melayang 📱', 'zh-TW': '正在浮動播放器中播放 📱', 'zh-CN': '正在浮动播放器中播放 📱', ja: 'フローティングプレイヤーで再生中 📱', ko: '플로팅 플레이어에서 재생 중 📱', ms: 'Memutar dalam pemain terapung 📱', th: 'กำลังเล่นในเครื่องเล่นลอย 📱', de: 'Abspielen im schwebenden Player 📱', fr: 'Lecture dans le lecteur flottant 📱', vi: 'Đang phát trong trình phát nổi 📱', fil: 'Nagpe-play sa floating player 📱', pt: 'Reproduzindo no player flutuante 📱'
+  },
+  no_related_videos: {
+    en: 'No related videos', id: 'Tidak ada video terkait', 'zh-TW': '沒有推薦影片', 'zh-CN': '没有推荐视频', ja: '関連動画はありません', ko: '관련 비디오가 없습니다', ms: 'Tiada video berkaitan', th: 'ไม่มีวิดีโอที่เกี่ยวข้อง', de: 'Keine ähnlichen Videos', fr: 'Aucune vidéo connexe', vi: 'Không có video liên quan', fil: 'Walang kaugnay na video', pt: 'Nenhum vídeo relacionado'
+  },
+  no_results_for: {
+    en: 'No results for "{query}"', id: 'Tidak ada hasil untuk "{query}"', 'zh-TW': '找不到 "{query}" 的結果', 'zh-CN': '找不到 "{query}" 的结果', ja: '「{query}」の検索結果はありません', ko: '"{query}"에 대한 결과가 없습니다', ms: 'Tiada hasil untuk "{query}"', th: 'ไม่มีผลลัพธ์สำหรับ "{query}"', de: 'Keine Ergebnisse für "{query}"', fr: 'Aucun résultat pour "{query}"', vi: 'Không có kết quả cho "{query}"', fil: 'Walang resulta para sa "{query}"', pt: 'Nenhum resultado para "{query}"'
+  },
+  no_results_desc: {
+    en: 'Try different keywords, check spelling, or clear active filters.', id: 'Coba kata kunci yang berbeda, periksa ejaan, atau hapus filter aktif.', 'zh-TW': '請嘗試不同的關鍵字、檢查拼字，或清除啟用的篩選條件。', 'zh-CN': '请尝试不同的关键字、检查拼写，或清除启用的筛选条件。', ja: '別のキーワードを試すか、スペルを確認するか、有効なフィルターをクリアしてください。', ko: '다른 키워드를 시도하거나, 철자를 확인하거나, 활성 필터를 지워보세요.', ms: 'Cuba kata kunci yang berbeza, periksa ejaan, atau padamkan penapis aktif.', th: 'ลองใช้คำค้นหาอื่น ตรวจสอบการสะกดคำ หรือล้างตัวกรองที่ใช้งานอยู่', de: 'Versuchen Sie andere Schlüsselwörter, überprüfen Sie die Rechtschreibung oder löschen Sie aktive Filter.', fr: 'Essayez d\'autres mots-clés, verifiez l\'orthographe ou effacez les filtres actifs.', vi: 'Thử từ khóa khác, kiểm tra chính tả hoặc xóa bộ lọc đang hoạt động.', fil: 'Subukan ang iba pang mga keyword, suriin ang spelling, o i-clear ang mga aktibong filter.', pt: 'Tente palavras-chave diferentes, verifique a ortografia ou limpe os filtros ativos.'
+  },
+  error_title: {
+    en: 'Oops! Something went wrong', id: 'Oops! Terjadi kesalahan', 'zh-TW': 'Oops! 發生錯誤', 'zh-CN': 'Oops! 发生错误', ja: 'おっと！エラーが発生しました', ko: '앗! 오류가 발생했습니다', ms: 'Oops! Berlaku ralat', th: 'อุ๊ย! เกิดข้อผิดพลาด', de: 'Oops! Etwas ist schief gelaufen', fr: 'Oops! Quelque chose s\'est mal passé', vi: 'Rất tiếc! Đã xảy ra lỗi', fil: 'Oops! May nagkamali', pt: 'Oops! Algo deu errado'
   }
 };
 
@@ -352,6 +388,15 @@ export function translateStaticUI() {
     }
   });
 
+  // 3. Terjemahkan atribut title
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    const translation = t(key);
+    if (translation) {
+      el.setAttribute('title', translation);
+    }
+  });
+
   // 3. Perbarui visual tombol trigger bendera di header
   const triggerImg = document.getElementById('lang-trigger-flag');
   const activeLangObj = LANGS.find(l => l.code === activeLang);
@@ -366,4 +411,5 @@ export function translateStaticUI() {
   }
 }
 
+window.i18n = { LANGS, getLang, setLang, t, translateStaticUI };
 export default { LANGS, getLang, setLang, t, translateStaticUI };

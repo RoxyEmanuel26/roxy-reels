@@ -138,7 +138,7 @@ function navigate(hash) {
         floatTitle.textContent = window.missavJState.activeVideo.title;
         floatWrapper.classList.remove('hidden');
         window.missavJState.isFloating = true;
-        ui.showToast('Memutar dalam pemutar melayang 📱');
+        ui.showToast(i18n.t('playing_floating_player'));
       }
     }
   }
@@ -177,8 +177,8 @@ function navigate(hash) {
   route().then(() => {
     i18n.translateStaticUI();
   }).catch(err => {
-    console.error(`Gagal memuat rute ${path}:`, err);
-    ui.showError(`Gagal memuat halaman: ${err.message}`);
+    console.error(`Error loading route ${path}:`, err);
+    ui.showError(i18n.t('error_load_page', { message: err.message }));
   });
 }
 
@@ -257,10 +257,10 @@ function setupFloatingPlayerDOM() {
   float.className = 'floating-player-wrapper hidden';
   float.innerHTML = `
     <div class="floating-player-header">
-      <span id="floating-player-title" class="text-ellipsis">Sedang Memutar...</span>
+      <span id="floating-player-title" class="text-ellipsis" data-i18n="now_playing">Sedang Memutar...</span>
       <div class="floating-player-controls">
-        <button id="floating-player-maximize" title="Kembali ke Layar Penuh">🗖</button>
-        <button id="floating-player-close" title="Tutup Pemutar">✕</button>
+        <button id="floating-player-maximize" data-i18n-title="restore_full_screen" title="Kembali ke Layar Penuh">🗖</button>
+        <button id="floating-player-close" data-i18n-title="close_player" title="Tutup Pemutar">✕</button>
       </div>
     </div>
     <div id="floating-player-body" class="floating-player-body"></div>
