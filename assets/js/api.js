@@ -1,196 +1,97 @@
 /**
- * EnakReels — API Layer
- * Handles RedGIFs authentication, data fetching, caching, and error handling.
- * Endpoints based on gallery-dl's reverse-engineered RedGIFs API.
+ * Roxy Reels — API Client Wrapper
+ * Mengintegrasikan front-end dengan apiJAV REST API.
+ * Menyediakan fungsi-fungsi fetch terbungkus dengan penanganan error.
  */
-var RoxyAPI = (() => {
-  // Use local CORS proxy in dev; in production, replace with your proxy URL
-  const BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'http://localhost:3001/v2'
-    : '/api/v2';
 
-  let _token = null;
-  let _tokenExpiry = 0;
-  const _cache = new Map();
-  const CACHE_TTL = 5 * 60 * 1000;
-  const _abortControllers = new Map();
+const BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
 
-  // Blocklist for categories
-  const BLOCKED_WORDS = ['gay', 'gays', 'shemale', 'tranny', 'ladyboy', 'dick', 'cock', 'penis'];
-
-  function _isBlocked(text) {
-    if (!text) return false;
-    const regex = new RegExp('\\b(' + BLOCKED_WORDS.join('|') + ')\\b', 'i');
-    return regex.test(text);
-  }
-
-  function _abort(key) {
-    if (_abortControllers.has(key)) {
-      _abortControllers.get(key).abort();
-      _abortControllers.delete(key);
-    }
-  }
-
-  function _signal(key) {
-    _abort(key);
-    const ac = new AbortController();
-    _abortControllers.set(key, ac);
-    return ac.signal;
-  }
-
-  /** Get or refresh temporary token */
-  async function _ensureToken() {
-    if (_token && Date.now() < _tokenExpiry) return _token;
-    const res = await fetch(`${BASE}/auth/temporary`);
-    if (!res.ok) throw new Error(`Auth failed: ${res.status}`);
-    const data = await res.json();
-    _token = data.token;
-    _tokenExpiry = Date.now() + 10 * 60 * 1000; // 10 min refresh
-    return _token;
-  }
-
-  /** Authenticated fetch with auto-retry on 401 */
-  async function _authFetch(url, opts = {}) {
-    const token = await _ensureToken();
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json, text/plain, */*',
-      ...opts.headers,
-    };
-    let res = await fetch(url, { ...opts, headers });
-    if (res.status === 401) {
-      _token = null;
-      _tokenExpiry = 0;
-      const newToken = await _ensureToken();
-      headers.Authorization = `Bearer ${newToken}`;
-      res = await fetch(url, { ...opts, headers });
-    }
-    if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
-    return res.json();
-  }
-
-  /** Cached fetch */
-  async function _cachedFetch(cacheKey, url, opts) {
-    const cached = _cache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data;
-    const data = await _authFetch(url, opts);
-    _cache.set(cacheKey, { data, ts: Date.now() });
-    return data;
-  }
-
-  /** Map raw gif to our normalized format */
-  function _mapGif(gif) {
-    if (!gif) return null;
-    const urls = gif.urls || {};
-    return {
-      id: gif.id,
-      title: gif.tags ? gif.tags.join(', ') : '',
-      username: gif.userName || gif.username || 'unknown',
-      tags: gif.tags || [],
-      duration: gif.duration || 0,
-      views: gif.views || 0,
-      likes: gif.likes || 0,
-      width: gif.width || 0,
-      height: gif.height || 0,
-      videoUrl: urls.hd || urls.sd || urls.vthumbnail || '',
-      videoUrlSD: urls.sd || urls.vthumbnail || '',
-      thumbnail: urls.thumbnail || urls.poster || '',
-      poster: urls.poster || urls.thumbnail || '',
-      createDate: gif.createDate || 0,
-      verified: gif.verified || false,
-    };
-  }
-
-  function _mapGifs(response) {
-    const gifs = response.gifs || response.results || [];
-    return {
-      items: gifs.map(_mapGif).filter(g => g && g.videoUrl && !_isBlocked(g.title) && !g.tags.some(t => _isBlocked(t))),
-      page: response.page || 1,
-      pages: response.pages || 1,
-      total: response.total || 0,
-    };
-  }
-
-  // ─── Public API ───────────────────────────
-
-  /** Trending feed — uses /v2/gifs/search with order=trending */
-  async function getTrending(page = 1, count = 30) {
-    const key = `trending_${page}_${count}`;
-    const url = `${BASE}/gifs/search?search_text=trending&order=top&count=${count}&page=${page}`;
-    const signal = _signal('feed');
-    return _mapGifs(await _cachedFetch(key, url, { signal }));
-  }
-
-  /** Search by query — uses tags parameter (confirmed working) */
-  async function search(query, page = 1, count = 30) {
-    if (_isBlocked(query)) return { items: [], page: 1, pages: 1, total: 0 };
-    const q = encodeURIComponent(query.trim());
-    const signal = _signal('feed');
-
-    // Primary: /v2/gifs/search with search_text
-    const url = `${BASE}/gifs/search?search_text=${q}&page=${page}&count=${count}&order=top`;
-    return _mapGifs(await _authFetch(url, { signal }));
-  }
-
-  /** Search suggestions */
-  async function suggest(query) {
-    if (!query || query.length < 2 || _isBlocked(query)) return [];
-    const q = encodeURIComponent(query.trim());
-    const signal = _signal('suggest');
-    const url = `${BASE}/search/suggest?query=${q}`;
+const api = {
+  /**
+   * Mengambil daftar video (feed & listing) dengan query parameters.
+   * @param {Object} params - Query parameters (per_page, page, search, category, tag, actor, studio, orderby, order, after)
+   * @returns {Promise<{posts: Array, total: number, totalPages: number}>}
+   */
+  async getPosts(params = {}) {
     try {
-      const data = await _authFetch(url, { signal });
-      let suggestions = [];
-      if (Array.isArray(data)) suggestions = data.map(s => typeof s === 'string' ? s : s.text || s.name || '');
-      else if (data.suggestions) suggestions = data.suggestions;
-      else if (data.results) suggestions = data.results.map(r => r.text || r.name || r);
-      return suggestions.filter(s => !_isBlocked(s));
-    } catch (e) {
-      if (e.name === 'AbortError') return [];
-      throw e;
+      const cleanParams = {};
+      
+      // Bersihkan parameter dari nilai kosong/null/undefined agar tidak mengotori query string
+      Object.keys(params).forEach(key => {
+        if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+          cleanParams[key] = params[key];
+        }
+      });
+
+      const qs = new URLSearchParams(cleanParams).toString();
+      const url = `${BASE}/posts?${qs}`;
+      
+      const res = await fetch(url);
+      
+      if (!res.ok) {
+        throw new Error(`API Error ${res.status}: ${res.statusText}`);
+      }
+      
+      const posts = await res.json();
+      
+      // Baca dan parse response headers untuk keperluan pagination di UI
+      const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
+      const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+      
+      return {
+        posts: Array.isArray(posts) ? posts : [],
+        total,
+        totalPages
+      };
+    } catch (error) {
+      console.error('[API getPosts Error]', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Mengambil detail lengkap video tunggal berdasarkan ID.
+   * @param {string|number} id - ID Post / Video
+   * @returns {Promise<Object>} Detail post/video
+   */
+  async getPost(id) {
+    try {
+      if (!id) throw new Error('Post ID wajib disertakan');
+      
+      const res = await fetch(`${BASE}/posts/${id}`);
+      
+      if (!res.ok) {
+        throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
+      }
+      
+      return await res.json();
+    } catch (error) {
+      console.error(`[API getPost ${id} Error]`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Mengambil data embed player berdasarkan ID video.
+   * @param {string|number} id - ID Post / Video
+   * @returns {Promise<{iframe_html: string}>} Data player berisi markup iframe
+   */
+  async getPlayer(id) {
+    try {
+      if (!id) throw new Error('Player ID wajib disertakan');
+      
+      const res = await fetch(`${BASE}/player/${id}`);
+      
+      if (!res.ok) {
+        throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);
+      }
+      
+      return await res.json();
+    } catch (error) {
+      console.error(`[API getPlayer ${id} Error]`, error);
+      throw error;
     }
   }
+};
 
-  /** Niche list — uses /v2/niches */
-  async function getNiches() {
-    const url = `${BASE}/niches`;
-    const data = await _cachedFetch('niches', url, {});
-    if (data && data.niches) {
-      data.niches = data.niches.filter(n => !_isBlocked(n.name) && !_isBlocked(n.id));
-    }
-    return data;
-  }
-
-  /** Gifs by niche — uses /v2/niches/{niche}/gifs */
-  async function getNicheGifs(nicheId, page = 1, count = 30) {
-    if (_isBlocked(nicheId)) return { items: [], page: 1, pages: 1, total: 0 };
-    const url = `${BASE}/niches/${encodeURIComponent(nicheId)}/gifs?page=${page}&count=${count}&order=top`;
-    const signal = _signal('feed');
-    return _mapGifs(await _authFetch(url, { signal }));
-  }
-
-  /** Search niches */
-  async function searchNiches(query) {
-    if (_isBlocked(query)) return { niches: [] };
-    const q = encodeURIComponent(query.trim());
-    const url = `${BASE}/niches/search?search_text=${q}`;
-    const data = await _authFetch(url, { signal: _signal('niche_search') });
-    if (data && data.niches) {
-      data.niches = data.niches.filter(n => !_isBlocked(n.name) && !_isBlocked(n.id));
-    }
-    return data;
-  }
-
-  /** Get single gif details */
-  async function getGif(id) {
-    const url = `${BASE}/gifs/${id.toLowerCase()}`;
-    const data = await _cachedFetch(`gif_${id}`, url, {});
-    return _mapGif(data.gif || data);
-  }
-
-  function cancel(key) { _abort(key); }
-  function clearCache() { _cache.clear(); }
-
-  return { getTrending, search, suggest, getNiches, searchNiches, getNicheGifs, getGif, cancel, clearCache };
-})();
-
+export default api;

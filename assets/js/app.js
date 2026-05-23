@@ -1,252 +1,203 @@
 /**
- * EnakReels — App Orchestrator
- * Initializes all modules, wires up events, and manages top-level UX flows.
+ * Roxy Reels — App Orchestrator & SPA Router (Secured & Optimized)
+ * Mengelola perutean berbasis hash (SPA), interaksi global seperti collapsible sidebar,
+ * pencarian global, toggle tema, dan menyuntikkan tombol Scroll-to-Top premium.
  */
-var RoxyApp = (() => {
-  let _searchDebounce = null;
-  let _nicheSearchDebounce = null;
 
-  async function init() {
-    RoxyUI.restoreTheme();
-    RoxyPlayer.init();
-    RoxyFeed.init();
-    _bindEvents();
-    // Boot: load trending
-    await _boot();
+import ui from './ui.js';
+
+// Parameter Helper: Mengambil nilai parameter dari hash query string
+function getParam(name) {
+  const hash = window.location.hash;
+  const parts = hash.split('?');
+  if (parts.length < 2) return null;
+  const searchParams = new URLSearchParams(parts[1]);
+  return searchParams.get(name);
+}
+
+// Daftar rute aplikasi Roxy Reels berbasis hash
+const routes = {
+  '/':          () => import('./feed.js').then(m => m.init()),
+  '/trending':  () => import('./trending.js').then(m => m.init()),
+  '/recent':    () => import('./recent.js').then(m => m.init()),
+  '/search':    () => import('./search.js').then(m => m.init(getParam('q'))),
+  '/watch':     () => import('./player.js').then(m => m.init(getParam('id'))),
+  '/category':  () => import('./feed.js').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js').then(m => m.init({ tag: getParam('name') })),
+};
+
+/**
+ * Fungsi navigasi utama yang dipanggil saat hash berubah
+ * @param {string} hash - window.location.hash
+ */
+function navigate(hash) {
+  const [pathWithHash] = hash.split('?');
+  const path = pathWithHash.replace('#', '') || '/';
+  
+  // Ambil rute pencocokan atau default ke homepage
+  const route = routes[path] || routes['/'];
+  
+  const mainApp = document.getElementById('app-content');
+  if (mainApp) {
+    mainApp.innerHTML = '';
   }
+  
+  // Tampilkan skeleton loader sebelum memuat konten
+  ui.showSkeletons(8);
+  
+  // Highlight item aktif di sidebar
+  highlightActiveSidebarItem(path);
+  
+  // Scroll halaman ke atas secara otomatis saat navigasi rute berubah (UX standar YouTube)
+  window.scrollTo({ top: 0, behavior: 'instant' });
 
-  async function _boot() {
-    try {
-      await RoxyFeed.load('trending');
-      _hideSplash();
-    } catch (err) {
-      console.error('Boot error:', err);
-      _hideSplash();
-      RoxyUI.showError('Couldn\'t load feed', 'Please refresh the page or try again later.');
+  // Panggil modul halaman terkait
+  route().catch(err => {
+    console.error(`Gagal memuat rute ${path}:`, err);
+    ui.showError(`Gagal memuat halaman: ${err.message}`);
+  });
+}
+
+/**
+ * Memberikan class active pada link menu sidebar yang sesuai dengan rute aktif
+ * @param {string} activePath - Rute saat ini (misalnya '/trending')
+ */
+function highlightActiveSidebarItem(activePath) {
+  const sidebarLinks = document.querySelectorAll('.sidebar-nav a, .sidebar-nav button');
+  sidebarLinks.forEach(link => {
+    const href = link.getAttribute('href') || '';
+    const cleanHref = href.split('?')[0].replace('#', '');
+    
+    if (cleanHref === activePath) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
     }
-  }
+  });
+}
 
-  function _hideSplash() {
-    const splash = document.getElementById('splash-screen');
-    const app = document.getElementById('app');
-    setTimeout(() => {
-      if (splash) splash.classList.add('hidden');
-      if (app) app.style.display = '';
-      setTimeout(() => { if (splash) splash.remove(); }, 500);
-    }, 400);
-  }
+/**
+ * Menyuntikkan tombol Scroll-to-Top mengambang secara dinamis
+ */
+function setupScrollTopButton() {
+  // Cegah injeksi ganda jika sudah ada
+  if (document.getElementById('scroll-top-btn')) return;
 
-  // ─── Event Bindings ─────────────────────────
-  function _bindEvents() {
-    // Tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => _onTabClick(btn));
+  const scrollTopBtn = document.createElement('button');
+  scrollTopBtn.id = 'scroll-top-btn';
+  scrollTopBtn.className = 'scroll-top-btn';
+  scrollTopBtn.setAttribute('title', 'Kembali ke Atas');
+  scrollTopBtn.setAttribute('aria-label', 'Scroll to top');
+  
+  // SVG Arrow Up Icon
+  scrollTopBtn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  `;
+  
+  document.body.appendChild(scrollTopBtn);
+
+  // Pantau scroll untuk memicu visibilitas tombol
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 300) {
+      scrollTopBtn.classList.add('visible');
+    } else {
+      scrollTopBtn.classList.remove('visible');
+    }
+  });
+
+  // Eksekusi scroll mulus kembali ke atas ketika diklik
+  scrollTopBtn.addEventListener('click', () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
     });
+  });
+}
 
-    // Refresh
-    document.getElementById('btn-refresh').addEventListener('click', _onRefresh);
-
-    // Theme toggle
-    document.getElementById('btn-theme').addEventListener('click', RoxyUI.toggleTheme);
-
-    // Logo → go trending
-    document.getElementById('header-logo').addEventListener('click', () => {
-      _setActiveTab('trending');
-      _closeSearch();
-      _closeNichePanel();
-      RoxyFeed.load('trending');
-    });
-
-    // Search
-    _bindSearch();
-
-    // Niche panel
-    _bindNichePanel();
-
-    // Error retry
-    document.getElementById('error-retry').addEventListener('click', () => {
-      RoxyUI.hideError();
-      RoxyFeed.load(RoxyFeed.getMode());
-    });
-
-    // Empty action
-    document.getElementById('empty-action').addEventListener('click', () => {
-      RoxyUI.hideEmpty();
-      _setActiveTab('trending');
-      _closeSearch();
-      RoxyFeed.load('trending');
-    });
-
-    // Keyboard: Escape closes drawers
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        _closeSearch();
-        _closeNichePanel();
+/**
+ * Inisialisasi global element listeners (Sidebar, Search, Theme)
+ */
+function initGlobalEvents() {
+  // 1. Sidebar toggles (Desktop Collapsible & Mobile Slide)
+  const menuBtn = document.getElementById('menu-btn');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  
+  if (menuBtn && sidebar) {
+    menuBtn.addEventListener('click', () => {
+      if (window.innerWidth < 768) {
+        sidebar.classList.toggle('mobile-open');
+        if (sidebarOverlay) sidebarOverlay.classList.toggle('visible');
+      } else {
+        sidebar.classList.toggle('collapsed');
+        document.body.classList.toggle('sidebar-collapsed-layout');
       }
     });
   }
+  
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('mobile-open');
+      sidebarOverlay.classList.remove('visible');
+    });
+  }
 
-  // ─── Tabs ───────────────────────────────────
-  function _onTabClick(btn) {
-    const mode = btn.dataset.mode;
-    _setActiveTab(mode);
-
-    if (mode === 'trending') {
-      _closeSearch();
-      _closeNichePanel();
-      RoxyFeed.load('trending');
-    } else if (mode === 'search') {
-      _closeNichePanel();
-      _openSearch();
-    } else if (mode === 'niches') {
-      _closeSearch();
-      _openNichePanel();
+  // 2. Sticky Search Bar Input (Aman dari query kosong)
+  const searchInput = document.getElementById('header-search-input');
+  const searchBtn = document.getElementById('header-search-btn');
+  
+  const handleSearchSubmit = () => {
+    const query = searchInput.value.trim();
+    if (query) {
+      window.location.hash = `#/search?q=${encodeURIComponent(query)}`;
     }
-  }
+  };
 
-  function _setActiveTab(mode) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    const target = document.querySelector(`.tab-btn[data-mode="${mode}"]`);
-    if (target) target.classList.add('active');
-  }
-
-  // ─── Refresh ────────────────────────────────
-  function _onRefresh() {
-    const btn = document.getElementById('btn-refresh');
-    btn.classList.add('spinning');
-    setTimeout(() => btn.classList.remove('spinning'), 600);
-    RoxyAPI.clearCache();
-    RoxyFeed.load(RoxyFeed.getMode(), {
-      query: document.getElementById('search-input').value,
-    });
-    RoxyUI.showToast('Feed refreshed');
-  }
-
-  // ─── Search ─────────────────────────────────
-  function _bindSearch() {
-    const drawer = document.getElementById('search-drawer');
-    const backdrop = document.getElementById('search-backdrop');
-    const input = document.getElementById('search-input');
-    const clearBtn = document.getElementById('search-clear');
-
-    backdrop.addEventListener('click', _closeSearch);
-
-    clearBtn.addEventListener('click', () => {
-      input.value = '';
-      clearBtn.classList.remove('visible');
-      RoxyUI.renderSuggestions([]);
-      input.focus();
-    });
-
-    input.addEventListener('input', () => {
-      const val = input.value.trim();
-      clearBtn.classList.toggle('visible', val.length > 0);
-      clearTimeout(_searchDebounce);
-      if (val.length < 2) {
-        RoxyUI.renderSuggestions([]);
-        return;
-      }
-      _searchDebounce = setTimeout(async () => {
-        try {
-          const suggestions = await RoxyAPI.suggest(val);
-          RoxyUI.renderSuggestions(suggestions);
-        } catch (e) {
-          if (e.name !== 'AbortError') console.error('Suggest error:', e);
-        }
-      }, 300);
-    });
-
-    input.addEventListener('keydown', (e) => {
+  if (searchInput) {
+    searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        const val = input.value.trim();
-        if (val) executeSearch(val);
+        handleSearchSubmit();
       }
     });
   }
 
-  function _openSearch() {
-    const drawer = document.getElementById('search-drawer');
-    drawer.classList.add('open');
-    setTimeout(() => document.getElementById('search-input').focus(), 100);
+  if (searchBtn) {
+    searchBtn.addEventListener('click', handleSearchSubmit);
   }
 
-  function _closeSearch() {
-    const drawer = document.getElementById('search-drawer');
-    drawer.classList.remove('open');
-    RoxyUI.renderSuggestions([]);
-  }
-
-  function executeSearch(query) {
-    _closeSearch();
-    const input = document.getElementById('search-input');
-    input.value = query;
-    _setActiveTab('search');
-    RoxyFeed.load('search', { query });
-  }
-
-  function searchByTag(tag) {
-    executeSearch(tag);
-  }
-
-  // ─── Niche Panel ────────────────────────────
-  function _bindNichePanel() {
-    const panel = document.getElementById('niche-panel');
-    const backdrop = document.getElementById('niche-backdrop');
-    const closeBtn = document.getElementById('niche-close');
-    const input = document.getElementById('niche-search-input');
-
-    backdrop.addEventListener('click', _closeNichePanel);
-    closeBtn.addEventListener('click', _closeNichePanel);
-
-    input.addEventListener('input', () => {
-      const val = input.value.trim();
-      clearTimeout(_nicheSearchDebounce);
-      _nicheSearchDebounce = setTimeout(async () => {
-        try {
-          if (val.length < 2) {
-            await _loadDefaultNiches();
-          } else {
-            const data = await RoxyAPI.searchNiches(val);
-            const niches = data.niches || data.results || data || [];
-            RoxyUI.renderNiches(Array.isArray(niches) ? niches : []);
-          }
-        } catch (e) {
-          if (e.name !== 'AbortError') console.error('Niche search error:', e);
-        }
-      }, 300);
+  // 3. Theme Toggle Button (Dark / Light)
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      ui.toggleTheme();
     });
   }
+  
+  // Pulihkan tema tersimpan (default dark)
+  ui.initTheme();
 
-  async function _openNichePanel() {
-    const panel = document.getElementById('niche-panel');
-    panel.classList.add('open');
-    await _loadDefaultNiches();
-  }
-
-  function _closeNichePanel() {
-    document.getElementById('niche-panel').classList.remove('open');
-  }
-
-  async function _loadDefaultNiches() {
-    const list = document.getElementById('niche-list');
-    list.innerHTML = '<div class="niche-loading"><div class="spinner"></div></div>';
-    try {
-      const data = await RoxyAPI.getNiches();
-      const niches = data.niches || data.results || data || [];
-      RoxyUI.renderNiches(Array.isArray(niches) ? niches : []);
-    } catch (e) {
-      list.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-tertiary);padding:40px 0;font-size:13px;">Failed to load niches</div>';
+  // Bersihkan overlay sidebar mobile saat navigasi hash berubah
+  window.addEventListener('hashchange', () => {
+    if (sidebar) {
+      sidebar.classList.remove('mobile-open');
     }
-  }
+    if (sidebarOverlay) {
+      sidebarOverlay.classList.remove('visible');
+    }
+  });
+}
 
-  function loadNiche(nicheId, nicheName) {
-    _closeNichePanel();
-    _setActiveTab('niches');
-    RoxyFeed.load('niche', { nicheId, nicheName: nicheName || nicheId });
-  }
-
-  return { init, executeSearch, searchByTag, loadNiche };
-})();
-
-// ─── Bootstrap ────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => RoxyApp.init());
+// Bootstrap router saat halaman dimuat
+document.addEventListener('DOMContentLoaded', () => {
+  initGlobalEvents();
+  setupScrollTopButton(); // Suntikkan tombol scroll-to-top
+  
+  window.addEventListener('hashchange', () => navigate(window.location.hash));
+  
+  // Jalankan navigasi pertama kali untuk memicu pemuatan feed awal
+  navigate(window.location.hash || '#/');
+});
