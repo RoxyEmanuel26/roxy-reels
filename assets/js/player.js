@@ -236,9 +236,11 @@ export async function init(id) {
         }
       }
       
-      document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
-      renderPostMeta(post, id);
-      loadRelatedVideos(post);
+      if (window.missavJState.currentPath === '/watch' && String(new URLSearchParams(window.location.search).get('id')) === String(id)) {
+        document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
+        renderPostMeta(post, id);
+        loadRelatedVideos(post);
+      }
     }
 
     // 4. Catat Riwayat Tontonan Sesi (In-memory, hindari duplikasi rujukan)

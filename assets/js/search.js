@@ -157,6 +157,8 @@ async function fetchAndRenderSearch(isInitial = false) {
     const data = await api.getPosts({ page: currentPage, ...currentFilters });
     
     const grid = document.getElementById('search-video-grid');
+    if (!grid) return;
+
     const totalCountEl = document.getElementById('search-total-count');
     const pageTrackEl = document.getElementById('search-page-track');
 
@@ -192,6 +194,7 @@ async function fetchAndRenderSearch(isInitial = false) {
   } catch (error) {
     console.error('Fetch Search Error:', error);
     const grid = document.getElementById('search-video-grid');
+    if (!grid) return;
     if (isInitial) {
       ui.showError(error.message, grid);
     } else {

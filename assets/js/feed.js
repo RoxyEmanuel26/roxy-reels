@@ -290,6 +290,8 @@ async function fetchAndRenderFeed(isInitial = false) {
     const data = await api.getPosts({ page: currentPage, ...currentFilters });
     
     const grid = document.getElementById('video-grid');
+    if (!grid) return;
+
     const totalCountEl = document.getElementById('video-total-count');
     const pageTrackEl = document.getElementById('page-track');
 
@@ -327,6 +329,7 @@ async function fetchAndRenderFeed(isInitial = false) {
   } catch (error) {
     console.error('Fetch Feed Error:', error);
     const grid = document.getElementById('video-grid');
+    if (!grid) return;
     if (isInitial) {
       ui.showError(error.message, grid);
     } else {
