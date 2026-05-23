@@ -145,9 +145,10 @@ const routes = {
   '/studio':    () => import('./feed.js').then(m => m.init({ studio: getParam('name') })),
   '/tag':       () => import('./feed.js').then(m => m.init({ tag: getParam('name') })),
   
-  // Taxonomy browsing routes for Actors & Studios
-  '/actors':    () => import('./actors.js').then(m => m.init()),
-  '/studios':   () => import('./studios.js').then(m => m.init()),
+  // Taxonomy browsing routes for Actors, Studios & Categories
+  '/actors':      () => import('./actors.js').then(m => m.init()),
+  '/studios':     () => import('./studios.js').then(m => m.init()),
+  '/categories':  () => import('./categories.js').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -169,6 +170,45 @@ function navigate(urlPath) {
   const prevPath = window.missavJState.currentPath;
   window.missavJState.currentPath = routePath;
 
+  // SPECIAL CASE: Language changed while on watch page with the same video.
+  // Do NOT destroy and reload the player — just re-translate all visible UI text in-place.
+  const targetId = getParam('id');
+  if (prevPath === '/watch' && routePath === '/watch' &&
+      window.missavJState.activeVideo &&
+      String(window.missavJState.activeVideo.id) === String(targetId)) {
+    
+    // Re-translate all static UI elements (sidebar, header, buttons, etc.)
+    i18n.translateStaticUI();
+    
+    // Re-translate the player page dynamic text using the stored post data
+    const post = window.missavJState.activeVideo;
+    const titleEl = document.getElementById('player-title');
+    if (titleEl) titleEl.textContent = i18n.translateVideoTitle(post.title);
+    document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
+    
+    // Re-translate player button labels
+    const watchLaterLabel = document.getElementById('watch-later-label');
+    if (watchLaterLabel) watchLaterLabel.textContent = i18n.t('btn_watch_later');
+    
+    // Re-translate meta section headers (Actors, Categories, Tags)
+    document.querySelectorAll('.meta-section h4').forEach((h4, idx) => {
+      const keys = ['meta_actors', 'meta_categories', 'meta_tags'];
+      if (keys[idx]) h4.textContent = i18n.t(keys[idx]);
+    });
+    
+    // Re-translate related videos heading
+    const relatedHeading = document.querySelector('.player-sidebar-column h3');
+    if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
+    
+    // Re-render metadata chips (actors, categories, tags) with new language
+    import('./player.js').then(m => {
+      if (m.renderPostMeta) m.renderPostMeta(post, targetId);
+      if (m.loadRelatedVideos) m.loadRelatedVideos(post);
+    }).catch(() => { /* silent — non-critical */ });
+    
+    return; // Early exit — player iframe is preserved!
+  }
+
   // 1. LEAVE WATCH TRANSPLANTATION: Move running player element to picture-in-picture mode
   if (prevPath === '/watch' && routePath !== '/watch') {
     const playerContainer = document.getElementById('player-container');
@@ -189,7 +229,6 @@ function navigate(urlPath) {
   }
 
   // 2. ENTER WATCH TRANSPLANTATION: If target watch ID matches floating ID, transplant it back!
-  const targetId = getParam('id');
   if (routePath === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
     const floatWrapper = document.getElementById('floating-player-wrapper');
     if (floatWrapper) floatWrapper.classList.add('hidden');
@@ -211,8 +250,8 @@ function navigate(urlPath) {
   // Show page shimmer skeletal states
   ui.showSkeletons(8);
   
-  // Highlight active sidebar navigation indicators
-  highlightActiveSidebarItem(routePath);
+  // Highlight active sidebar navigation indicators (pass full path + query for accurate matching)
+  highlightActiveSidebarItem(routePath, window.location.search);
   
   // Scroll instantly to page top bounds
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -243,13 +282,22 @@ export function closeFloatingPlayer() {
 /**
  * Synchronizes selected visual state styling highlights on sidebar items
  */
-function highlightActiveSidebarItem(activePath) {
+function highlightActiveSidebarItem(activePath, activeSearch = '') {
   const sidebarLinks = document.querySelectorAll('.sidebar-nav a, .sidebar-nav button');
+  const activeFullPath = activePath + activeSearch; // e.g. "/category?name=Uncensored"
+  
   sidebarLinks.forEach(link => {
     const href = link.getAttribute('href') || '';
-    const cleanHref = href.split('?')[0].replace('#', '');
+    const cleanHref = href.replace('#', ''); // Remove hash prefix → "/category?name=Uncensored"
+    const cleanHrefPath = cleanHref.split('?')[0]; // Just the path → "/category"
     
-    if (cleanHref === activePath) {
+    // For parameterized routes, compare full path + query; for simple routes, compare path only
+    const hasQuery = cleanHref.includes('?');
+    const isMatch = hasQuery
+      ? cleanHref === activeFullPath       // Exact match including query params
+      : cleanHrefPath === activePath;       // Path-only match for simple routes
+    
+    if (isMatch) {
       link.classList.add('active');
     } else {
       link.classList.remove('active');

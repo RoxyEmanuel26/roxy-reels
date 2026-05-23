@@ -329,6 +329,100 @@ const DICTIONARY = {
   },
   category_mosaic: {
     en: 'Mosaic', id: 'Sensor Mosaik', 'zh-TW': '有修正', 'zh-CN': '有修正', ja: 'モザイク', ko: '모자イク', ms: 'Mosaik', th: 'โมเสก', de: 'Mosaik', fr: 'Mosaïque', vi: 'Mờ che', fil: 'Mosaiko', pt: 'Mosaico'
+  },
+  sidebar_more_categories: {
+    en: 'More...', id: 'Lainnya...', 'zh-TW': '更多...', 'zh-CN': '更多...', ja: 'もっと見る...', ko: '더 보기...', ms: 'Lagi...', th: 'เพิ่มเติม...', de: 'Mehr...', fr: 'Plus...', vi: 'Thêm...', fil: 'Pa-dagdag...', pt: 'Mais...'
+  },
+
+  // Extended category translations
+  category_leaked: {
+    en: 'Leaked', id: 'Bocoran', 'zh-TW': '流出', 'zh-CN': '流出', ja: '流出', ko: '유출', ms: 'Bocor', th: 'หลุด', de: 'Geleakt', fr: 'Fuité', vi: 'Bị rò rỉ', fil: 'Naleak', pt: 'Vazado'
+  },
+  category_big_tits: {
+    en: 'Big Tits', id: 'Payudara Besar', 'zh-TW': '巨乳', 'zh-CN': '巨乳', ja: '巨乳', ko: '큰 가슴', ms: 'Payudara Besar', th: 'นมใหญ่', de: 'Große Brüste', fr: 'Gros seins', vi: 'Ngực lớn', fil: 'Malaking dibdib', pt: 'Peitos grandes'
+  },
+  category_milf: {
+    en: 'MILF', id: 'MILF', 'zh-TW': '熟女', 'zh-CN': '熟女', ja: '熟女', ko: '밀프', ms: 'MILF', th: 'แม่บ้าน', de: 'MILF', fr: 'MILF', vi: 'Phụ nữ trưởng thành', fil: 'MILF', pt: 'MILF'
+  },
+  category_threesome: {
+    en: 'Threesome', id: 'Threesome', 'zh-TW': '三人行', 'zh-CN': '三人行', ja: '3P', ko: '쓰리섬', ms: 'Threesome', th: 'สามคน', de: 'Dreier', fr: 'Trio', vi: 'Ba người', fil: 'Threesome', pt: 'Ménage à trois'
+  },
+  category_teen: {
+    en: 'Teen', id: 'Remaja', 'zh-TW': '少女', 'zh-CN': '少女', ja: '美少女', ko: '틴', ms: 'Remaja', th: 'วัยรุ่น', de: 'Teen', fr: 'Adolescente', vi: 'Tuổi teen', fil: 'Tin', pt: 'Adolescente'
+  },
+  category_massage: {
+    en: 'Massage', id: 'Pijat', 'zh-TW': '按摩', 'zh-CN': '按摩', ja: 'マッサージ', ko: '마사지', ms: 'Urut', th: 'นวด', de: 'Massage', fr: 'Massage', vi: 'Massage', fil: 'Masahe', pt: 'Massagem'
+  },
+  category_anal: {
+    en: 'Anal', id: 'Anal', 'zh-TW': '肛交', 'zh-CN': '肛交', ja: 'アナル', ko: '애널', ms: 'Anal', th: 'ทวาร', de: 'Anal', fr: 'Anal', vi: 'Hậu môn', fil: 'Anal', pt: 'Anal'
+  },
+  category_lesbian: {
+    en: 'Lesbian', id: 'Lesbian', 'zh-TW': '女同', 'zh-CN': '女同', ja: 'レズビアン', ko: '레즈비언', ms: 'Lesbian', th: 'เลสเบี้ยน', de: 'Lesbisch', fr: 'Lesbienne', vi: 'Đồng tính nữ', fil: 'Lesbiyana', pt: 'Lésbica'
+  },
+  category_bondage: {
+    en: 'Bondage', id: 'Bondage', 'zh-TW': '束縛', 'zh-CN': '束缚', ja: '緊縛', ko: '본디지', ms: 'Bondage', th: 'บอนเดจ', de: 'Bondage', fr: 'Bondage', vi: 'Trói buộc', fil: 'Bondage', pt: 'Bondage'
+  },
+  category_office_lady: {
+    en: 'Office Lady', id: 'Wanita Kantoran', 'zh-TW': 'OL', 'zh-CN': 'OL', ja: 'OL', ko: '오피스레이디', ms: 'Wanita Pejabat', th: 'OL', de: 'Bürodame', fr: 'Employée de bureau', vi: 'Nhân viên văn phòng', fil: 'Office Lady', pt: 'Secretária'
+  },
+  category_nurse: {
+    en: 'Nurse', id: 'Perawat', 'zh-TW': '護士', 'zh-CN': '护士', ja: 'ナース', ko: '간호사', ms: 'Jururawat', th: 'พยาบาล', de: 'Krankenschwester', fr: 'Infirmière', vi: 'Y tá', fil: 'Nars', pt: 'Enfermeira'
+  },
+  category_teacher: {
+    en: 'Teacher', id: 'Guru', 'zh-TW': '教師', 'zh-CN': '教师', ja: '女教師', ko: '교사', ms: 'Guru', th: 'ครู', de: 'Lehrerin', fr: 'Enseignante', vi: 'Giáo viên', fil: 'Guro', pt: 'Professora'
+  },
+  category_schoolgirl: {
+    en: 'Schoolgirl', id: 'Pelajar', 'zh-TW': '女學生', 'zh-CN': '女学生', ja: '女子校生', ko: '여학생', ms: 'Pelajar', th: 'นักเรียนหญิง', de: 'Schülerin', fr: 'Écolière', vi: 'Nữ sinh', fil: 'Estudyante', pt: 'Colegial'
+  },
+  category_stepmom: {
+    en: 'Stepmom', id: 'Ibu Tiri', 'zh-TW': '繼母', 'zh-CN': '继母', ja: '義母', ko: '새엄마', ms: 'Ibu Tiri', th: 'แม่เลี้ยง', de: 'Stiefmutter', fr: 'Belle-mère', vi: 'Mẹ kế', fil: 'Stepmother', pt: 'Madrasta'
+  },
+  category_gangbang: {
+    en: 'Gangbang', id: 'Gangbang', 'zh-TW': '輪姦', 'zh-CN': '轮奸', ja: '輪姦', ko: '갱뱅', ms: 'Gangbang', th: 'แก๊งแบง', de: 'Gangbang', fr: 'Gangbang', vi: 'Nhóm', fil: 'Gangbang', pt: 'Gangbang'
+  },
+  category_ntr: {
+    en: 'NTR', id: 'NTR', 'zh-TW': 'NTR', 'zh-CN': 'NTR', ja: '寝取られ', ko: 'NTR', ms: 'NTR', th: 'NTR', de: 'NTR', fr: 'NTR', vi: 'NTR', fil: 'NTR', pt: 'NTR'
+  },
+  category_pov: {
+    en: 'POV', id: 'Sudut Pandang', 'zh-TW': '主觀視角', 'zh-CN': '主观视角', ja: '主観', ko: 'POV', ms: 'POV', th: 'มุมมองคนดู', de: 'POV', fr: 'Subjectif', vi: 'Góc nhìn', fil: 'POV', pt: 'POV'
+  },
+  category_orgy: {
+    en: 'Orgy', id: 'Pesta', 'zh-TW': '群交', 'zh-CN': '群交', ja: '乱交', ko: '난교', ms: 'Orgy', th: 'ออร์จี้', de: 'Orgie', fr: 'Orgie', vi: 'Loạn dâm', fil: 'Orgy', pt: 'Orgia'
+  },
+  category_squirting: {
+    en: 'Squirting', id: 'Squirting', 'zh-TW': '潮吹', 'zh-CN': '潮吹', ja: '潮吹き', ko: '분출', ms: 'Squirting', th: 'สไควร์ท', de: 'Squirting', fr: 'Éjaculation féminine', vi: 'Squirting', fil: 'Squirting', pt: 'Squirting'
+  },
+  category_blowjob: {
+    en: 'Blowjob', id: 'Oral', 'zh-TW': '口交', 'zh-CN': '口交', ja: 'フェラ', ko: '블로우잡', ms: 'Oral', th: 'ออรัล', de: 'Blowjob', fr: 'Fellation', vi: 'Thổi kèn', fil: 'Blowjob', pt: 'Oral'
+  },
+  category_handjob: {
+    en: 'Handjob', id: 'Handjob', 'zh-TW': '手交', 'zh-CN': '手交', ja: '手コキ', ko: '핸드잡', ms: 'Handjob', th: 'แฮนด์จ็อบ', de: 'Handjob', fr: 'Branlette', vi: 'Thủ dâm', fil: 'Handjob', pt: 'Punheta'
+  },
+  category_footjob: {
+    en: 'Footjob', id: 'Footjob', 'zh-TW': '足交', 'zh-CN': '足交', ja: '足コキ', ko: '풋잡', ms: 'Footjob', th: 'ฟุตจ็อบ', de: 'Footjob', fr: 'Footjob', vi: 'Chân', fil: 'Footjob', pt: 'Footjob'
+  },
+  category_outdoor: {
+    en: 'Outdoor', id: 'Luar Ruangan', 'zh-TW': '戶外', 'zh-CN': '户外', ja: '野外', ko: '야외', ms: 'Luar', th: 'กลางแจ้ง', de: 'Outdoor', fr: 'Extérieur', vi: 'Ngoài trời', fil: 'Outdoor', pt: 'Ao ar livre'
+  },
+  category_voyeur: {
+    en: 'Voyeur', id: 'Mengintip', 'zh-TW': '偷窺', 'zh-CN': '偷窥', ja: '盗撮', ko: '관음', ms: 'Mengintai', th: 'แอบดู', de: 'Voyeur', fr: 'Voyeur', vi: 'Quay lén', fil: 'Voyeur', pt: 'Voyeur'
+  },
+
+  // Categories browse page UI strings
+  categories_browse_title: {
+    en: 'All Categories', id: 'Semua Kategori', 'zh-TW': '所有分類', 'zh-CN': '所有分类', ja: 'すべてのカテゴリー', ko: '모든 카테고리', ms: 'Semua Kategori', th: 'หมวดหมู่ทั้งหมด', de: 'Alle Kategorien', fr: 'Toutes les catégories', vi: 'Tất cả danh mục', fil: 'Lahat ng kategorya', pt: 'Todas as categorias'
+  },
+  categories_browse_desc: {
+    en: 'Browse and explore all available categories', id: 'Jelajahi semua kategori yang tersedia', 'zh-TW': '瀏覽並探索所有可用分類', 'zh-CN': '浏览并探索所有可用分类', ja: '利用可能なすべてのカテゴリーを閲覧', ko: '사용 가능한 모든 카테고리 탐색', ms: 'Layari semua kategori yang tersedia', th: 'เรียกดูหมวดหมู่ทั้งหมดที่มี', de: 'Alle verfügbaren Kategorien durchsuchen', fr: 'Parcourir toutes les catégories disponibles', vi: 'Duyệt tất cả danh mục có sẵn', fil: 'I-browse ang lahat ng kategorya', pt: 'Navegue por todas as categorias disponíveis'
+  },
+  category_search_placeholder: {
+    en: 'Search categories...', id: 'Cari kategori...', 'zh-TW': '搜索分類...', 'zh-CN': '搜索分类...', ja: 'カテゴリーを検索...', ko: '카테고리 검색...', ms: 'Cari kategori...', th: 'ค้นหาหมวดหมู่...', de: 'Kategorien suchen...', fr: 'Rechercher des catégories...', vi: 'Tìm danh mục...', fil: 'Maghanap ng kategorya...', pt: 'Buscar categorias...'
+  },
+  category_not_found: {
+    en: 'No categories found', id: 'Kategori tidak ditemukan', 'zh-TW': '未找到分類', 'zh-CN': '未找到分类', ja: 'カテゴリーが見つかりません', ko: '카테고리를 찾을 수 없습니다', ms: 'Kategori tidak dijumpai', th: 'ไม่พบหมวดหมู่', de: 'Keine Kategorien gefunden', fr: 'Aucune catégorie trouvée', vi: 'Không tìm thấy danh mục', fil: 'Walang kategoryang nahanap', pt: 'Nenhuma categoria encontrada'
+  },
+  category_not_found_desc: {
+    en: 'No results for "{query}"', id: 'Tidak ada hasil untuk "{query}"', 'zh-TW': '沒有"{query}"的結果', 'zh-CN': '没有"{query}"的结果', ja: '「{query}」の結果はありません', ko: '"{query}" 검색 결과가 없습니다', ms: 'Tiada hasil untuk "{query}"', th: 'ไม่มีผลลัพธ์สำหรับ "{query}"', de: 'Keine Ergebnisse für „{query}"', fr: 'Aucun résultat pour « {query} »', vi: 'Không có kết quả cho "{query}"', fil: 'Walang resulta para sa "{query}"', pt: 'Nenhum resultado para "{query}"'
   }
 };
 

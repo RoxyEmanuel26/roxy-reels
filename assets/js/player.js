@@ -248,7 +248,7 @@ function trackWatchHistory(post) {
 /**
  * Merender metadata lengkap video ke elemen DOM (Tersanitasi Penuh)
  */
-function renderPostMeta(post, id) {
+export function renderPostMeta(post, id) {
   const titleEl = document.getElementById('player-title');
   const viewsEl = document.getElementById('player-views-count');
   const dateEl = document.getElementById('player-publish-date');
@@ -455,7 +455,7 @@ function setupWatchLaterLogic(post) {
 /**
  * Mengambil rekomendasi video terkait berdasarkan kategori pertama
  */
-async function loadRelatedVideos(post) {
+export async function loadRelatedVideos(post) {
   const relatedList = document.getElementById('related-videos-list');
   if (!relatedList) return;
 
