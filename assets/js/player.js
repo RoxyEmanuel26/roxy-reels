@@ -611,9 +611,9 @@ export function alignGlobalPlayerWithPlaceholder() {
     // inside the embed player from apijav.com.
     const playerContainer = document.getElementById('player-container');
     if (playerContainer) {
-      const scale = rect.width / 960;
-      playerContainer.style.transform = `scale(${scale})`;
-
+      playerContainer.style.transform = 'none';  // ← Hapus transform
+      playerContainer.style.width = rect.width + 'px';   // ← Resize langsung
+      playerContainer.style.height = rect.height + 'px';
     }
   }
 }
