@@ -19,9 +19,17 @@ module.exports = async (req, res) => {
       return res.status(200).end();
     }
 
-    // Bangun URL tujuan lengkap beserta seluruh parameter query dari client
-    const targetUrl = new URL(`${TARGET_BASE}/posts`);
+    // Deteksi apakah ini request untuk single post berdasarkan parameter id
+    let targetUrl;
+    if (req.query.id) {
+      targetUrl = new URL(`${TARGET_BASE}/posts/${req.query.id}`);
+    } else {
+      targetUrl = new URL(`${TARGET_BASE}/posts`);
+    }
+
+    // Salin parameter query lainnya (kecuali id jika itu request single post)
     Object.keys(req.query).forEach(key => {
+      if (req.query.id && key === 'id') return; // Lewati parameter id agar tidak masuk query string
       targetUrl.searchParams.append(key, req.query[key]);
     });
 
