@@ -211,23 +211,31 @@ function navigate(urlPath) {
 
   // 1. LEAVE WATCH TRANSPLANTATION: Move running player element to picture-in-picture mode
   if (prevPath === '/watch' && routePath !== '/watch') {
-    const globalPlayer = document.getElementById('global-player-container');
-    if (globalPlayer && window.missavJState.activeVideo) {
+    const playerContainer = document.getElementById('player-container');
+    if (playerContainer && window.missavJState.activeVideo) {
+      const floatBody = document.getElementById('floating-player-body');
       const floatTitle = document.getElementById('floating-player-title');
       const floatWrapper = document.getElementById('floating-player-wrapper');
       
-      if (floatTitle && floatWrapper) {
-        // Disconnect placeholder observer in player.js
-        import('./player.js').then(m => {
-          if (m.disconnectPlaceholderObserver) m.disconnectPlaceholderObserver();
-        }).catch(() => {});
-
-        // Switch global player container to floating mode
-        globalPlayer.className = 'global-player-container floating-mode';
-        globalPlayer.style.top = '';
-        globalPlayer.style.left = '';
-        globalPlayer.style.width = '';
-        globalPlayer.style.height = '';
+      if (floatBody && floatTitle && floatWrapper) {
+        floatBody.innerHTML = '';
+        floatBody.appendChild(playerContainer); // Transplant player DOM directly
+        
+        // Force muted autoplay when going to PiP mode
+        const iframe = playerContainer.querySelector('iframe');
+        if (iframe) {
+          let src = iframe.getAttribute('src');
+          if (src) {
+            // Add autoplay and muted parameters
+            if (!src.includes('autoplay=1')) {
+              src += (src.includes('?') ? '&' : '?') + 'autoplay=1';
+            }
+            if (!src.includes('muted=1')) {
+              src += '&muted=1';
+            }
+            iframe.setAttribute('src', src);
+          }
+        }
         
         floatTitle.textContent = i18n.translateVideoTitle(window.missavJState.activeVideo.title);
         floatWrapper.classList.remove('hidden');
@@ -281,22 +289,11 @@ export function closeFloatingPlayer() {
   const float = document.getElementById('floating-player-wrapper');
   if (float) float.classList.add('hidden');
   
-  const globalPlayer = document.getElementById('global-player-container');
-  if (globalPlayer) {
-    globalPlayer.innerHTML = '';
-    globalPlayer.className = 'global-player-hidden';
-    globalPlayer.style.top = '';
-    globalPlayer.style.left = '';
-    globalPlayer.style.width = '';
-    globalPlayer.style.height = '';
-  }
+  const body = document.getElementById('floating-player-body');
+  if (body) body.innerHTML = '';
   
   window.missavJState.activeVideo = null;
   window.missavJState.isFloating = false;
-
-  import('./player.js').then(m => {
-    if (m.disconnectPlaceholderObserver) m.disconnectPlaceholderObserver();
-  }).catch(() => {});
 }
 
 /**
