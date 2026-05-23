@@ -105,8 +105,12 @@ export function renderVideoCard(post, index = 0) {
   // Staggered animation delay: masing-masing kartu dimunculkan dengan jeda 40ms secara beruntun
   const animationStyle = `style="animation-delay: calc(${index % 24} * 45ms);"`;
 
+  // Sanitasi & bersihkan ampersand untuk parameter URL cuplikan video hover
+  const rawEmbedUrl = (post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&');
+  const safeEmbedUrl = ui.escapeHTML(rawEmbedUrl);
+
   return `
-    <article class="video-card fadeInUp" data-id="${safeId}" ${animationStyle}>
+    <article class="video-card fadeInUp" data-id="${safeId}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
       <div class="card-thumb">
         <img 
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
@@ -263,6 +267,9 @@ export async function init(filters = {}) {
   
   // 6. Pasang click listener di grid untuk menangani rute SPA terintegrasi
   bindGridClicks(grid);
+
+  // 7. Pasang hover listeners untuk cuplikan video dinamis (Live Preview)
+  bindHoverPreviews(grid);
 }
 
 /**
@@ -394,4 +401,105 @@ function bindGridClicks(grid) {
     }
   });
 }
-export default { init, renderVideoCard };
+
+// Variabel state global terisolasi untuk hover live preview
+let activeHoverTimeout = null;
+let activeCard = null;
+
+/**
+ * Menghapus cuplikan video aktif yang sedang berjalan dan membersihkan DOM
+ */
+export function clearActivePreview() {
+  if (activeHoverTimeout) {
+    clearTimeout(activeHoverTimeout);
+    activeHoverTimeout = null;
+  }
+
+  if (activeCard) {
+    const thumb = activeCard.querySelector('.card-thumb');
+    if (thumb) {
+      // Hapus iframe cuplikan jika ada
+      const iframe = thumb.querySelector('.card-preview-iframe');
+      if (iframe) iframe.remove();
+
+      // Hapus loader jika ada
+      const loader = thumb.querySelector('.preview-loader');
+      if (loader) loader.remove();
+    }
+    activeCard.classList.remove('hover-playing');
+    activeCard = null;
+  }
+}
+
+/**
+ * Memulai pengunduhan dan pemutaran cuplikan bisu live di kartu video
+ */
+function startLivePreview(card, embedUrl) {
+  const thumb = card.querySelector('.card-thumb');
+  if (!thumb) return;
+
+  // Cek apakah sudah ada iframe aktif untuk mencegah duplikasi
+  if (thumb.querySelector('.card-preview-iframe')) return;
+
+  // Tambahkan micro loader spinner di tengah thumbnail
+  const loader = document.createElement('div');
+  loader.className = 'preview-loader';
+  thumb.appendChild(loader);
+
+  // Buat iframe pemutar cuplikan
+  const iframe = document.createElement('iframe');
+  iframe.className = 'card-preview-iframe';
+  
+  // Suntikkan query parameters autoplay=1 dan muted=1 untuk mematuhi kebijakan autoplay browser
+  const previewUrl = embedUrl.includes('?') ? `${embedUrl}&autoplay=1&muted=1` : `${embedUrl}?autoplay=1&muted=1`;
+  iframe.src = previewUrl;
+  iframe.allow = 'autoplay; encrypted-media';
+  iframe.setAttribute('scrolling', 'no');
+  iframe.setAttribute('frameborder', '0');
+
+  // Transisi visual saat pemutar siap (loaded)
+  iframe.addEventListener('load', () => {
+    if (loader) loader.remove();
+    iframe.classList.add('loaded');
+    card.classList.add('hover-playing');
+  });
+
+  thumb.appendChild(iframe);
+}
+
+/**
+ * Mengikat hover listeners untuk live video preview pada kartu video menggunakan delegasi event berkinerja tinggi
+ */
+export function bindHoverPreviews(grid) {
+  if (!grid) return;
+
+  grid.addEventListener('mouseover', (e) => {
+    const card = e.target.closest('.video-card');
+    if (!card || card.classList.contains('skeleton-card') || card === activeCard) return;
+
+    // Bersihkan hover sebelumnya jika kursor bergeser langsung ke kartu lain
+    clearActivePreview();
+
+    activeCard = card;
+    const embedUrl = card.dataset.embedUrl;
+    if (!embedUrl) return;
+
+    // Sensor penundaan 800ms demi kenyamanan navigasi
+    activeHoverTimeout = setTimeout(() => {
+      startLivePreview(card, embedUrl);
+    }, 800);
+  });
+
+  grid.addEventListener('mouseout', (e) => {
+    const card = e.target.closest('.video-card');
+    // Matikan preview hanya jika mouse meninggalkan kontainer kartu video sepenuhnya
+    if (card && !card.contains(e.relatedTarget)) {
+      clearActivePreview();
+    }
+  });
+
+  // Pastikan membersihkan preview jika halaman di-scroll (infinite scroll/user actions)
+  window.addEventListener('scroll', clearActivePreview, { passive: true });
+}
+
+export default { init, renderVideoCard, bindHoverPreviews, clearActivePreview };

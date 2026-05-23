@@ -7,7 +7,7 @@
 import api from './api.js';
 import ui from './ui.js';
 import filter from './filter.js';
-import { renderVideoCard } from './feed.js';
+import { renderVideoCard, bindHoverPreviews } from './feed.js';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
@@ -136,6 +136,9 @@ export async function init(query = '') {
 
   // 6. Bind click events di grid
   bindGridClicks(grid);
+
+  // 6.5. Bind hover previews di grid pencarian
+  bindHoverPreviews(grid);
 
   // 7. Setup Event Debounce 400ms pada Header Input
   setupHeaderLiveSearch();

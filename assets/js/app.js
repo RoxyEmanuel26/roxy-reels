@@ -5,7 +5,7 @@
  */
 
 import ui from './ui.js';
-import { renderVideoCard } from './feed.js';
+import { renderVideoCard, bindHoverPreviews } from './feed.js';
 
 // Inisialisasi State Global In-Memory
 window.missavJState = {
@@ -82,6 +82,9 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
         window.location.hash = `#/watch?id=${postId}`;
       }
     });
+
+    // Pasang hover listeners untuk cuplikan video dinamis (Live Preview)
+    bindHoverPreviews(grid);
   }
 }
 
