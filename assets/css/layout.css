@@ -406,6 +406,9 @@ body.sidebar-collapsed-layout .main-content {
   .main-content {
     margin-left: 0 !important;
     padding: var(--space-3);
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
   
   .header-center {

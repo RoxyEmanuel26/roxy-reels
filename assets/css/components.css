@@ -1367,6 +1367,8 @@
 .az-filter-container {
   position: relative;
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   margin-bottom: var(--space-6);
 }
 
@@ -1392,6 +1394,8 @@
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
   scrollbar-width: none; /* Hide scrollbar for Firefox */
   -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
 }
