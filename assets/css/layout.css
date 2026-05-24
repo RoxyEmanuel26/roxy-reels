@@ -456,50 +456,6 @@ body.sidebar-collapsed-layout .main-content {
     padding: 1px 4px !important;
   }
 
-  /* Redesigned 2-column grids for Actors & Categories on Mobile */
-  .actors-grid.all-actors-grid,
-  .actors-grid.all-categories-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: var(--space-2) !important;
-  }
-
-  .all-actors-grid .actor-browse-card,
-  .all-categories-grid .category-browse-card {
-    flex-direction: column !important;
-    align-items: center !important;
-    text-align: center !important;
-    padding: var(--space-3) !important;
-    min-height: 140px !important;
-    justify-content: center !important;
-  }
-
-  .all-actors-grid .actor-info-box,
-  .all-categories-grid .category-info-box {
-    padding-right: 0 !important;
-    align-items: center !important;
-    text-align: center !important;
-    width: 100% !important;
-  }
-
-  .all-actors-grid .actor-browse-name,
-  .all-categories-grid .category-browse-name {
-    font-size: 0.75rem !important;
-    text-align: center !important;
-  }
-
-  .all-actors-grid .actor-browse-native {
-    font-size: 0.65rem !important;
-    text-align: center !important;
-  }
-
-  .all-actors-grid .actor-video-count {
-    position: static !important;
-    margin-top: var(--space-2) !important;
-    width: fit-content !important;
-    font-size: 0.6rem !important;
-    padding: 2px 5px !important;
-  }
-
   .taxonomy-search-wrapper {
     max-width: 100% !important;
     width: 100% !important;
@@ -543,13 +499,6 @@ body.sidebar-collapsed-layout .main-content {
   .video-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  /* Grid tablet untuk Aktris & Kategori (2 Kolom Seimbang agar nama tidak squished) */
-  .actors-grid.all-actors-grid,
-  .actors-grid.all-categories-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: var(--space-4) !important;
-  }
 }
 
 /* Desktop: Viewports >= 1024px */
@@ -576,7 +525,6 @@ body.sidebar-collapsed-layout .main-content {
     text-overflow: ellipsis !important;
     display: block !important;
     width: 100% !important;
-    text-align: center !important;
   }
 
   /* High-fidelity haptic-like active tap micro-interactions for cards */
