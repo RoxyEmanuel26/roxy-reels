@@ -69,15 +69,6 @@ export function init(container, currentFilters, onFilterChange) {
           <button class="dropdown-item ${activeValue === 'views|DESC|' ? 'active' : ''}" data-value="views|DESC|">${i18n.t('sort_views_total')}</button>
         </div>
       </div>
-
-      <!-- Scrollable Category Chips -->
-      <div class="filter-chips-scroll" id="filter-chips-scroll">
-        <button class="filter-chip ${!currentFilters.category ? 'active' : ''}" data-category="">${i18n.t('category_all')}</button>
-        ${POPULAR_CATEGORIES.map(cat => {
-          const isActive = currentFilters.category === cat.value;
-          return `<button class="filter-chip ${isActive ? 'active' : ''}" data-category="${cat.value}">${cat.label}</button>`;
-        }).join('')}
-      </div>
     </div>
   `;
 
