@@ -521,14 +521,39 @@ const TITLE_DICTIONARY = {
 };
 
 /**
+ * Decodes all HTML entities (e.g. &quot;, &#039;, &amp;) inside a string to raw characters.
+ */
+export function decodeHTMLEntities(text) {
+  if (!text) return '';
+  return text
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#039;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&#038;/g, '&')
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&ldquo;/g, '"')
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ndash;/g, '-')
+    .replace(/&mdash;/g, '-')
+    .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-f]+);/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+/**
  * Dynamically translates common JAV bracket tags and standalone words inside video titles
  * @param {string} title - The original video title
  * @returns {string} The translated video title
  */
 export function translateVideoTitle(title) {
   if (!title) return '';
+  const decodedTitle = decodeHTMLEntities(title);
   const lang = getLang();
-  let translatedTitle = title;
+  let translatedTitle = decodedTitle;
   const words = ['uncensored', 'subtitled', 'amateur', 'creampie', 'cosplay', 'mosaic', 'leaked', 'leak', 'sub'];
 
   for (const word of words) {

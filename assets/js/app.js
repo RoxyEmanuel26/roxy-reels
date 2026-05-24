@@ -29,8 +29,27 @@ function getParam(name) {
  */
 export function slugify(text) {
   if (!text) return '';
-  return text
+  // Decode HTML entities first to prevent dirty slugs (e.g. &#039; -> ' which is then stripped)
+  const decoded = text
     .toString()
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#039;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&#038;/g, '&')
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&ldquo;/g, '"')
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ndash;/g, '-')
+    .replace(/&mdash;/g, '-')
+    .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-f]+);/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+  return decoded
     .toLowerCase()
     .trim()
     .replace(/[\s\-_]+/g, '-') // Replace spaces, underscores, hyphens with a single hyphen
