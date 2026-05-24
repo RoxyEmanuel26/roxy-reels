@@ -135,21 +135,21 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=1.1.2').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=1.1.2').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=1.1.2').then(m => m.init()),
-  '/search':    () => import('./search.js?v=1.1.2').then(m => m.init(getParam('q'))),
-  '/watch':     () => import('./player.js?v=1.1.2').then(m => m.init(getParam('id'))),
-  '/category':  () => import('./feed.js?v=1.1.2').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=1.1.2').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=1.1.2').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=1.1.2').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=1.1.3').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=1.1.3').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=1.1.3').then(m => m.init()),
+  '/search':    () => import('./search.js?v=1.1.3').then(m => m.init(getParam('q'))),
+  '/watch':     () => import('./player.js?v=1.1.3').then(m => m.init(getParam('id'))),
+  '/category':  () => import('./feed.js?v=1.1.3').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=1.1.3').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=1.1.3').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=1.1.3').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=1.1.2').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=1.1.2').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=1.1.2').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=1.1.2').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=1.1.3').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=1.1.3').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=1.1.3').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=1.1.3').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -202,7 +202,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=1.1.2').then(m => {
+    import('./player.js?v=1.1.3').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -424,7 +424,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=1.1.2').then(m => {
+      import('./player.js?v=1.1.3').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }

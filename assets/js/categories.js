@@ -40,7 +40,9 @@ function renderCategoriesGrid(categories, searchQuery = '') {
         <div class="category-icon-circle">
           <span class="category-icon-emoji">${cat.icon}</span>
         </div>
-        <div class="category-browse-name">${translatedName}</div>
+        <div class="category-info-box">
+          <div class="category-browse-name" title="${translatedName}">${translatedName}</div>
+        </div>
       </div>
     `;
   }).join('');
@@ -84,7 +86,7 @@ export function init() {
       ${alphabetHtml}
     </div>
     
-    <div class="actors-grid" id="categories-grid"></div>
+    <div class="actors-grid all-categories-grid" id="categories-grid"></div>
   `;
 
   // Render all categories initially
