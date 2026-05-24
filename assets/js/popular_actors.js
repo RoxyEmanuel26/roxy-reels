@@ -76,8 +76,10 @@ function renderActorsGrid(actorsList, searchQuery = '') {
         <div class="actor-avatar-circle">
           <span class="actor-initial">${safeLetter}</span>
         </div>
-        <div class="actor-browse-name">${safeName}</div>
-        <div class="text-muted" style="font-size: 0.65rem; margin-top: 2px;">${safeNative}</div>
+        <div class="actor-info-box">
+          <div class="actor-browse-name" title="${safeName}">${safeName}</div>
+          <div class="actor-browse-native" title="${safeNative}">${safeNative}</div>
+        </div>
       </div>
     `;
   }).join('');

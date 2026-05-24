@@ -47,13 +47,19 @@ function renderActorsGrid(actorsList, searchQuery = '') {
     const safeLetter = ui.escapeHTML(actor.letter || (actor.name ? actor.name.charAt(0).toUpperCase() : '#'));
     const animationStyle = `style="animation-delay: calc(${idx % 16} * 15ms);"`;
 
+    const nativeHtml = safeNative ? `<div class="actor-browse-native" title="${safeNative}">${safeNative}</div>` : '';
+    const countHtml = actor.count !== undefined ? `<div class="actor-video-count">🎬 ${actor.count}</div>` : '';
+
     return `
       <div class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
         <div class="actor-avatar-circle">
           <span class="actor-initial">${safeLetter}</span>
         </div>
-        <div class="actor-browse-name">${safeName}</div>
-        <div class="text-muted" style="font-size: 0.65rem; margin-top: 2px;">${safeNative}</div>
+        <div class="actor-info-box">
+          <div class="actor-browse-name" title="${safeName}">${safeName}</div>
+          ${nativeHtml}
+        </div>
+        ${countHtml}
       </div>
     `;
   }).join('');
@@ -97,7 +103,7 @@ export function init() {
       ${alphabetHtml}
     </div>
     
-    <div class="actors-grid" id="actors-grid"></div>
+    <div class="actors-grid all-actors-grid" id="actors-grid"></div>
   `;
 
   // Render initial list (first 250 actors for performance limit on initial mount, ALL is huge!)
