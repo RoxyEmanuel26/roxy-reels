@@ -16,8 +16,12 @@ import ui from './ui.js';
   document.addEventListener = function(type, listener, options) {
     if (type === 'click') {
       const stack = new Error().stack || '';
+      // Saring ads.js dari stack trace untuk mencari pemanggil asli
+      const filteredStack = stack.split('\n').filter(line => !line.includes('ads.js')).join('\n');
+      const isLocalCaller = filteredStack.includes('/assets/js/');
+      
       // Jika dipanggil oleh script luar (tidak mengandung path file JS lokal kita)
-      if (stack && !stack.includes('/assets/js/')) {
+      if (stack && !isLocalCaller) {
         const wrappedListener = function(event) {
           // Hanya izinkan eksekusi popunder jika sedang berada di watch page (/watch)
           if (window.missavJState && window.missavJState.currentPath === '/watch') {
@@ -36,7 +40,10 @@ import ui from './ui.js';
   window.addEventListener = function(type, listener, options) {
     if (type === 'click') {
       const stack = new Error().stack || '';
-      if (stack && !stack.includes('/assets/js/')) {
+      const filteredStack = stack.split('\n').filter(line => !line.includes('ads.js')).join('\n');
+      const isLocalCaller = filteredStack.includes('/assets/js/');
+      
+      if (stack && !isLocalCaller) {
         const wrappedListener = function(event) {
           if (window.missavJState && window.missavJState.currentPath === '/watch') {
             return listener.call(this, event);
