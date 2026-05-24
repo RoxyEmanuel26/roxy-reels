@@ -290,8 +290,7 @@ export function renderPostMeta(post, id) {
 
   // Sanitasi & render Title & views
   const translatedTitle = i18n.translateVideoTitle(post.title);
-  const safeTitle = ui.escapeHTML(translatedTitle);
-  if (titleEl) titleEl.textContent = safeTitle;
+  if (titleEl) titleEl.textContent = translatedTitle;
   
   if (viewsEl) {
     const viewsCount = post.views ? parseInt(post.views, 10) : 0;
