@@ -746,6 +746,23 @@ function saveFullTitleTranslations() {
   }
 }
 
+// Configuration of alternate free public Google Translate endpoints for rotation
+const TRANSLATION_ENDPOINTS = [
+  { domain: 'translate.googleapis.com', client: 'gtx' },
+  { domain: 'translate.google.com', client: 'dict-chrome-ex' },
+  { domain: 'clients5.google.com', client: 'dict-chrome-ex' }
+];
+let activeEndpointIndex = 0;
+
+/**
+ * Rotates the active endpoint index to failover on errors or 429 rate limits.
+ */
+function rotateEndpoint() {
+  activeEndpointIndex = (activeEndpointIndex + 1) % TRANSLATION_ENDPOINTS.length;
+  const next = TRANSLATION_ENDPOINTS[activeEndpointIndex];
+  console.warn(`Translation rate limit or error encountered. Rotating to alternative endpoint: ${next.domain} (${next.client})`);
+}
+
 /**
  * Translates English text to a target language asynchronously using a free Google Translate API.
  * Uses localStorage to cache translations for speed and rate-limit prevention.
@@ -754,7 +771,6 @@ export async function translateText(text, targetLang) {
   if (!text) return '';
   if (!targetLang || targetLang === 'en') return text;
 
-  // Clean raw HTML entities if any slipped through
   const cleanedText = decodeHTMLEntities(text).trim();
   if (!cleanedText) return '';
 
@@ -763,22 +779,163 @@ export async function translateText(text, targetLang) {
     return fullTitleTranslations[cacheKey];
   }
 
-  // Undocumented client=gtx endpoint for free keyless translations
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(cleanedText)}`;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const data = await res.json();
-    if (data && data[0]) {
-      const translated = data[0].map(x => x[0]).join('');
-      fullTitleTranslations[cacheKey] = translated;
-      saveFullTitleTranslations();
-      return translated;
+  // Fallback to single translate query if batch system is bypassed
+  let attempt = 0;
+  while (attempt < TRANSLATION_ENDPOINTS.length) {
+    const endpoint = TRANSLATION_ENDPOINTS[activeEndpointIndex];
+    const url = `https://${endpoint.domain}/translate_a/single?client=${endpoint.client}&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(cleanedText)}`;
+    try {
+      const res = await fetch(url);
+      if (res.status === 429) {
+        rotateEndpoint();
+        attempt++;
+        continue;
+      }
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
+      if (data && data[0]) {
+        const translated = data[0].map(x => x[0]).join('');
+        fullTitleTranslations[cacheKey] = translated;
+        saveFullTitleTranslations();
+        return translated;
+      }
+    } catch (e) {
+      console.error(`Failed single translation fetch via ${endpoint.domain}:`, e);
+      rotateEndpoint();
     }
-  } catch (e) {
-    console.error(`Failed to translate text to "${targetLang}":`, e);
+    attempt++;
   }
-  return text; // Return original on error
+  return text; // Return original on total failure
+}
+
+// Global batch translation queue
+let translationQueue = [];
+let batchTimeout = null;
+
+/**
+ * Registers an element to the global batch translation queue.
+ */
+function queueTranslation(element, originalText, targetLang) {
+  // Prevent duplicate queuing
+  if (element.dataset.translating === 'true') return;
+  element.dataset.translating = 'true';
+
+  translationQueue.push({ element, originalText, targetLang });
+
+  // Debounce worker to collect all elements loaded during a DOM render frame
+  clearTimeout(batchTimeout);
+  batchTimeout = setTimeout(processTranslationQueue, 150);
+}
+
+/**
+ * Processes the translation queue, batching up to 30 titles in a single Google Translate API request.
+ */
+async function processTranslationQueue() {
+  if (translationQueue.length === 0) return;
+
+  const queueToProcess = [...translationQueue];
+  translationQueue = [];
+
+  const lang = getLang();
+  if (!lang || lang === 'en') {
+    // If language is English, clear translation state and revert
+    queueToProcess.forEach(({ element, originalText }) => {
+      const defaultTitle = translateVideoTitle(originalText);
+      element.textContent = defaultTitle;
+      if (element.hasAttribute('title')) element.setAttribute('title', defaultTitle);
+      delete element.dataset.translating;
+    });
+    return;
+  }
+
+  // 1. Group unique texts to translate
+  const uniqueTexts = Array.from(new Set(queueToProcess.map(item => item.originalText.trim())));
+  if (uniqueTexts.length === 0) {
+    queueToProcess.forEach(({ element }) => delete element.dataset.translating);
+    return;
+  }
+
+  // 2. Fetch translations in batches of up to 30 items
+  const BATCH_SIZE = 30;
+  const translationsMap = {};
+
+  // Check cache first for all items to avoid querying Google if possible
+  const textsToQuery = [];
+  uniqueTexts.forEach(txt => {
+    const cacheKey = `${lang}:${txt}`;
+    if (fullTitleTranslations[cacheKey]) {
+      translationsMap[txt] = fullTitleTranslations[cacheKey];
+    } else {
+      textsToQuery.push(txt);
+    }
+  });
+
+  if (textsToQuery.length > 0) {
+    for (let i = 0; i < textsToQuery.length; i += BATCH_SIZE) {
+      const batch = textsToQuery.slice(i, i + BATCH_SIZE);
+      // Join queries with standard newlines. Google Translate naturally preserves \n
+      const combinedText = batch.join('\n');
+
+      let success = false;
+      let attempt = 0;
+
+      while (!success && attempt < TRANSLATION_ENDPOINTS.length) {
+        const endpoint = TRANSLATION_ENDPOINTS[activeEndpointIndex];
+        const url = `https://${endpoint.domain}/translate_a/single?client=${endpoint.client}&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(combinedText)}`;
+        try {
+          const res = await fetch(url);
+          if (res.status === 429) {
+            rotateEndpoint();
+            attempt++;
+            continue;
+          }
+          if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+          const data = await res.json();
+          if (data && data[0]) {
+            // Google Translate single returns data[0] as list of segment pairs: [ [ "trans_part_1", "src_part_1" ], ... ]
+            // Reconstruct the translated lines
+            const fullTranslatedText = data[0].map(segment => segment[0]).join('');
+            const lines = fullTranslatedText.split('\n');
+
+            // Map translated lines back to the source batch texts
+            batch.forEach((originalTxt, idx) => {
+              const translatedTxt = (lines[idx] || originalTxt).trim();
+              translationsMap[originalTxt] = translatedTxt;
+              
+              // Cache results
+              const cacheKey = `${lang}:${originalTxt}`;
+              fullTitleTranslations[cacheKey] = translatedTxt;
+            });
+            saveFullTitleTranslations();
+            success = true;
+          }
+        } catch (e) {
+          console.error(`Batch translation failed via ${endpoint.domain}:`, e);
+          rotateEndpoint();
+        }
+        attempt++;
+      }
+
+      // Fallback: If translation fails completely for this batch, assign original text
+      if (!success) {
+        batch.forEach(originalTxt => {
+          translationsMap[originalTxt] = originalTxt;
+        });
+      }
+    }
+  }
+
+  // 3. Update the DOM elements with their respective translations
+  queueToProcess.forEach(({ element, originalText }) => {
+    const translated = translationsMap[originalText];
+    if (translated && element.getAttribute('data-original-title') === originalText) {
+      element.textContent = translated;
+      if (element.hasAttribute('title')) {
+        element.setAttribute('title', translated);
+      }
+    }
+    delete element.dataset.translating;
+  });
 }
 
 /**
@@ -786,40 +943,12 @@ export async function translateText(text, targetLang) {
  */
 export function translatePageTitles() {
   const lang = getLang();
-  
-  // Find all elements displaying video titles
   const titleElements = document.querySelectorAll('[data-original-title]');
-  titleElements.forEach(async (el) => {
+  
+  titleElements.forEach((el) => {
     const original = el.getAttribute('data-original-title');
     if (!original) return;
-
-    // Handle reverting to English if target language is English
-    if (lang === 'en') {
-      const defaultTitle = translateVideoTitle(original);
-      if (el.textContent !== defaultTitle) {
-        el.textContent = defaultTitle;
-        if (el.hasAttribute('title')) el.setAttribute('title', defaultTitle);
-      }
-      return;
-    }
-
-    // Mark element as translating to prevent duplicate triggers
-    if (el.dataset.translating === 'true') return;
-    el.dataset.translating = 'true';
-
-    try {
-      const translated = await translateText(original, lang);
-      if (translated && el.getAttribute('data-original-title') === original) {
-        el.textContent = translated;
-        if (el.hasAttribute('title')) {
-          el.setAttribute('title', translated);
-        }
-      }
-    } catch (err) {
-      console.error('Error translating title element:', err);
-    } finally {
-      delete el.dataset.translating;
-    }
+    queueTranslation(el, original, lang);
   });
 }
 

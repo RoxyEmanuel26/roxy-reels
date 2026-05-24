@@ -232,6 +232,81 @@ const routes = {
   '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')))
 };
 
+/**
+ * Updates SEO Canonical and Alternate language links inside the document head.
+ */
+function updateSEOTags(routePath, targetId) {
+  // Remove existing canonical and alternate link elements
+  document.querySelectorAll('link[rel="canonical"], link[rel="alternate"]').forEach(el => el.remove());
+
+  const baseDomain = window.location.origin;
+  const currentLang = i18n.getLang();
+  
+  let cleanRoutePath = routePath;
+  let hasLocalizedSlugs = false;
+  let localizedSlugsMap = {};
+
+  if (routePath === '/watch' && window.missavJState.activeVideo) {
+    const post = window.missavJState.activeVideo;
+    if (post.localized_slugs) {
+      hasLocalizedSlugs = true;
+      localizedSlugsMap = post.localized_slugs;
+      cleanRoutePath = `/watch/${localizedSlugsMap[currentLang] || slugify(post.code) + '-' + slugify(post.title)}-${post.id}`;
+    } else {
+      cleanRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title);
+    }
+  } else {
+    // For listing and browsing pages
+    const parsed = parseUrl(window.location.pathname);
+    cleanRoutePath = parsed.routePath;
+    if (window.location.search) {
+      cleanRoutePath += window.location.search;
+    }
+  }
+
+  // 1. Add canonical link
+  const canonicalLink = document.createElement('link');
+  canonicalLink.rel = 'canonical';
+  canonicalLink.href = `${baseDomain}/${currentLang}${cleanRoutePath}`;
+  document.head.appendChild(canonicalLink);
+
+  // 2. Add alternate links for all 13 languages
+  i18n.LANGS.forEach(lang => {
+    let langRoutePath = cleanRoutePath;
+    
+    if (routePath === '/watch' && window.missavJState.activeVideo) {
+      const post = window.missavJState.activeVideo;
+      if (hasLocalizedSlugs && localizedSlugsMap[lang.code]) {
+        langRoutePath = `/watch/${localizedSlugsMap[lang.code]}-${post.id}`;
+      } else {
+        langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title);
+      }
+    }
+    
+    const altLink = document.createElement('link');
+    altLink.rel = 'alternate';
+    altLink.hreflang = lang.code;
+    altLink.href = `${baseDomain}/${lang.code}${langRoutePath}`;
+    document.head.appendChild(altLink);
+  });
+  
+  // Add x-default alternate pointing to English
+  const xDefaultLink = document.createElement('link');
+  xDefaultLink.rel = 'alternate';
+  xDefaultLink.hreflang = 'x-default';
+  let enWatchPath = cleanRoutePath;
+  if (routePath === '/watch' && window.missavJState.activeVideo) {
+    const post = window.missavJState.activeVideo;
+    if (hasLocalizedSlugs && localizedSlugsMap['en']) {
+      enWatchPath = `/watch/${localizedSlugsMap['en']}-${post.id}`;
+    } else {
+      enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title);
+    }
+  }
+  xDefaultLink.href = `${baseDomain}/en${enWatchPath}`;
+  document.head.appendChild(xDefaultLink);
+}
+
 function navigate(urlPath) {
   const { lang, routePath } = parseUrl(urlPath);
   
@@ -390,6 +465,7 @@ function navigate(urlPath) {
   // Load and execute module script
   route(routeArg).then(() => {
     i18n.translateStaticUI();
+    updateSEOTags(matchedRoutePath, targetId);
   }).catch(err => {
     console.error(`Error loading route ${matchedRoutePath}:`, err);
     ui.showError(i18n.t('error_load_page', { message: err.message }));

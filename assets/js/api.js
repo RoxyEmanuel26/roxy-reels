@@ -8,6 +8,13 @@ const BASE = (window.location.protocol === 'file:' || window.location.hostname =
   ? 'https://server.apijav.com/wp-json/myvideo/v1'
   : '/api';
 
+function getActiveLang() {
+  const segments = window.location.pathname.replace(/^\//, '').split('/');
+  const lang = segments[0] || 'en';
+  const validLangs = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
+  return validLangs.includes(lang) ? lang : 'en';
+}
+
 const api = {
   /**
    * Mengambil daftar video (feed & listing) dengan query parameters.
@@ -16,7 +23,8 @@ const api = {
    */
   async getPosts(params = {}) {
     try {
-      const cleanParams = {};
+      const lang = getActiveLang();
+      const cleanParams = { lang };
       
       // Bersihkan parameter dari nilai kosong/null/undefined agar tidak mengotori query string
       Object.keys(params).forEach(key => {
@@ -59,8 +67,8 @@ const api = {
   async getPost(id) {
     try {
       if (!id) throw new Error('Post ID wajib disertakan');
-      
-      const res = await fetch(`${BASE}/posts/${id}`);
+      const lang = getActiveLang();
+      const res = await fetch(`${BASE}/posts/${id}?lang=${lang}`);
       
       if (!res.ok) {
         throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
@@ -81,8 +89,8 @@ const api = {
   async getPlayer(id) {
     try {
       if (!id) throw new Error('Player ID wajib disertakan');
-      
-      const res = await fetch(`${BASE}/player/${id}`);
+      const lang = getActiveLang();
+      const res = await fetch(`${BASE}/player/${id}?lang=${lang}`);
       
       if (!res.ok) {
         throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);
