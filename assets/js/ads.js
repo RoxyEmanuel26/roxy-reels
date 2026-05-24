@@ -6,6 +6,51 @@
 
 import ui from './ui.js';
 
+// ==========================================
+// HIJACK CLICK LISTENERS FOR POPUNDER BOUNDS
+// ==========================================
+// Membungkus seluruh event listener klik tingkat dokumen/window yang didaftarkan 
+// oleh script eksternal (Adsterra) agar HANYA berfungsi di halaman watch page.
+(function hijackExternalClickListeners() {
+  const originalAddDoc = document.addEventListener;
+  document.addEventListener = function(type, listener, options) {
+    if (type === 'click') {
+      const stack = new Error().stack || '';
+      // Jika dipanggil oleh script luar (tidak mengandung path file JS lokal kita)
+      if (stack && !stack.includes('/assets/js/')) {
+        const wrappedListener = function(event) {
+          // Hanya izinkan eksekusi popunder jika sedang berada di watch page (/watch)
+          if (window.missavJState && window.missavJState.currentPath === '/watch') {
+            return listener.call(this, event);
+          }
+          console.log('[Ads] Popunder click blocked because current path is not watch page:', window.missavJState?.currentPath);
+        };
+        wrappedListener._original = listener;
+        return originalAddDoc.call(this, type, wrappedListener, options);
+      }
+    }
+    return originalAddDoc.call(this, type, listener, options);
+  };
+
+  const originalAddWin = window.addEventListener;
+  window.addEventListener = function(type, listener, options) {
+    if (type === 'click') {
+      const stack = new Error().stack || '';
+      if (stack && !stack.includes('/assets/js/')) {
+        const wrappedListener = function(event) {
+          if (window.missavJState && window.missavJState.currentPath === '/watch') {
+            return listener.call(this, event);
+          }
+          console.log('[Ads] Popunder click blocked because current path is not watch page:', window.missavJState?.currentPath);
+        };
+        wrappedListener._original = listener;
+        return originalAddWin.call(this, type, wrappedListener, options);
+      }
+    }
+    return originalAddWin.call(this, type, listener, options);
+  };
+})();
+
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
   popunderEnabled: true,
@@ -151,6 +196,24 @@ export function initPlayerAdOverlay() {
 }
 
 /**
+ * Menginisialisasi pemuatan script popunder Adsterra secara dinamis di watch page
+ */
+export function initAdsterraPopunder() {
+  const cfg = window.missavJAdConfig;
+  if (!cfg.popunderEnabled) return;
+
+  // Hindari memuat ulang jika script sudah ada di DOM
+  if (document.getElementById('adsterra-popunder-script')) return;
+
+  console.log('[Ads] Loading Adsterra popunder script dynamically on watch page...');
+  const script = document.createElement('script');
+  script.id = 'adsterra-popunder-script';
+  script.src = 'https://glamournakedemployee.com/42/94/4e/42944edee184893535ddfd1e20e98e81.js';
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+/**
  * Memuat seluruh iklan halaman tontonan video secara paralel
  */
 export function loadWatchPageAds() {
@@ -165,6 +228,9 @@ export function loadWatchPageAds() {
   loadAdBanner('below-player-ad', belowPlayerKey, belowPlayerWidth, belowPlayerHeight);
   loadAdBanner('sidebar-ad', cfg.sidebarBannerKey, 300, 250);
   initPlayerAdOverlay();
+  
+  // Muat script popunder Adsterra secara dinamis
+  initAdsterraPopunder();
 }
 
 /**
@@ -186,5 +252,6 @@ window.missavJAds = {
   loadAdsterraBanner,
   initPlayerAdOverlay,
   loadWatchPageAds,
-  loadGlobalTopAd
+  loadGlobalTopAd,
+  initAdsterraPopunder
 };
