@@ -81,6 +81,9 @@ export async function init(id) {
             </div>
           </div>
         </div>
+
+        <!-- Banner Ad di bawah Video Player (Mendukung 728x90 / 300x250) -->
+        <div class="ad-placement below-player-ad" id="below-player-ad"></div>
         
         <!-- Metadata Video -->
         <div class="player-metadata-container">
@@ -148,8 +151,11 @@ export async function init(id) {
         </div>
       </div>
       
-      <!-- Kolom Kanan: Rekomendasi Video Terkait -->
+      <!-- Kolom Kanan: Rekomendasi Video Terkait & Iklan Sidebar -->
       <div class="player-sidebar-column">
+        <!-- Banner Iklan Sidebar (Mendukung 300x250) -->
+        <div class="ad-placement sidebar-ad" id="sidebar-ad"></div>
+
         <h3>${i18n.t('related_videos')}</h3>
         <div class="related-videos-list" id="related-videos-list">
           <!-- Diisi video rekomendasi -->
@@ -252,6 +258,11 @@ export async function init(id) {
 
     // 4. Catat Riwayat Tontonan Sesi (In-memory, hindari duplikasi rujukan)
     trackWatchHistory(post);
+
+    // 5. Muat Iklan Adsterra & Popunder Overlay
+    if (window.missavJAds && typeof window.missavJAds.loadWatchPageAds === 'function') {
+      window.missavJAds.loadWatchPageAds();
+    }
 
   } catch (error) {
     console.error('Failed to load player page:', error);

@@ -27,3 +27,4 @@ sitemaps/
 sitemap_index.xml
 sitemap_*.xml
 sitemap_index.xml.state
+.vercel

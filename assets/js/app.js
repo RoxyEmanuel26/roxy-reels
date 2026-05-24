@@ -7,6 +7,7 @@
 import ui from './ui.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
 import i18n from './i18n.js';
+import './ads.js';
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {
@@ -491,6 +492,19 @@ function navigate(urlPath) {
   const prevPath = window.missavJState.currentPath;
   window.missavJState.currentPath = matchedRoutePath;
 
+  // Manage Global Top Ad Visibility and Loading
+  const globalTopAd = document.getElementById('global-top-ad');
+  if (globalTopAd) {
+    if (matchedRoutePath === '/watch') {
+      globalTopAd.style.display = 'none';
+    } else {
+      globalTopAd.style.display = '';
+      if (window.missavJAds && typeof window.missavJAds.loadGlobalTopAd === 'function') {
+        window.missavJAds.loadGlobalTopAd();
+      }
+    }
+  }
+
   // Extract ID using our robust Unicode-safe extractor helper
   const targetId = window.missavJGetCurrentWatchId();
 
@@ -577,6 +591,10 @@ function navigate(urlPath) {
         window.missavJState.isFloating = true;
         ui.showToast(i18n.t('playing_floating_player'));
       }
+      
+      // Hide player overlay in floating PiP mode to avoid click blockage
+      const adOverlay = document.getElementById('player-ad-overlay');
+      if (adOverlay) adOverlay.classList.add('hidden');
     }
   }
 
@@ -737,6 +755,7 @@ function setupFloatingPlayerDOM() {
     </div>
     <div id="floating-player-body" class="floating-player-body">
       <div class="player-iframe-container" id="player-container"></div>
+      <div id="player-ad-overlay" class="player-ad-overlay"></div>
     </div>
   `;
   document.body.appendChild(float);
