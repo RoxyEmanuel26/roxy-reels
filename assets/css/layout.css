@@ -568,12 +568,15 @@ body.sidebar-collapsed-layout .main-content {
 
 /* Global Touch Viewports (Mobile & Tablet <= 1023px) UI/UX Enhancements */
 @media (max-width: 1023px) {
-  /* Lock text clamping to prevent layout jumping/popping when touched */
-  .all-actors-grid .actor-browse-card:hover .actor-browse-name,
-  .all-categories-grid .category-browse-card:hover .category-browse-name {
-    -webkit-line-clamp: 2 !important;
+  /* Force single-line text ellipsis on mobile & tablet for long names (e.g. "1St Person: Rino, The...") */
+  .all-actors-grid .actor-browse-name,
+  .all-categories-grid .category-browse-name {
+    white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
   }
 
   /* High-fidelity haptic-like active tap micro-interactions for cards */
