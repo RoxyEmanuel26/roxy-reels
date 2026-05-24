@@ -23,3 +23,7 @@ dist/
 out/
 build/
 generate*
+sitemaps/
+sitemap_index.xml
+sitemap_*.xml
+sitemap_index.xml.state
