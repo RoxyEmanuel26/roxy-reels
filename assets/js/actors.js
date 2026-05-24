@@ -1,40 +1,17 @@
 /**
- * MISSAV-J — Actors/Stars Taxonomy Page
- * Mengelola penelusuran aktris JAV terpopuler, filter pencarian instan lokal,
- * dan perutean dinamis ke feed video berbasis API.
+ * MISSAV-J — All Actors Browse Page
+ * Full taxonomy grid for browsing all 7376 JAV actors.
+ * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
 import ui from './ui.js';
 import i18n from './i18n.js';
-
-// Daftar Aktris JAV populer terkurasi dengan nama kanji & inisial premium
-const POPULAR_ACTORS = [
-  { name: 'Eimi Fukada', native: '深田えいみ', letter: 'E' },
-  { name: 'Yua Mikami', native: '三上悠亜', letter: 'Y' },
-  { name: 'Arina Hashimoto', native: '橋本ありな', letter: 'A' },
-  { name: 'Kana Momonogi', native: '桃乃木かな', letter: 'K' },
-  { name: 'Remu Suzumori', native: '涼森れむ', letter: 'R' },
-  { name: 'Saeko Matsushita', native: '松下紗栄子', letter: 'S' },
-  { name: 'Minami Hatsukawa', native: '初川みなみ', letter: 'M' },
-  { name: 'Karen Kanon', native: '花音かれん', letter: 'K' },
-  { name: 'Yura Kano', native: '架乃ゆら', letter: 'Y' },
-  { name: 'Julia', native: 'ジュリア', letter: 'J' },
-  { name: 'Shoko Takahashi', native: '高橋しょう子', letter: 'S' },
-  { name: 'Tsukasa Aoi', native: '葵つかさ', letter: 'T' },
-  { name: 'Ai Uehara', native: '上原亜衣', letter: 'A' },
-  { name: 'Maria Ozawa', native: '小沢マリア', letter: 'M' },
-  { name: 'Sora Aoi', native: '蒼井そら', letter: 'S' },
-  { name: 'Kano Yura', native: '架乃ゆら', letter: 'K' },
-  { name: 'Eimi Fukada', native: '深田えいみ', letter: 'F' }
-];
-
-// Hilangkan duplikasi nama jika ada
-const UNIQUE_ACTORS = Array.from(new Map(POPULAR_ACTORS.map(item => [item.name, item])).values());
+import { ALL_ACTORS } from './actors_data.js?v=1.0.7';
 
 /**
- * Render grid kartu aktris berdasarkan data yang disaring
- * @param {Array} actorsList - Daftar aktris yang akan dirender
- * @param {string} [searchQuery=''] - Query pencarian aktif untuk render tombol fallback
+ * Render actor grid cards based on filtered data
+ * @param {Array} actorsList - List of actors to render
+ * @param {string} [searchQuery=''] - Active search query for empty state
  */
 function renderActorsGrid(actorsList, searchQuery = '') {
   const grid = document.getElementById('actors-grid');
@@ -53,7 +30,7 @@ function renderActorsGrid(actorsList, searchQuery = '') {
       </div>
     `;
 
-    // Pasang handler tombol pencarian server
+    // Hook search fallback button to API route
     const apiBtn = document.getElementById('search-api-actor-btn');
     if (apiBtn) {
       apiBtn.addEventListener('click', () => {
@@ -64,12 +41,11 @@ function renderActorsGrid(actorsList, searchQuery = '') {
     return;
   }
 
-  // Render kartu aktris dengan staggered animation delay
   grid.innerHTML = actorsList.map((actor, idx) => {
     const safeName = ui.escapeHTML(actor.name);
     const safeNative = ui.escapeHTML(actor.native);
-    const safeLetter = ui.escapeHTML(actor.letter || actor.name.charAt(0));
-    const animationStyle = `style="animation-delay: calc(${idx % 16} * 40ms);"`;
+    const safeLetter = ui.escapeHTML(actor.letter || (actor.name ? actor.name.charAt(0).toUpperCase() : '#'));
+    const animationStyle = `style="animation-delay: calc(${idx % 16} * 15ms);"`;
 
     return `
       <div class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
@@ -84,21 +60,25 @@ function renderActorsGrid(actorsList, searchQuery = '') {
 }
 
 /**
- * Inisialisasi halaman Aktor
+ * Initialize the All Actors browse page
  */
 export function init() {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
 
-  // 1. Tulis template layout utama Aktor
+  const alphabet = ['ALL', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+
+  const alphabetHtml = alphabet.map(letter => {
+    return `<button class="az-letter-btn ${letter === 'ALL' ? 'active' : ''}" data-letter="${letter}">${letter}</button>`;
+  }).join('');
+
   mainApp.innerHTML = `
     <div class="taxonomy-browse-header">
       <div>
-        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('actors_browse_title')}</h2>
-        <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('actors_browse_desc')}</p>
+        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('actors_browse_title_all') || 'All Actors'}</h2>
+        <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('actors_browse_desc_all') || 'Browse and search all JAV actresses alphabetically'}</p>
       </div>
       
-      <!-- Input pencarian taksonomi -->
       <div class="taxonomy-search-wrapper">
         <input 
           type="text" 
@@ -111,35 +91,89 @@ export function init() {
         <span class="taxonomy-search-icon">🔍</span>
       </div>
     </div>
+
+    <!-- A-Z Alphabetical Index Filter Bar -->
+    <div class="az-filter-bar" id="az-filter-bar">
+      ${alphabetHtml}
+    </div>
     
-    <!-- Grid Aktris -->
     <div class="actors-grid" id="actors-grid"></div>
   `;
 
-  // 2. Render list aktris awal
-  renderActorsGrid(UNIQUE_ACTORS);
+  // Render initial list (first 250 actors for performance limit on initial mount, ALL is huge!)
+  // It is best to slice the initial mount to the first 250 unless filtered, to keep DOM rendering instant.
+  renderActorsGrid(ALL_ACTORS.slice(0, 250));
 
-  // 3. Pasang search listener untuk filter instan lokal
   const searchInput = document.getElementById('actor-search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.trim().toLowerCase();
-      
-      if (!query) {
-        renderActorsGrid(UNIQUE_ACTORS);
-        return;
-      }
+  const azBar = document.getElementById('az-filter-bar');
+  let activeLetter = 'ALL';
 
-      const filtered = UNIQUE_ACTORS.filter(actor => 
-        actor.name.toLowerCase().includes(query) || 
-        actor.native.toLowerCase().includes(query)
-      );
-      
-      renderActorsGrid(filtered, e.target.value.trim());
+  function setActiveLetter(letter) {
+    activeLetter = letter;
+    if (azBar) {
+      const buttons = azBar.querySelectorAll('.az-letter-btn');
+      buttons.forEach(btn => {
+        if (btn.dataset.letter === letter) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  // Alphabetical Index Click Handler
+  if (azBar) {
+    azBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.az-letter-btn');
+      if (!btn) return;
+
+      const letter = btn.dataset.letter;
+      setActiveLetter(letter);
+
+      // Reset search bar when letter filter is clicked
+      if (searchInput) searchInput.value = '';
+
+      if (letter === 'ALL') {
+        // Show first 250 on full list to keep browser fast, user can search for specific names
+        renderActorsGrid(ALL_ACTORS.slice(0, 250));
+      } else {
+        const filtered = ALL_ACTORS.filter(actor => {
+          if (letter === '#') {
+            return actor.letter === '#';
+          } else {
+            return actor.letter === letter;
+          }
+        });
+        renderActorsGrid(filtered);
+      }
     });
   }
 
-  // 4. Pasang click handler delegasi pada grid aktris
+  // Live Local Search Input Listener
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim().toLowerCase();
+
+      // Typing in the search resets active A-Z letter to "ALL"
+      setActiveLetter('ALL');
+
+      if (!query) {
+        renderActorsGrid(ALL_ACTORS.slice(0, 250));
+        return;
+      }
+
+      const filtered = ALL_ACTORS.filter(actor => {
+        return actor.name.toLowerCase().includes(query) ||
+               actor.native.toLowerCase().includes(query);
+      });
+
+      // Limit search results to 200 items for layout performance
+      renderActorsGrid(filtered.slice(0, 200), e.target.value.trim());
+    });
+  }
+
+  // Click delegation for actor cards
   const grid = document.getElementById('actors-grid');
   if (grid) {
     grid.addEventListener('click', (e) => {

@@ -158,6 +158,12 @@ const DICTIONARY = {
   actors_browse_desc: {
     en: 'Discover exclusive video collections based on your favorite actress', id: 'Temukan koleksi video eksklusif berdasarkan bintang aktris favorit Anda', 'zh-TW': '根據您喜愛的演員發現專屬影片系列', 'zh-CN': '根据您喜爱的演员发现专属影片系列', ja: 'お気に入りの女優から限定動画コレクションを見つける', ko: '좋아하는 배우의 독점 비디오 컬렉션을 찾아보세요', ms: 'Cari koleksi video eksklusif berdasarkan pelakon kegemaran anda', th: 'ค้นพบคอลเลกชันวิดีโอพิเศษตามนักแสดงหญิงที่คุณชื่นชอบ', de: 'Entdecken Sie exklusive Videosammlungen basierend auf Ihrer Lieblingsschauspielerin', fr: 'Découvrez des collections de vidéos exclusives basées sur votre actrice préférée', vi: 'Khám phá bộ sưu tập video độc quyền theo diễn viên yêu thích của bạn', fil: 'Tuklasin ang mga eksklusibong koleksyon ng video batay sa inyong aktris', pt: 'Descubra coleções de vídeos exclusivas baseadas na sua atriz favorita'
   },
+  actors_browse_title_all: {
+    en: '🎭 All JAV Actresses', id: '🎭 Semua Aktris JAV', 'zh-TW': '🎭 所有 JAV 女優', 'zh-CN': '🎭 所有 JAV 女优', ja: '🎭 すべて door JAV 女優', ko: '🎭 모든 JAV 여배우', ms: '🎭 Semua Aktris JAV', th: '🎭 นักแสดงหญิง JAV ทั้งหมด', de: '🎭 Alle JAV-Schauspielerinnen', fr: '🎭 Toutes les actrices de JAV', vi: '🎭 Tất cả diễn viên JAV', fil: '🎭 Lahat ng JAV Actresses', pt: '🎭 Todas as atrizes de JAV'
+  },
+  actors_browse_desc_all: {
+    en: 'Browse and search all available actresses alphabetically', id: 'Telusuri dan cari semua aktris yang tersedia berdasarkan urutan abjad', 'zh-TW': '按字母順序瀏覽並搜尋所有可用演員', 'zh-CN': '按字母顺序浏览并搜寻所有可用演员', ja: 'すべての女優をアルファベット順に閲覧・検索', ko: '알파벳순으로 모든 배우 찾기', ms: 'Teroka dan cari semua pelakon yang tersedia mengikut abjad', th: 'เรียกดูและค้นหานักแสดงหญิงทั้งหมดตามตัวอักษร', de: 'Alle verfügbaren Schauspielerinnen alphabetisch durchsuchen', fr: 'Parcourir et rechercher toutes les actrices disponibles par ordre alphabétique', vi: 'Duyệt và tìm kiếm tất cả diễn viên theo thứ tự bảng chữ cái', fil: 'I-browse at maghanap ng lahat ng magagamit na aktres', pt: 'Navegue e pesquise por todas as atrizes disponíveis em ordem alfabética'
+  },
   actor_search_placeholder: {
     en: 'Search actress name...', id: 'Cari nama aktris...', 'zh-TW': '搜尋演員姓名...', 'zh-CN': '搜索演员姓名...', ja: '女優名で検索...', ko: '여배우 이름 검색...', ms: 'Cari nama pelakon...', th: 'ค้นหาชื่อนักแสดง...', de: 'Schauspielerinnen suchen...', fr: 'Rechercher un nom d\'actrice...', vi: 'Tìm tên diễn viên...', fil: 'Maghanap ng aktris...', pt: 'Pesquisar atriz...'
   },
