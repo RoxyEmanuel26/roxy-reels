@@ -480,30 +480,111 @@ function setupWatchLaterLogic(post) {
 }
 
 /**
- * Mengambil rekomendasi video terkait berdasarkan kategori pertama
+ * Mengekstrak kata kunci bersih dari judul video untuk pencarian (menghindari tanda kurung & stop words umum)
+ */
+function extractTitleKeywords(title) {
+  if (!title) return '';
+  // Hapus blok kurung siku [...] dan kurung biasa (...)
+  let clean = title.replace(/\[[^\]]*\]/g, ' ').replace(/\([^)]*\)/g, ' ');
+  // Hapus karakter khusus
+  clean = clean.replace(/[^a-zA-Z0-9\s]/g, ' ');
+  
+  // Daftar kata-kata tidak bermakna (stop words) untuk disaring
+  const stopWords = new Set([
+    'the', 'and', 'with', 'for', 'that', 'this', 'from', 'you', 'are', 'was', 'were', 
+    'has', 'have', 'had', 'she', 'her', 'him', 'his', 'they', 'them', 'who', 'whom', 
+    'which', 'what', 'why', 'how', 'slut', 'girl', 'beautiful', 'legs', 'breasts', 
+    'knee', 'highs', 'senior', 'junior', 'friends', 'gals', 'dan', 'yang', 'untuk', 
+    'dengan', 'dari', 'pada', 'atau', 'ini', 'itu', 'di', 'ke', 'terbaru', 'sub', 
+    'indo', 'uncensored', 'censored'
+  ]);
+  
+  const words = clean.split(/\s+/)
+    .map(w => w.trim())
+    .filter(w => w.length >= 3 && !stopWords.has(w.toLowerCase()));
+  
+  // Ambil maksimal 3 kata kunci penting pertama
+  return words.slice(0, 3).join(' ');
+}
+
+/**
+ * Mengambil rekomendasi video terkait secara cerdas berdasarkan kode, judul, dan tag
  */
 export async function loadRelatedVideos(post) {
   const relatedList = document.getElementById('related-videos-list');
   if (!relatedList) return;
 
   try {
-    const firstCategory = post.categories && post.categories[0] ? post.categories[0] : '';
+    const promises = [];
+
+    // 1. Pencarian berdasarkan Kode Video atau Kata Kunci Judul
+    if (post.code && post.code.trim()) {
+      promises.push(api.getPosts({ search: post.code.trim(), per_page: 8 }));
+    } else {
+      const keywords = extractTitleKeywords(post.title);
+      if (keywords) {
+        promises.push(api.getPosts({ search: keywords, per_page: 8 }));
+      }
+    }
+
+    // 2. Pencarian berdasarkan Tag Utama
+    if (post.tags && post.tags.length > 0) {
+      promises.push(api.getPosts({ tag: post.tags[0], per_page: 8 }));
+    }
+
+    // 3. Pencarian berdasarkan Tag Kedua atau Kategori Pertama sebagai Fallback
+    if (post.tags && post.tags.length > 1) {
+      promises.push(api.getPosts({ tag: post.tags[1], per_page: 8 }));
+    } else if (post.categories && post.categories.length > 0) {
+      promises.push(api.getPosts({ category: post.categories[0], per_page: 8 }));
+    }
+
+    // Jalankan semua query secara paralel untuk efisiensi tinggi
+    const results = await Promise.allSettled(promises);
     
-    const data = await api.getPosts({
-      category: firstCategory,
-      orderby: 'views',
-      order: 'DESC',
-      per_page: 12
+    // Gabungkan hasil dari semua query yang berhasil
+    let allPosts = [];
+    results.forEach(res => {
+      if (res.status === 'fulfilled' && res.value && Array.isArray(res.value.posts)) {
+        allPosts = allPosts.concat(res.value.posts);
+      }
     });
 
-    const filteredPosts = data.posts.filter(p => p.id !== post.id);
+    // Filter out video yang sedang ditonton
+    let filteredPosts = allPosts.filter(p => String(p.id) !== String(post.id));
+
+    // Deduplikasi posts berdasarkan ID unik
+    const seenIds = new Set();
+    filteredPosts = filteredPosts.filter(p => {
+      if (seenIds.has(p.id)) return false;
+      seenIds.add(p.id);
+      return true;
+    });
+
+    // Jika hasil kosong, coba fallback ke kategori pertama
+    if (filteredPosts.length === 0 && post.categories && post.categories[0]) {
+      try {
+        const fallbackData = await api.getPosts({
+          category: post.categories[0],
+          orderby: 'views',
+          order: 'DESC',
+          per_page: 12
+        });
+        filteredPosts = fallbackData.posts.filter(p => String(p.id) !== String(post.id));
+      } catch (err) {
+        console.warn('Fallback related videos failed:', err);
+      }
+    }
 
     if (filteredPosts.length === 0) {
       relatedList.innerHTML = `<span class="text-faint text-center py-4">${i18n.t('no_related_videos')}</span>`;
       return;
     }
 
-    relatedList.innerHTML = filteredPosts
+    // Batasi maksimal 12 video rekomendasi
+    const finalPosts = filteredPosts.slice(0, 12);
+
+    relatedList.innerHTML = finalPosts
       .map((p, idx) => renderRelatedRowCard(p, idx))
       .join('');
     
