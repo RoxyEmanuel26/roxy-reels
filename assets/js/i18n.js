@@ -723,5 +723,156 @@ export function translateStaticUI() {
   }
 }
 
-window.i18n = { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle };
-export default { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle };
+// Persistent localStorage cache for translated video titles
+const FULL_TRANSLATION_CACHE_KEY = 'missav_full_title_translations_v1';
+let fullTitleTranslations = {};
+try {
+  const cached = localStorage.getItem(FULL_TRANSLATION_CACHE_KEY);
+  if (cached) {
+    fullTitleTranslations = JSON.parse(cached);
+  }
+} catch (e) {
+  console.error('Error loading translation cache:', e);
+}
+
+function saveFullTitleTranslations() {
+  try {
+    localStorage.setItem(FULL_TRANSLATION_CACHE_KEY, JSON.stringify(fullTitleTranslations));
+  } catch (e) {
+    // If local storage is full, reset cache to prevent fatal errors
+    console.warn('Translation cache quota exceeded, resetting cache:', e);
+    localStorage.removeItem(FULL_TRANSLATION_CACHE_KEY);
+    fullTitleTranslations = {};
+  }
+}
+
+/**
+ * Translates English text to a target language asynchronously using a free Google Translate API.
+ * Uses localStorage to cache translations for speed and rate-limit prevention.
+ */
+export async function translateText(text, targetLang) {
+  if (!text) return '';
+  if (!targetLang || targetLang === 'en') return text;
+
+  // Clean raw HTML entities if any slipped through
+  const cleanedText = decodeHTMLEntities(text).trim();
+  if (!cleanedText) return '';
+
+  const cacheKey = `${targetLang}:${cleanedText}`;
+  if (fullTitleTranslations[cacheKey]) {
+    return fullTitleTranslations[cacheKey];
+  }
+
+  // Undocumented client=gtx endpoint for free keyless translations
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(cleanedText)}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    if (data && data[0]) {
+      const translated = data[0].map(x => x[0]).join('');
+      fullTitleTranslations[cacheKey] = translated;
+      saveFullTitleTranslations();
+      return translated;
+    }
+  } catch (e) {
+    console.error(`Failed to translate text to "${targetLang}":`, e);
+  }
+  return text; // Return original on error
+}
+
+/**
+ * Scans the active page for all elements with `data-original-title` and updates their text content.
+ */
+export function translatePageTitles() {
+  const lang = getLang();
+  
+  // Find all elements displaying video titles
+  const titleElements = document.querySelectorAll('[data-original-title]');
+  titleElements.forEach(async (el) => {
+    const original = el.getAttribute('data-original-title');
+    if (!original) return;
+
+    // Handle reverting to English if target language is English
+    if (lang === 'en') {
+      const defaultTitle = translateVideoTitle(original);
+      if (el.textContent !== defaultTitle) {
+        el.textContent = defaultTitle;
+        if (el.hasAttribute('title')) el.setAttribute('title', defaultTitle);
+      }
+      return;
+    }
+
+    // Mark element as translating to prevent duplicate triggers
+    if (el.dataset.translating === 'true') return;
+    el.dataset.translating = 'true';
+
+    try {
+      const translated = await translateText(original, lang);
+      if (translated && el.getAttribute('data-original-title') === original) {
+        el.textContent = translated;
+        if (el.hasAttribute('title')) {
+          el.setAttribute('title', translated);
+        }
+      }
+    } catch (err) {
+      console.error('Error translating title element:', err);
+    } finally {
+      delete el.dataset.translating;
+    }
+  });
+}
+
+// Global MutationObserver instance to auto-translate titles as they render/append
+let translationObserver = null;
+
+/**
+ * Initializes a MutationObserver on #app-content to automatically translate titles
+ * loaded dynamically or appended by infinite scroll.
+ */
+export function initTranslationObserver() {
+  if (translationObserver) {
+    translationObserver.disconnect();
+  }
+
+  const appContent = document.getElementById('app-content');
+  if (!appContent) return;
+
+  // Scan immediately on initialization
+  translatePageTitles();
+
+  translationObserver = new MutationObserver((mutations) => {
+    let hasNewTitles = false;
+    for (const mutation of mutations) {
+      if (mutation.type === 'childList') {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.querySelector('[data-original-title]') || node.hasAttribute('data-original-title')) {
+              hasNewTitles = true;
+              break;
+            }
+          }
+        }
+      } else if (mutation.type === 'attributes' && mutation.attributeName === 'data-original-title') {
+        hasNewTitles = true;
+      }
+      if (hasNewTitles) break;
+    }
+
+    if (hasNewTitles) {
+      // Debounce slightly to allow the DOM to settle
+      clearTimeout(window.missavJTranslateTimeout);
+      window.missavJTranslateTimeout = setTimeout(translatePageTitles, 100);
+    }
+  });
+
+  translationObserver.observe(appContent, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-original-title']
+  });
+}
+
+window.i18n = { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle, translateText, translatePageTitles, initTranslationObserver };
+export default { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle, translateText, translatePageTitles, initTranslationObserver };

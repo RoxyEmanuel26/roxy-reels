@@ -147,7 +147,7 @@ export function renderVideoCard(post, index = 0) {
         <div class="card-hover-overlay">▶ ${i18n.t('play_video')}</div>
       </div>
       <div class="card-info">
-        <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
+        <h3 class="card-title" title="${safeTitle}" data-original-title="${ui.escapeHTML(originalTitle)}">${safeTitle}</h3>
         <div class="card-meta">
           ${studioMarkup}
           <span class="card-dot">•</span>

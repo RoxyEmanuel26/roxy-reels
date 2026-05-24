@@ -270,7 +270,10 @@ function navigate(urlPath) {
     // Re-translate the player page dynamic text using the stored post data
     const post = window.missavJState.activeVideo;
     const titleEl = document.getElementById('player-title');
-    if (titleEl) titleEl.textContent = i18n.translateVideoTitle(post.title);
+    if (titleEl) {
+      titleEl.textContent = i18n.translateVideoTitle(post.title);
+      titleEl.setAttribute('data-original-title', post.title || '');
+    }
     document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
     
     // Re-translate player button labels
@@ -838,6 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   i18n.translateStaticUI();
+  i18n.initTranslationObserver();
   
   // Register browser popstate triggers
   window.addEventListener('popstate', () => {

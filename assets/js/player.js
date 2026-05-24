@@ -295,7 +295,10 @@ export function renderPostMeta(post, id) {
 
   // Sanitasi & render Title & views
   const translatedTitle = i18n.translateVideoTitle(post.title);
-  if (titleEl) titleEl.textContent = translatedTitle;
+  if (titleEl) {
+    titleEl.textContent = translatedTitle;
+    titleEl.setAttribute('data-original-title', post.title || '');
+  }
   
   if (viewsEl) {
     const viewsCount = post.views ? parseInt(post.views, 10) : 0;
@@ -817,7 +820,7 @@ function renderRelatedRowCard(post, index) {
         ${hdBadge}
       </div>
       <div class="related-info">
-        <h4 class="related-title" title="${safeTitle}">${safeTitle}</h4>
+        <h4 class="related-title" title="${safeTitle}" data-original-title="${ui.escapeHTML(post.title || '')}">${safeTitle}</h4>
         <span class="related-studio">${safeStudio}</span>
         <div class="related-meta-row">
           <span class="related-views">${viewsFormatted} ${i18n.t('views')}</span>
