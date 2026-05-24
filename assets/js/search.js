@@ -291,7 +291,9 @@ function bindGridClicks(grid) {
     const card = e.target.closest('.video-card');
     if (card && !card.classList.contains('skeleton-card')) {
       const postId = card.dataset.id;
-      window.missavJNavigate(`/watch?id=${postId}`);
+      const code = card.dataset.code || '';
+      const title = card.dataset.title || '';
+      window.missavJNavigateToWatch(postId, code, title);
     }
   });
 }

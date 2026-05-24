@@ -131,7 +131,7 @@ export function renderVideoCard(post, index = 0) {
   const safeEmbedUrl = ui.escapeHTML(rawEmbedUrl);
 
   return `
-    <article class="video-card fadeInUp" data-id="${safeId}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+    <article class="video-card fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
       <div class="card-thumb">
         <img 
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
@@ -503,7 +503,9 @@ function bindGridClicks(grid) {
     const card = e.target.closest('.video-card');
     if (card && !card.classList.contains('skeleton-card')) {
       const postId = card.dataset.id;
-      window.missavJNavigate(`/watch?id=${postId}`);
+      const code = card.dataset.code || '';
+      const title = card.dataset.title || '';
+      window.missavJNavigateToWatch(postId, code, title);
     }
   });
 }

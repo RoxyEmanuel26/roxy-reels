@@ -234,7 +234,11 @@ export async function init(id) {
         }
       }
       
-      if (window.missavJState.currentPath === '/watch' && String(new URLSearchParams(window.location.search).get('id')) === String(id)) {
+      const currentWatchId = typeof window.missavJGetCurrentWatchId === 'function'
+        ? window.missavJGetCurrentWatchId()
+        : new URLSearchParams(window.location.search).get('id');
+
+      if (window.missavJState.currentPath === '/watch' && String(currentWatchId) === String(id)) {
         document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
         renderPostMeta(post, id);
         loadRelatedVideos(post);
@@ -796,7 +800,7 @@ function renderRelatedRowCard(post, index) {
   const animationStyle = `style="animation-delay: calc(${index} * 40ms);"`;
 
   return `
-    <div class="related-video-card fadeInUp" data-id="${safeId}" ${animationStyle}>
+    <div class="related-video-card fadeInUp" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" ${animationStyle}>
       <div class="related-thumb">
         <img 
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
@@ -828,7 +832,9 @@ function bindRelatedClicks(list) {
     const card = e.target.closest('.related-video-card');
     if (card) {
       const postId = card.dataset.id;
-      window.missavJNavigate(`/watch?id=${postId}`);
+      const code = card.dataset.code || '';
+      const title = card.dataset.title || '';
+      window.missavJNavigateToWatch(postId, code, title);
     }
   });
 }

@@ -24,6 +24,61 @@ function getParam(name) {
 }
 
 /**
+ * Converts text into a clean Unicode-safe URL slug.
+ * Smartly preserves letters across different languages (CJK, Cyrillic, etc.) and collapses special characters.
+ */
+export function slugify(text) {
+  if (!text) return '';
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[\s\-_]+/g, '-') // Replace spaces, underscores, hyphens with a single hyphen
+    .replace(/[^\p{L}\p{N}\-]/gu, '') // Keep Unicode letters, numbers, and hyphens (retains CJK characters)
+    .replace(/-+/g, '-') // Collapse multiple consecutive hyphens
+    .replace(/^-+/, '') // Trim leading hyphen
+    .replace(/-+$/, ''); // Trim trailing hyphen
+}
+
+// Global helpers for generating and navigating watch URLs using clean slugs
+window.missavJGetWatchUrl = function(id, code, title) {
+  const cleanCode = slugify(code || '');
+  const cleanTitle = slugify(title || '');
+  let slug = '';
+  if (cleanCode && cleanTitle) {
+    slug = `${cleanCode}-${cleanTitle}`;
+  } else if (cleanCode) {
+    slug = cleanCode;
+  } else if (cleanTitle) {
+    slug = cleanTitle;
+  }
+  if (slug.length > 100) {
+    slug = slug.substring(0, 100);
+  }
+  return slug ? `/watch/${slug}-${id}` : `/watch/${id}`;
+};
+
+window.missavJNavigateToWatch = function(id, code, title) {
+  const watchPath = window.missavJGetWatchUrl(id, code, title);
+  window.missavJNavigate(watchPath);
+};
+
+window.missavJGetCurrentWatchId = function() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const qId = searchParams.get('id');
+  if (qId) return qId;
+  
+  const path = window.location.pathname;
+  const match = path.match(/\/watch\/.*-(\d+)$/);
+  if (match) return match[1];
+  
+  const fallbackMatch = path.match(/\/watch\/(\d+)$/);
+  if (fallbackMatch) return fallbackMatch[1];
+  
+  return null;
+};
+
+/**
  * Parses URL path segments to extract active language subpath prefix and SPA internal route (Safe Segment parsing)
  * @param {string} urlPath - window.location.pathname
  * @returns {{lang: string, routePath: string}} Separated segments
@@ -122,7 +177,9 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
       const card = e.target.closest('.video-card');
       if (card && !card.classList.contains('skeleton-card')) {
         const postId = card.dataset.id;
-        window.missavJNavigate(`/watch?id=${postId}`);
+        const code = card.dataset.code || '';
+        const title = card.dataset.title || '';
+        window.missavJNavigateToWatch(postId, code, title);
       }
     });
 
@@ -138,8 +195,8 @@ const routes = {
   '/':          () => import('./feed.js?v=1.1.3').then(m => m.init()),
   '/trending':  () => import('./trending.js?v=1.1.3').then(m => m.init()),
   '/recent':    () => import('./recent.js?v=1.1.3').then(m => m.init()),
-  '/search':    () => import('./search.js?v=1.1.3').then(m => m.init(getParam('q'))),
-  '/watch':     () => import('./player.js?v=1.1.4').then(m => m.init(getParam('id'))),
+  '/search':    (q) => import('./search.js?v=1.1.3').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=1.1.4').then(m => m.init(id || window.missavJGetCurrentWatchId())),
   '/category':  () => import('./feed.js?v=1.1.3').then(m => m.init({ category: getParam('name') })),
   '/actor':     () => import('./feed.js?v=1.1.3').then(m => m.init({ actor: getParam('name') })),
   '/studio':    () => import('./feed.js?v=1.1.3').then(m => m.init({ studio: getParam('name') })),
@@ -156,10 +213,6 @@ const routes = {
   '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')))
 };
 
-/**
- * Main relative page lifecycle trigger (includes picture-in-picture DOM transplantation logic)
- * @param {string} urlPath - window.location.pathname + window.location.search
- */
 function navigate(urlPath) {
   const { lang, routePath } = parseUrl(urlPath);
   
@@ -168,13 +221,21 @@ function navigate(urlPath) {
     i18n.setLang(lang, false); // Set active language segment without invoking popstate routing loops
   }
 
+  // Normalize path slug watch routes (e.g. /watch/abp-123-sakura-imai-82597 -> /watch)
+  let matchedRoutePath = routePath;
+  if (routePath.startsWith('/watch/')) {
+    matchedRoutePath = '/watch';
+  }
+
   const prevPath = window.missavJState.currentPath;
-  window.missavJState.currentPath = routePath;
+  window.missavJState.currentPath = matchedRoutePath;
+
+  // Extract ID using our robust Unicode-safe extractor helper
+  const targetId = window.missavJGetCurrentWatchId();
 
   // SPECIAL CASE: Language changed while on watch page with the same video.
   // Do NOT destroy and reload the player — just re-translate all visible UI text in-place.
-  const targetId = getParam('id');
-  if (prevPath === '/watch' && routePath === '/watch' &&
+  if (prevPath === '/watch' && matchedRoutePath === '/watch' &&
       window.missavJState.activeVideo &&
       String(window.missavJState.activeVideo.id) === String(targetId)) {
     
@@ -211,7 +272,7 @@ function navigate(urlPath) {
   }
 
   // 1. LEAVE WATCH: Switch player container to floating mode (PiP)
-  if (prevPath === '/watch' && routePath !== '/watch') {
+  if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     const floatWrapper = document.getElementById('floating-player-wrapper');
     const floatTitle = document.getElementById('floating-player-title');
     
@@ -256,7 +317,7 @@ function navigate(urlPath) {
   }
 
   // 2. ENTER WATCH: If target watch ID matches floating ID, switch player container to theater mode
-  if (routePath === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
+  if (matchedRoutePath === '/watch' && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(targetId)) {
     const floatWrapper = document.getElementById('floating-player-wrapper');
     if (floatWrapper) {
       floatWrapper.classList.remove('mode-floating');
@@ -272,12 +333,12 @@ function navigate(urlPath) {
     window.missavJState.isFloating = false;
   } 
   // If launching a watch page of a DIFFERENT video, dispose of active floating session
-  else if (routePath === '/watch' && window.missavJState.isFloating) {
+  else if (matchedRoutePath === '/watch' && window.missavJState.isFloating) {
     closeFloatingPlayer();
   }
 
   // Retrieve routing module or default back to home feed
-  const route = routes[routePath] || routes['/'];
+  const route = routes[matchedRoutePath] || routes['/'];
   
   const mainApp = document.getElementById('app-content');
   if (mainApp) {
@@ -288,16 +349,21 @@ function navigate(urlPath) {
   ui.showSkeletons(8);
   
   // Highlight active sidebar navigation indicators (pass full path + query for accurate matching)
-  highlightActiveSidebarItem(routePath, window.location.search);
+  highlightActiveSidebarItem(matchedRoutePath, window.location.search);
   
   // Scroll instantly to page top bounds
   window.scrollTo({ top: 0, behavior: 'instant' });
 
+  // Determine router initialization arguments dynamically
+  let routeArg = undefined;
+  if (matchedRoutePath === '/search') routeArg = getParam('q');
+  if (matchedRoutePath === '/watch') routeArg = targetId;
+
   // Load and execute module script
-  route().then(() => {
+  route(routeArg).then(() => {
     i18n.translateStaticUI();
   }).catch(err => {
-    console.error(`Error loading route ${routePath}:`, err);
+    console.error(`Error loading route ${matchedRoutePath}:`, err);
     ui.showError(i18n.t('error_load_page', { message: err.message }));
   });
 }
@@ -410,10 +476,10 @@ function setupFloatingPlayerDOM() {
   `;
   document.body.appendChild(float);
 
-  // Click Maximize: Re-navigate to the full-size watch layout
   document.getElementById('floating-player-maximize').addEventListener('click', () => {
     if (window.missavJState.activeVideo) {
-      window.missavJNavigate(`/watch?id=${window.missavJState.activeVideo.id}`);
+      const post = window.missavJState.activeVideo;
+      window.missavJNavigateToWatch(post.id, post.code, post.title);
     }
   });
 
