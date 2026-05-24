@@ -88,10 +88,11 @@ export async function init(query = '') {
     order: 'DESC'
   };
 
-  // Sinkronisasikan teks input di header search bar
+  // Sinkronisasikan teks input di header search bar dan fokuskan
   const headerSearchInput = document.getElementById('header-search-input');
   if (headerSearchInput) {
     headerSearchInput.value = currentQuery;
+    headerSearchInput.focus();
   }
 
   // 1. Gambar layout dasar halaman pencarian
@@ -142,8 +143,27 @@ export async function init(query = '') {
   // 6.5. Bind hover previews di grid pencarian
   bindHoverPreviews(grid);
 
-  // 7. Setup Event Debounce 400ms pada Header Input
-  setupHeaderLiveSearch();
+  // 7. Expose live query trigger for app.js
+  window.missavJSearchTriggerLiveQuery = async (val) => {
+    if (window.missavJState.currentPath !== '/search') return;
+
+    if (val.length >= 2) {
+      currentQuery = val;
+      currentFilters.search = val;
+      currentPage = 1;
+      hasMore = true;
+
+      // Perbarui hash URL tanpa reload SPA router
+      const newHash = `#/search?q=${encodeURIComponent(val)}`;
+      history.replaceState(null, '', newHash);
+
+      const grid = document.getElementById('search-video-grid');
+      if (grid) {
+        ui.showSkeletonsInElement(grid, 8);
+        await fetchAndRenderSearch(true);
+      }
+    }
+  };
 }
 
 /**
@@ -227,61 +247,7 @@ function setupInfiniteScroll() {
   intersectionObserver.observe(sentinel);
 }
 
-/**
- * Setup Live Debounce 400ms pada Header Input
- */
-function setupHeaderLiveSearch() {
-  const searchInput = document.getElementById('header-search-input');
-  if (!searchInput) return;
-
-  // Hapus listener lama jika ada (agar tidak double firing)
-  const newSearchInput = searchInput.cloneNode(true);
-  searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-
-  newSearchInput.value = currentQuery;
-  newSearchInput.focus();
-
-  // Re-bind enter key
-  newSearchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const val = newSearchInput.value.trim();
-      if (val) {
-        window.missavJNavigate(`/search?q=${encodeURIComponent(val)}`);
-      }
-    }
-  });
-
-  newSearchInput.addEventListener('input', (e) => {
-    // CRITICAL: Only perform live search if the user is currently on the search page
-    if (window.missavJState.currentPath !== '/search') return;
-
-    const val = e.target.value.trim();
-    clearTimeout(searchTimeout);
-
-    searchTimeout = setTimeout(async () => {
-      // Re-verify route status inside asynchronous execution flow
-      if (window.missavJState.currentPath !== '/search') return;
-
-      if (val.length >= 2) {
-        currentQuery = val;
-        currentFilters.search = val;
-        currentPage = 1;
-        hasMore = true;
-
-        // Perbarui hash URL tanpa reload SPA router
-        const newHash = `#/search?q=${encodeURIComponent(val)}`;
-        history.replaceState(null, '', newHash);
-
-        const grid = document.getElementById('search-video-grid');
-        if (grid) {
-          ui.showSkeletonsInElement(grid, 8);
-        }
-
-        await fetchAndRenderSearch(true);
-      }
-    }, 400); // Debounce 400ms
-  });
-}
+// setupHeaderLiveSearch removed in favor of global app.js listener
 
 /**
  * Callback saat sort/filter bar diubah
