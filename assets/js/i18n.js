@@ -354,6 +354,18 @@ const DICTIONARY = {
   no_related_videos: {
     en: 'No related videos', id: 'Tidak ada video terkait', 'zh-TW': '沒有推薦影片', 'zh-CN': '没有推荐视频', ja: '関連動画はありません', ko: '관련 비디오가 없습니다', ms: 'Tiada video berkaitan', th: 'ไม่มีวิดีโอที่เกี่ยวข้อง', de: 'Keine ähnlichen Videos', fr: 'Aucune vidéo connexe', vi: 'Không có video liên quan', fil: 'Walang kaugnay na video', pt: 'Nenhum vídeo relacionado'
   },
+  match_same_actor: {
+    en: 'Same Actor', id: 'Aktris Sama', ja: '同じ女優', ko: '같은 배우', 'zh-TW': '同演員', 'zh-CN': '同演员', ms: 'Pelakon Sama', th: 'นักแสดงเดียวกัน', de: 'Gleicher Darsteller', fr: 'Même Acteur', vi: 'Cùng diễn viên', fil: 'Parehong Artista', pt: 'Mesmo Ator'
+  },
+  match_same_series: {
+    en: 'Same Series', id: 'Seri Sama', ja: '同じシリーズ', ko: '같은 시리즈', 'zh-TW': '同系列', 'zh-CN': '同系列', ms: 'Siri Sama', th: 'ซีรีส์เดียวกัน', de: 'Gleiche Serie', fr: 'Même Série', vi: 'Cùng series', fil: 'Parehong Serye', pt: 'Mesma Série'
+  },
+  match_similar_tag: {
+    en: 'Similar Tag', id: 'Tag Serupa', ja: '類似タグ', ko: '유사한 태그', 'zh-TW': '相似標籤', 'zh-CN': '相似标签', ms: 'Tag Serupa', th: 'แท็กที่คล้ายกัน', de: 'Ähnliches Tag', fr: 'Tag Similaire', vi: 'Tag tương tự', fil: 'Katulad na Tag', pt: 'Tag Similar'
+  },
+  match_same_category: {
+    en: 'Same Category', id: 'Kategori Sama', ja: '同じカテゴリ', ko: '같은 카테고리', 'zh-TW': '同分類', 'zh-CN': '同分类', ms: 'Kategori Sama', th: 'หมวดหมู่เดียวกัน', de: 'Gleiche Kategorie', fr: 'Même Catégorie', vi: 'Cùng danh mục', fil: 'Parehong Kategorya', pt: 'Mesma Categoria'
+  },
   no_results_for: {
     en: 'No results for "{query}"', id: 'Tidak ada hasil untuk "{query}"', 'zh-TW': '找不到 "{query}" 的結果', 'zh-CN': '找不到 "{query}" 的结果', ja: '「{query}」の検索結果はありません', ko: '"{query}"에 대한 결과가 없습니다', ms: 'Tiada hasil untuk "{query}"', th: 'ไม่มีผลลัพธ์สำหรับ "{query}"', de: 'Keine Ergebnisse für "{query}"', fr: 'Aucun résultat pour "{query}"', vi: 'Không có kết quả cho "{query}"', fil: 'Walang resulta para sa "{query}"', pt: 'Nenhum resultado para "{query}"'
   },

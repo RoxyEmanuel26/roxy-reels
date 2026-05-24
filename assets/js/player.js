@@ -496,7 +496,9 @@ function extractTitleKeywords(title) {
     'which', 'what', 'why', 'how', 'slut', 'girl', 'beautiful', 'legs', 'breasts', 
     'knee', 'highs', 'senior', 'junior', 'friends', 'gals', 'dan', 'yang', 'untuk', 
     'dengan', 'dari', 'pada', 'atau', 'ini', 'itu', 'di', 'ke', 'terbaru', 'sub', 
-    'indo', 'uncensored', 'censored'
+    'indo', 'uncensored', 'censored', 'video', 'full', 'part', 'episode', 'scene',
+    'new', 'hot', 'best', 'big', 'small', 'first', 'time', 'very', 'super', 'ultra',
+    'special', 'edition', 'collection', 'series', 'vol', 'chapter'
   ]);
   
   const words = clean.split(/\s+/)
@@ -508,7 +510,85 @@ function extractTitleKeywords(title) {
 }
 
 /**
- * Mengambil rekomendasi video terkait secara cerdas berdasarkan kode, judul, dan tag
+ * Mengekstrak prefix seri kode video (contoh: ABP-123 → "ABP")
+ */
+function extractCodeSeriesPrefix(code) {
+  if (!code) return '';
+  const match = code.match(/^([A-Za-z]+)-?\d/);
+  return match ? match[1].toUpperCase() : '';
+}
+
+/**
+ * Fisher-Yates shuffle untuk mengacak array in-place
+ */
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * Menghitung skor relevansi video terkait dan menentukan alasan kecocokan utama.
+ * Skor tertinggi = paling relevan. Alasan digunakan untuk badge visual.
+ */
+function computeRelevanceScore(candidate, currentPost) {
+  let score = 0;
+  let matchReason = '';
+
+  const currentActors = (currentPost.actors || []).map(a => a.toLowerCase());
+  const currentTags = (currentPost.tags || []).map(t => t.toLowerCase());
+  const currentCategories = (currentPost.categories || []).map(c => c.toLowerCase());
+  const currentCode = (currentPost.code || '').toUpperCase();
+  const currentSeriesPrefix = extractCodeSeriesPrefix(currentPost.code);
+
+  const candidateActors = (candidate.actors || []).map(a => a.toLowerCase());
+  const candidateTags = (candidate.tags || []).map(t => t.toLowerCase());
+  const candidateCategories = (candidate.categories || []).map(c => c.toLowerCase());
+  const candidateCode = (candidate.code || '').toUpperCase();
+  const candidateSeriesPrefix = extractCodeSeriesPrefix(candidate.code);
+
+  // Skor tertinggi: Aktris yang sama (paling relevan bagi pengguna)
+  const sharedActors = currentActors.filter(a => candidateActors.includes(a));
+  if (sharedActors.length > 0) {
+    score += 100 * sharedActors.length;
+    matchReason = 'actor';
+  }
+
+  // Skor tinggi: Seri kode yang sama (contoh: ABP-123 & ABP-456)
+  if (currentSeriesPrefix && candidateSeriesPrefix && currentSeriesPrefix === candidateSeriesPrefix && currentCode !== candidateCode) {
+    score += 80;
+    if (!matchReason) matchReason = 'series';
+  }
+
+  // Skor sedang: Tag yang sama
+  const sharedTags = currentTags.filter(t => candidateTags.includes(t));
+  if (sharedTags.length > 0) {
+    score += 15 * sharedTags.length;
+    if (!matchReason) matchReason = 'tag';
+  }
+
+  // Skor rendah: Kategori yang sama
+  const sharedCats = currentCategories.filter(c => candidateCategories.includes(c));
+  if (sharedCats.length > 0) {
+    score += 5 * sharedCats.length;
+    if (!matchReason) matchReason = 'category';
+  }
+
+  // Bonus kecil untuk video populer (views tinggi)
+  if (candidate.views) {
+    const views = parseInt(candidate.views, 10) || 0;
+    if (views > 10000) score += 3;
+    else if (views > 1000) score += 1;
+  }
+
+  return { score, matchReason };
+}
+
+/**
+ * Smart Related Videos Engine — Mencocokkan video berdasarkan aktor, seri kode, tag, dan kategori
+ * dengan sistem skor relevansi dan badge visual alasan kecocokan.
  */
 export async function loadRelatedVideos(post) {
   const relatedList = document.getElementById('related-videos-list');
@@ -516,27 +596,53 @@ export async function loadRelatedVideos(post) {
 
   try {
     const promises = [];
+    const queryLabels = []; // Label debug untuk setiap query
 
-    // 1. Pencarian berdasarkan Kode Video atau Kata Kunci Judul
+    // ── Query 1: Pencarian berdasarkan Aktor Utama ──
+    if (post.actors && post.actors.length > 0) {
+      promises.push(api.getPosts({ actor: post.actors[0], per_page: 10 }));
+      queryLabels.push('actor:' + post.actors[0]);
+    }
+
+    // ── Query 2: Pencarian berdasarkan Kode Video (exact) ──
     if (post.code && post.code.trim()) {
-      promises.push(api.getPosts({ search: post.code.trim(), per_page: 8 }));
+      const seriesPrefix = extractCodeSeriesPrefix(post.code);
+      if (seriesPrefix) {
+        // Cari video dengan prefix seri yang sama (contoh: ABP → ABP-xxx)
+        promises.push(api.getPosts({ search: seriesPrefix, per_page: 10 }));
+        queryLabels.push('series:' + seriesPrefix);
+      }
     } else {
+      // Fallback: kata kunci judul
       const keywords = extractTitleKeywords(post.title);
       if (keywords) {
-        promises.push(api.getPosts({ search: keywords, per_page: 8 }));
+        promises.push(api.getPosts({ search: keywords, per_page: 10 }));
+        queryLabels.push('keywords:' + keywords);
       }
     }
 
-    // 2. Pencarian berdasarkan Tag Utama
+    // ── Query 3: Pencarian berdasarkan Tag Utama ──
     if (post.tags && post.tags.length > 0) {
-      promises.push(api.getPosts({ tag: post.tags[0], per_page: 8 }));
+      promises.push(api.getPosts({ tag: post.tags[0], per_page: 10 }));
+      queryLabels.push('tag:' + post.tags[0]);
     }
 
-    // 3. Pencarian berdasarkan Tag Kedua atau Kategori Pertama sebagai Fallback
+    // ── Query 4: Pencarian berdasarkan Tag Kedua ──
     if (post.tags && post.tags.length > 1) {
-      promises.push(api.getPosts({ tag: post.tags[1], per_page: 8 }));
-    } else if (post.categories && post.categories.length > 0) {
-      promises.push(api.getPosts({ category: post.categories[0], per_page: 8 }));
+      promises.push(api.getPosts({ tag: post.tags[1], per_page: 10 }));
+      queryLabels.push('tag:' + post.tags[1]);
+    }
+
+    // ── Query 5: Pencarian berdasarkan Kategori Pertama ──
+    if (post.categories && post.categories.length > 0) {
+      promises.push(api.getPosts({ category: post.categories[0], per_page: 10 }));
+      queryLabels.push('category:' + post.categories[0]);
+    }
+
+    // ── Query 6 (Bonus): Aktor Kedua jika ada ──
+    if (post.actors && post.actors.length > 1) {
+      promises.push(api.getPosts({ actor: post.actors[1], per_page: 8 }));
+      queryLabels.push('actor:' + post.actors[1]);
     }
 
     // Jalankan semua query secara paralel untuk efisiensi tinggi
@@ -544,7 +650,7 @@ export async function loadRelatedVideos(post) {
     
     // Gabungkan hasil dari semua query yang berhasil
     let allPosts = [];
-    results.forEach(res => {
+    results.forEach((res, idx) => {
       if (res.status === 'fulfilled' && res.value && Array.isArray(res.value.posts)) {
         allPosts = allPosts.concat(res.value.posts);
       }
@@ -561,8 +667,36 @@ export async function loadRelatedVideos(post) {
       return true;
     });
 
+    // ── Hitung skor relevansi dan tentukan alasan kecocokan untuk setiap video ──
+    const scoredPosts = filteredPosts.map(p => {
+      const { score, matchReason } = computeRelevanceScore(p, post);
+      return { ...p, _relevanceScore: score, _matchReason: matchReason };
+    });
+
+    // Urutkan berdasarkan skor relevansi tertinggi
+    scoredPosts.sort((a, b) => b._relevanceScore - a._relevanceScore);
+
+    // Shuffle video dalam tier skor yang sama untuk variasi
+    let lastScore = -1;
+    let tierStart = 0;
+    for (let i = 0; i <= scoredPosts.length; i++) {
+      const currentScore = i < scoredPosts.length ? scoredPosts[i]._relevanceScore : -999;
+      if (currentScore !== lastScore) {
+        if (i - tierStart > 1) {
+          const tierSlice = scoredPosts.slice(tierStart, i);
+          shuffleArray(tierSlice);
+          for (let j = 0; j < tierSlice.length; j++) {
+            scoredPosts[tierStart + j] = tierSlice[j];
+          }
+        }
+        tierStart = i;
+        lastScore = currentScore;
+      }
+    }
+
     // Jika hasil kosong, coba fallback ke kategori pertama
-    if (filteredPosts.length === 0 && post.categories && post.categories[0]) {
+    let finalPosts = scoredPosts;
+    if (finalPosts.length === 0 && post.categories && post.categories[0]) {
       try {
         const fallbackData = await api.getPosts({
           category: post.categories[0],
@@ -570,19 +704,21 @@ export async function loadRelatedVideos(post) {
           order: 'DESC',
           per_page: 12
         });
-        filteredPosts = fallbackData.posts.filter(p => String(p.id) !== String(post.id));
+        finalPosts = fallbackData.posts
+          .filter(p => String(p.id) !== String(post.id))
+          .map(p => ({ ...p, _relevanceScore: 0, _matchReason: 'category' }));
       } catch (err) {
         console.warn('Fallback related videos failed:', err);
       }
     }
 
-    if (filteredPosts.length === 0) {
+    if (finalPosts.length === 0) {
       relatedList.innerHTML = `<span class="text-faint text-center py-4">${i18n.t('no_related_videos')}</span>`;
       return;
     }
 
-    // Batasi maksimal 12 video rekomendasi
-    const finalPosts = filteredPosts.slice(0, 12);
+    // Batasi maksimal 15 video rekomendasi
+    finalPosts = finalPosts.slice(0, 15);
 
     relatedList.innerHTML = finalPosts
       .map((p, idx) => renderRelatedRowCard(p, idx))
@@ -598,6 +734,7 @@ export async function loadRelatedVideos(post) {
 
 /**
  * Merender markup kartu video baris kecil untuk rekomendasi sidebar (Aman XSS & Staggered)
+ * Menambahkan badge alasan kecocokan jika tersedia (_matchReason).
  */
 function renderRelatedRowCard(post, index) {
   const originalTitle = post.title || '';
@@ -641,6 +778,21 @@ function renderRelatedRowCard(post, index) {
   const durationBadge = safeDuration ? `<span class="card-duration">${safeDuration}</span>` : '';
   const viewsFormatted = post.views ? parseInt(post.views, 10).toLocaleString(i18n.getLang()) : '0';
 
+  // ── Badge alasan kecocokan (Match Reason) ──
+  let matchBadgeHTML = '';
+  if (post._matchReason) {
+    const badgeConfig = {
+      actor:    { icon: '🎭', key: 'match_same_actor',    cls: 'match-actor' },
+      series:   { icon: '📀', key: 'match_same_series',   cls: 'match-series' },
+      tag:      { icon: '🏷️', key: 'match_similar_tag',   cls: 'match-tag' },
+      category: { icon: '📂', key: 'match_same_category', cls: 'match-category' },
+    };
+    const cfg = badgeConfig[post._matchReason];
+    if (cfg) {
+      matchBadgeHTML = `<span class="related-match-badge ${cfg.cls}">${cfg.icon} ${i18n.t(cfg.key)}</span>`;
+    }
+  }
+
   const animationStyle = `style="animation-delay: calc(${index} * 40ms);"`;
 
   return `
@@ -659,7 +811,10 @@ function renderRelatedRowCard(post, index) {
       <div class="related-info">
         <h4 class="related-title" title="${safeTitle}">${safeTitle}</h4>
         <span class="related-studio">${safeStudio}</span>
-        <span class="related-views">${viewsFormatted} ${i18n.t('views')}</span>
+        <div class="related-meta-row">
+          <span class="related-views">${viewsFormatted} ${i18n.t('views')}</span>
+          ${matchBadgeHTML}
+        </div>
       </div>
     </div>
   `;

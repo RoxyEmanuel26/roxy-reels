@@ -334,6 +334,53 @@
   color: var(--color-text-muted);
 }
 
+/* Baris meta bawah kartu rekomendasi (views + match badge) */
+.related-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Badge alasan kecocokan smart-matching */
+.related-match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 99px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.related-match-badge.match-actor {
+  background: rgba(255, 64, 129, 0.15);
+  color: #ff4081;
+  border: 1px solid rgba(255, 64, 129, 0.3);
+}
+
+.related-match-badge.match-series {
+  background: rgba(124, 77, 255, 0.15);
+  color: #b388ff;
+  border: 1px solid rgba(124, 77, 255, 0.3);
+}
+
+.related-match-badge.match-tag {
+  background: rgba(0, 200, 83, 0.12);
+  color: #69f0ae;
+  border: 1px solid rgba(0, 200, 83, 0.25);
+}
+
+.related-match-badge.match-category {
+  background: rgba(41, 182, 246, 0.12);
+  color: #4fc3f7;
+  border: 1px solid rgba(41, 182, 246, 0.25);
+}
+
 /* ==========================================
    4. PERSISTENT MINI FLOATING PLAYER (PiP)
    ========================================== */
