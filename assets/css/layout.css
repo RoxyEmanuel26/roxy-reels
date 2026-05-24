@@ -422,7 +422,82 @@ body.sidebar-collapsed-layout .main-content {
   }
   
   .video-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  /* Compact video cards for 2x2 layout on mobile */
+  .card-info {
+    padding: var(--space-2) !important;
+    gap: 4px !important;
+  }
+  
+  .card-title {
+    font-size: 0.78rem !important;
+    line-height: 1.3 !important;
+    height: 2.6em !important;
+  }
+  
+  .card-meta {
+    font-size: 0.68rem !important;
+  }
+  
+  .actor-chip {
+    font-size: 0.65rem !important;
+    padding: 1px 6px !important;
+  }
+  
+  .card-code {
+    font-size: 0.65rem !important;
+  }
+  
+  .card-duration, .card-hd, .card-uncensored {
+    font-size: 0.65rem !important;
+    padding: 1px 4px !important;
+  }
+
+  /* Redesigned 2-column grids for Actors & Categories on Mobile */
+  .actors-grid.all-actors-grid,
+  .actors-grid.all-categories-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--space-2) !important;
+  }
+
+  .all-actors-grid .actor-browse-card,
+  .all-categories-grid .category-browse-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: var(--space-3) !important;
+    min-height: 140px !important;
+    justify-content: center !important;
+  }
+
+  .all-actors-grid .actor-info-box,
+  .all-categories-grid .category-info-box {
+    padding-right: 0 !important;
+    align-items: center !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  .all-actors-grid .actor-browse-name,
+  .all-categories-grid .category-browse-name {
+    font-size: 0.75rem !important;
+    text-align: center !important;
+  }
+
+  .all-actors-grid .actor-browse-native {
+    font-size: 0.65rem !important;
+    text-align: center !important;
+  }
+
+  .all-actors-grid .actor-video-count {
+    position: static !important;
+    margin-top: var(--space-2) !important;
+    width: fit-content !important;
+    font-size: 0.6rem !important;
+    padding: 2px 5px !important;
   }
   
   .scroll-top-btn {
@@ -457,6 +532,13 @@ body.sidebar-collapsed-layout .main-content {
   
   .video-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Grid tablet untuk Aktris & Kategori (3 Kolom Seimbang) */
+  .actors-grid.all-actors-grid,
+  .actors-grid.all-categories-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: var(--space-3) !important;
   }
 }
 
