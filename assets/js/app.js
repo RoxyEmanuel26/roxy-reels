@@ -717,13 +717,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 3. Fallback redirects if root domain is loaded directly
+  // 3. Auto-redirect root domain to /en/ (English default) if no language prefix present
   const currentPathname = window.location.pathname;
   const { lang, routePath } = parseUrl(currentPathname);
   
-  if (currentPathname === '/' || currentPathname === '') {
-    const activeLang = i18n.getLang();
-    history.replaceState(null, '', `/${activeLang}/`);
+  // Check if the URL has no valid language prefix (root "/" or bare path like "/trending")
+  const firstSegment = currentPathname.replace(/^\//, '').split('/')[0] || '';
+  const hasValidLangPrefix = i18n.LANGS.some(l => l.code === firstSegment);
+  
+  if (!hasValidLangPrefix) {
+    // Default to English for URLs without language prefix
+    const defaultLang = 'en';
+    localStorage.setItem('missav_lang', defaultLang);
+    const targetPath = currentPathname === '/' || currentPathname === '' 
+      ? `/${defaultLang}/` 
+      : `/${defaultLang}${currentPathname}${window.location.search}`;
+    history.replaceState(null, '', targetPath);
   }
 
   initGlobalEvents();
