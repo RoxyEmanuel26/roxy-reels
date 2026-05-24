@@ -311,13 +311,21 @@ export function renderPostMeta(post, id) {
     }
   }
 
-  if (studioWrapper && post.studio) {
-    const safeStudio = ui.escapeHTML(post.studio);
-    studioWrapper.innerHTML = `
-      <a href="#/studio?name=${encodeURIComponent(safeStudio)}" class="studio-link-badge">
-        🎬 ${safeStudio}
-      </a>
-    `;
+  if (studioWrapper) {
+    if (post.studio) {
+      const safeStudio = ui.escapeHTML(post.studio);
+      studioWrapper.innerHTML = `
+        <a href="#/studio?name=${encodeURIComponent(safeStudio)}" class="studio-link-badge">
+          🎬 ${safeStudio}
+        </a>
+      `;
+    } else {
+      studioWrapper.innerHTML = `
+        <a href="#/studio?name=Other" class="studio-link-badge text-muted">
+          🎬 ${i18n.t('unknown_studio')}
+        </a>
+      `;
+    }
   }
 
   // Render Chip lists dengan sanitasi HTML terenkapsulasi

@@ -21,7 +21,8 @@ const POPULAR_STUDIOS = [
   { name: 'Kawaii*', label: 'KAWAII*' },
   { name: 'KMP', label: 'KMP' },
   { name: 'Attackers', label: 'ATTACK' },
-  { name: 'Premium', label: 'PREMIUM' }
+  { name: 'Premium', label: 'PREMIUM' },
+  { name: 'Other', label: 'OTHER' }
 ];
 
 // Hilangkan duplikasi nama jika ada

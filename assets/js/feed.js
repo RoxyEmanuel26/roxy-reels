@@ -100,7 +100,7 @@ export function renderVideoCard(post, index = 0) {
   // Format Studio link
   const studioMarkup = safeStudio 
     ? `<span class="card-studio" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</span>`
-    : `<span class="card-studio text-muted">${i18n.t('unknown_studio')}</span>`;
+    : `<span class="card-studio text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
 
   // Format views
   const viewsCount = post.views ? parseInt(post.views, 10) : 0;
