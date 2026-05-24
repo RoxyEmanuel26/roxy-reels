@@ -1184,3 +1184,61 @@
   }
 }
 
+/* ==========================================
+   A-Z ALPHABETICAL FILTER BAR
+   ========================================== */
+.az-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-6);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+}
+
+.az-filter-bar::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
+}
+
+.az-letter-btn {
+  background: var(--color-surface, #181818);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  color: var(--text-secondary, #aaaaaa);
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all var(--transition, 0.2s ease);
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-primary, sans-serif);
+}
+
+.az-letter-btn:hover {
+  background: var(--color-surface-2, #2c2c2c);
+  color: var(--text-primary, #ffffff);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.az-letter-btn.active {
+  background: var(--color-accent, #ff003c);
+  color: #ffffff;
+  border-color: var(--color-accent, #ff003c);
+  box-shadow: 0 0 10px rgba(255, 0, 60, 0.35);
+}
+
+/* Custom design adjustments on mobile viewport */
+@media (max-width: 767px) {
+  .az-filter-bar {
+    flex-wrap: nowrap;
+    padding-bottom: var(--space-3);
+    -webkit-overflow-scrolling: touch;
+  }
+}
+

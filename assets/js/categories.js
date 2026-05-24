@@ -1,45 +1,12 @@
 /**
  * MISSAV-J — Categories Browse Page
- * Full taxonomy grid for browsing all available JAV categories.
- * Mirrors the actors/studios page pattern with instant local search and animated card grid.
+ * Full taxonomy grid for browsing all 499 JAV categories.
+ * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
 import ui from './ui.js';
 import i18n from './i18n.js';
-
-// Comprehensive curated list of JAV categories with emoji icons and i18n dictionary keys
-const ALL_CATEGORIES = [
-  { name: 'Uncensored', icon: '🔓', key: 'category_uncensored' },
-  { name: 'Amateur', icon: '📸', key: 'category_amateur' },
-  { name: 'Subtitled', icon: '💬', key: 'category_subtitled' },
-  { name: 'Creampie', icon: '🍦', key: 'category_creampie' },
-  { name: 'Cosplay', icon: '🎭', key: 'category_cosplay' },
-  { name: 'Mosaic', icon: '🟦', key: 'category_mosaic' },
-  { name: 'Leaked', icon: '🔥', key: 'category_leaked' },
-  { name: 'Big Tits', icon: '🍈', key: 'category_big_tits' },
-  { name: 'MILF', icon: '👩', key: 'category_milf' },
-  { name: 'Threesome', icon: '👥', key: 'category_threesome' },
-  { name: 'Teen', icon: '🌸', key: 'category_teen' },
-  { name: 'Massage', icon: '💆', key: 'category_massage' },
-  { name: 'Anal', icon: '🍑', key: 'category_anal' },
-  { name: 'Lesbian', icon: '👩‍❤️‍👩', key: 'category_lesbian' },
-  { name: 'Bondage', icon: '⛓️', key: 'category_bondage' },
-  { name: 'Office Lady', icon: '💼', key: 'category_office_lady' },
-  { name: 'Nurse', icon: '🏥', key: 'category_nurse' },
-  { name: 'Teacher', icon: '📚', key: 'category_teacher' },
-  { name: 'Schoolgirl', icon: '🎒', key: 'category_schoolgirl' },
-  { name: 'Stepmom', icon: '👩‍👧', key: 'category_stepmom' },
-  { name: 'Gangbang', icon: '👥', key: 'category_gangbang' },
-  { name: 'NTR', icon: '💔', key: 'category_ntr' },
-  { name: 'POV', icon: '👁️', key: 'category_pov' },
-  { name: 'Orgy', icon: '🎊', key: 'category_orgy' },
-  { name: 'Squirting', icon: '💦', key: 'category_squirting' },
-  { name: 'Blowjob', icon: '👄', key: 'category_blowjob' },
-  { name: 'Handjob', icon: '✋', key: 'category_handjob' },
-  { name: 'Footjob', icon: '🦶', key: 'category_footjob' },
-  { name: 'Outdoor', icon: '🌳', key: 'category_outdoor' },
-  { name: 'Voyeur', icon: '👀', key: 'category_voyeur' }
-];
+import { ALL_CATEGORIES } from './categories_data.js?v=1.0.6';
 
 /**
  * Render category grid cards based on filtered data
@@ -64,9 +31,9 @@ function renderCategoriesGrid(categories, searchQuery = '') {
 
   grid.innerHTML = categories.map((cat, idx) => {
     const safeName = ui.escapeHTML(cat.name);
-    // Translate category name if dictionary key exists
+    // Translate category name if dictionary key exists in i18n
     const translatedName = i18n.t(cat.key) || safeName;
-    const animationStyle = `style="animation-delay: calc(${idx % 16} * 40ms);"`;
+    const animationStyle = `style="animation-delay: calc(${idx % 16} * 20ms);"`;
 
     return `
       <div class="category-browse-card fadeInUp" data-name="${encodeURIComponent(cat.name)}" ${animationStyle}>
@@ -85,6 +52,12 @@ function renderCategoriesGrid(categories, searchQuery = '') {
 export function init() {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
+
+  const alphabet = ['ALL', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+
+  const alphabetHtml = alphabet.map(letter => {
+    return `<button class="az-letter-btn ${letter === 'ALL' ? 'active' : ''}" data-letter="${letter}">${letter}</button>`;
+  }).join('');
 
   mainApp.innerHTML = `
     <div class="taxonomy-browse-header">
@@ -105,6 +78,11 @@ export function init() {
         <span class="taxonomy-search-icon">🔍</span>
       </div>
     </div>
+
+    <!-- A-Z Alphabetical Index Filter Bar -->
+    <div class="az-filter-bar" id="az-filter-bar">
+      ${alphabetHtml}
+    </div>
     
     <div class="actors-grid" id="categories-grid"></div>
   `;
@@ -112,11 +90,59 @@ export function init() {
   // Render all categories initially
   renderCategoriesGrid(ALL_CATEGORIES);
 
-  // Instant local search filter
   const searchInput = document.getElementById('category-search-input');
+  const azBar = document.getElementById('az-filter-bar');
+  let activeLetter = 'ALL';
+
+  function setActiveLetter(letter) {
+    activeLetter = letter;
+    if (azBar) {
+      const buttons = azBar.querySelectorAll('.az-letter-btn');
+      buttons.forEach(btn => {
+        if (btn.dataset.letter === letter) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  // Alphabetical Filter Clicks
+  if (azBar) {
+    azBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.az-letter-btn');
+      if (!btn) return;
+
+      const letter = btn.dataset.letter;
+      setActiveLetter(letter);
+
+      // Clear search input since we are filtering by letter group
+      if (searchInput) searchInput.value = '';
+
+      if (letter === 'ALL') {
+        renderCategoriesGrid(ALL_CATEGORIES);
+      } else {
+        const filtered = ALL_CATEGORIES.filter(cat => {
+          const firstChar = cat.name.trim().charAt(0).toUpperCase();
+          if (letter === '#') {
+            return !/^[A-Z]$/.test(firstChar);
+          } else {
+            return firstChar === letter;
+          }
+        });
+        renderCategoriesGrid(filtered);
+      }
+    });
+  }
+
+  // Instant local search filter
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.trim().toLowerCase();
+
+      // Typing in the search resets the active A-Z filter to "ALL"
+      setActiveLetter('ALL');
 
       if (!query) {
         renderCategoriesGrid(ALL_CATEGORIES);
