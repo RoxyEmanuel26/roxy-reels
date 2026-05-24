@@ -18,6 +18,23 @@ let hasMore = true;
 let currentFilters = {};
 let intersectionObserver = null;
 
+// Random Mode State — used on the homepage to show a fresh mix of videos each visit
+let randomMode = false;
+let usedPages = new Set();
+
+/**
+ * Fisher-Yates in-place shuffle for randomizing video card order
+ * @param {Array} arr - Array to shuffle
+ * @returns {Array} The same array, shuffled in-place
+ */
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // Premium inline SVG fallback used when video thumbnail fails to load
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2213%22>NO IMAGE</text></svg>`;
 
@@ -161,12 +178,17 @@ export async function init(filters = {}) {
   totalPages = 1;
   isLoading = false;
   hasMore = true;
+  usedPages = new Set();
   currentFilters = {
     per_page: 24,
     orderby: 'date',
     order: 'DESC',
     ...filters
   };
+
+  // Enable random mode only on the unfiltered homepage (no actor/studio/category/tag/search)
+  const hasSpecificFilter = filters.actor || filters.studio || filters.category || filters.tag || filters.search;
+  randomMode = !hasSpecificFilter && !filters.orderby;
 
   // 1. Prepare Base Feed layout templates
   const mainApp = document.getElementById('app-content');
@@ -287,7 +309,29 @@ async function fetchAndRenderFeed(isInitial = false) {
   isLoading = true;
   
   try {
-    const data = await api.getPosts({ page: currentPage, ...currentFilters });
+    // In random mode on initial load, probe the API to discover totalPages,
+    // then pick a truly random starting page
+    let fetchPage = currentPage;
+    if (randomMode && isInitial) {
+      try {
+        const probe = await api.getPosts({ page: 1, per_page: 1, ...currentFilters });
+        if (probe.totalPages > 1) {
+          totalPages = probe.totalPages;
+          fetchPage = Math.floor(Math.random() * totalPages) + 1;
+          currentPage = fetchPage;
+        }
+      } catch (e) {
+        // Probe failed — proceed with page 1 normally
+      }
+    }
+    usedPages.add(fetchPage);
+
+    const data = await api.getPosts({ page: fetchPage, ...currentFilters });
+
+    // Shuffle results client-side in random mode for a fresh feel
+    if (randomMode && data.posts.length > 1) {
+      shuffleArray(data.posts);
+    }
     
     const grid = document.getElementById('video-grid');
     if (!grid) return;
@@ -388,7 +432,21 @@ function setupInfiniteScroll() {
     if (entries[0].isIntersecting && !isLoading && hasMore) {
       if (loader) loader.classList.remove('hidden');
       
-      currentPage++;
+      if (randomMode && totalPages > 1) {
+        // Pick a random unused page for infinite scroll
+        const availablePages = [];
+        for (let p = 1; p <= totalPages; p++) {
+          if (!usedPages.has(p)) availablePages.push(p);
+        }
+        if (availablePages.length === 0) {
+          hasMore = false;
+          if (loader) loader.classList.add('hidden');
+          return;
+        }
+        currentPage = availablePages[Math.floor(Math.random() * availablePages.length)];
+      } else {
+        currentPage++;
+      }
       await fetchAndRenderFeed(false);
       
       if (loader) loader.classList.add('hidden');
@@ -407,6 +465,9 @@ async function updateFeedFilters(updatedFilters) {
   currentFilters = { ...currentFilters, ...updatedFilters };
   currentPage = 1;
   hasMore = true;
+  // Disable random mode when user explicitly changes sort/filter — they want a specific order
+  randomMode = false;
+  usedPages = new Set();
 
   const grid = document.getElementById('video-grid');
   if (grid) {
