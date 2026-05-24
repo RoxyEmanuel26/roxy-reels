@@ -112,7 +112,7 @@ async function translateTitle(title, lang) {
     'translate.google.co.id'
   ];
   for (const domain of domains) {
-    const url = `https://${domain}/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(title)}`;
+    const url = `https://${domain}/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(title)}`;
     try {
       const res = await fetch(url);
       if (res.ok) {
