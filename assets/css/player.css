@@ -531,8 +531,8 @@
 }
 
 /* NEAT STACKING LOGIC USING CSS :has SELECTOR
-   Ketika pemutar melayang sedang aktif (tidak hidden), tombol scroll-to-top naik 235px di atasnya! */
-body:has(#floating-player-wrapper:not(.hidden)) .scroll-top-btn {
+   Ketika pemutar melayang sedang aktif (mode-floating), tombol scroll-to-top naik 235px di atasnya! */
+body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
   bottom: 235px;
 }
 
@@ -594,7 +594,7 @@ body:has(#floating-player-wrapper:not(.hidden)) .scroll-top-btn {
     max-width: 120px;
   }
 
-  body:has(#floating-player-wrapper:not(.hidden)) .scroll-top-btn {
+  body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
     bottom: 180px;
   }
 }
