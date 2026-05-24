@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /assets/js/
+Disallow: /assets/css/
+
+Sitemap: https://www.missav-j.web.id/sitemap.xml

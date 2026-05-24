@@ -233,7 +233,8 @@ const routes = {
 };
 
 /**
- * Updates SEO Canonical and Alternate language links inside the document head.
+ * Updates SEO Canonical, Alternate language links, Meta Description, OG Tags, Twitter Cards,
+ * and JSON-LD Structured Data inside the document head — dynamically per route.
  */
 function updateSEOTags(routePath, targetId) {
   // Remove existing canonical and alternate link elements
@@ -264,10 +265,12 @@ function updateSEOTags(routePath, targetId) {
     }
   }
 
+  const canonicalUrl = `${baseDomain}/${currentLang}${cleanRoutePath}`;
+
   // 1. Add canonical link
   const canonicalLink = document.createElement('link');
   canonicalLink.rel = 'canonical';
-  canonicalLink.href = `${baseDomain}/${currentLang}${cleanRoutePath}`;
+  canonicalLink.href = canonicalUrl;
   document.head.appendChild(canonicalLink);
 
   // 2. Add alternate links for all 13 languages
@@ -305,6 +308,164 @@ function updateSEOTags(routePath, targetId) {
   }
   xDefaultLink.href = `${baseDomain}/en${enWatchPath}`;
   document.head.appendChild(xDefaultLink);
+
+  // 3. Update dynamic Meta Description, OG Tags, Twitter Cards, and JSON-LD
+  updateDynamicMetaTags(routePath, canonicalUrl);
+}
+
+/**
+ * Helper: safely set meta tag content by ID
+ */
+function setMetaContent(id, content) {
+  const el = document.getElementById(id);
+  if (el) el.setAttribute('content', content);
+}
+
+/**
+ * Dynamically updates Meta Description, Open Graph, Twitter Card, and JSON-LD
+ * based on the currently active route and video data.
+ */
+function updateDynamicMetaTags(routePath, canonicalUrl) {
+  const baseDomain = window.location.origin;
+  const currentLang = i18n.getLang();
+  const isWatchPage = routePath === '/watch' && window.missavJState.activeVideo;
+  
+  // Map locale codes to OG locale format
+  const localeMap = {
+    'en': 'en_US', 'ja': 'ja_JP', 'ko': 'ko_KR', 'zh-TW': 'zh_TW', 'zh-CN': 'zh_CN',
+    'ms': 'ms_MY', 'th': 'th_TH', 'de': 'de_DE', 'fr': 'fr_FR', 'vi': 'vi_VN',
+    'id': 'id_ID', 'fil': 'fil_PH', 'pt': 'pt_BR'
+  };
+
+  if (isWatchPage) {
+    const post = window.missavJState.activeVideo;
+    const translatedTitle = i18n.translateVideoTitle(post.title);
+    const pageTitle = `${translatedTitle} — MISSAV-J`;
+    const description = `${i18n.t('meta_watch_prefix') || 'Watch'} ${post.code || ''} ${translatedTitle}`.trim();
+    const thumbnail = post.thumbnail || '/assets/images/logo.png';
+
+    // Meta Description
+    setMetaContent('meta-description', description);
+    
+    // Open Graph
+    setMetaContent('og-type', 'video.other');
+    setMetaContent('og-url', canonicalUrl);
+    setMetaContent('og-title', pageTitle);
+    setMetaContent('og-description', description);
+    setMetaContent('og-image', thumbnail);
+    setMetaContent('og-locale', localeMap[currentLang] || 'en_US');
+    
+    // Twitter Card
+    setMetaContent('twitter-card', 'summary_large_image');
+    setMetaContent('twitter-title', pageTitle);
+    setMetaContent('twitter-description', description);
+    setMetaContent('twitter-image', thumbnail);
+
+    // JSON-LD: VideoObject schema
+    const jsonLdEl = document.getElementById('json-ld-data');
+    if (jsonLdEl) {
+      const uploadDate = post.date ? post.date.split('T')[0] : new Date().toISOString().split('T')[0];
+      const viewCount = post.views ? parseInt(post.views, 10) : 0;
+      
+      const videoSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'VideoObject',
+        'name': translatedTitle,
+        'description': description,
+        'thumbnailUrl': thumbnail.startsWith('http') ? thumbnail : `${baseDomain}${thumbnail}`,
+        'uploadDate': uploadDate,
+        'interactionStatistic': {
+          '@type': 'InteractionCounter',
+          'interactionType': { '@type': 'WatchAction' },
+          'userInteractionCount': viewCount
+        },
+        'publisher': {
+          '@type': 'Organization',
+          'name': 'MISSAV-J',
+          'url': baseDomain
+        }
+      };
+
+      // Add actor/performer info if available
+      if (post.actors && post.actors.length > 0) {
+        videoSchema.actor = post.actors.map(name => ({
+          '@type': 'Person',
+          'name': name
+        }));
+      }
+
+      // Add genre if categories available
+      if (post.categories && post.categories.length > 0) {
+        videoSchema.genre = post.categories.slice(0, 5).join(', ');
+      }
+
+      jsonLdEl.textContent = JSON.stringify(videoSchema);
+    }
+
+  } else {
+    // Non-watch pages: set default/listing meta tags
+    const pageTitles = {
+      '/':          'MISSAV-J — Premium Video Streaming Feed',
+      '/trending':  `${i18n.t('nav_trending') || 'Trending'} — MISSAV-J`,
+      '/recent':    `${i18n.t('nav_recent') || 'Recent'} — MISSAV-J`,
+      '/actors':    `${i18n.t('nav_all_actors') || 'All Actors'} — MISSAV-J`,
+      '/categories':`${i18n.t('nav_all_categories') || 'All Categories'} — MISSAV-J`,
+      '/studios':   `${i18n.t('nav_studios') || 'Studios'} — MISSAV-J`,
+      '/search':    `${i18n.t('nav_search') || 'Search'} — MISSAV-J`,
+    };
+
+    const pageDescriptions = {
+      '/':          i18n.t('meta_home_desc') || 'Discover the best video streaming with a premium YouTube-inspired dark mode interface.',
+      '/trending':  i18n.t('meta_trending_desc') || 'Browse the most popular and trending videos right now.',
+      '/recent':    i18n.t('meta_recent_desc') || 'Watch the latest and most recently uploaded videos.',
+      '/actors':    i18n.t('meta_actors_desc') || 'Browse all actors and actresses.',
+      '/categories':i18n.t('meta_categories_desc') || 'Explore video categories and genres.',
+      '/studios':   i18n.t('meta_studios_desc') || 'Discover popular production studios.',
+      '/search':    i18n.t('meta_search_desc') || 'Search for videos, actors, studios, and more.',
+    };
+
+    const title = pageTitles[routePath] || 'MISSAV-J — Premium Video Streaming Feed';
+    const desc = pageDescriptions[routePath] || pageDescriptions['/'];
+
+    document.title = title;
+    
+    // Meta Description
+    setMetaContent('meta-description', desc);
+    
+    // Open Graph
+    setMetaContent('og-type', 'website');
+    setMetaContent('og-url', canonicalUrl);
+    setMetaContent('og-title', title);
+    setMetaContent('og-description', desc);
+    setMetaContent('og-image', '/assets/images/logo.png');
+    setMetaContent('og-locale', localeMap[currentLang] || 'en_US');
+
+    // Twitter Card
+    setMetaContent('twitter-card', 'summary');
+    setMetaContent('twitter-title', title);
+    setMetaContent('twitter-description', desc);
+    setMetaContent('twitter-image', '/assets/images/logo.png');
+
+    // JSON-LD: WebSite schema with SearchAction
+    const jsonLdEl = document.getElementById('json-ld-data');
+    if (jsonLdEl) {
+      const websiteSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        'name': 'MISSAV-J',
+        'url': baseDomain,
+        'potentialAction': {
+          '@type': 'SearchAction',
+          'target': {
+            '@type': 'EntryPoint',
+            'urlTemplate': `${baseDomain}/en/search?q={search_term_string}`
+          },
+          'query-input': 'required name=search_term_string'
+        }
+      };
+      jsonLdEl.textContent = JSON.stringify(websiteSchema);
+    }
+  }
 }
 
 function navigate(urlPath) {

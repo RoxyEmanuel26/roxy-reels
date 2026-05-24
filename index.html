@@ -9,14 +9,42 @@
   
   <!-- SEO Meta Tags -->
   <title>MISSAV-J — Immersive JAV Streaming & Video Feed</title>
-  <meta name="description" content="Temukan tren video streaming terbaik dengan antarmuka YouTube-inspired dark mode premium. MISSAV-J menghadirkan navigasi single-page app super cepat.">
+  <meta name="description" id="meta-description" content="Temukan tren video streaming terbaik dengan antarmuka YouTube-inspired dark mode premium. MISSAV-J menghadirkan navigasi single-page app super cepat.">
   <meta name="author" content="MISSAV-J">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   
   <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="MISSAV-J — Premium Video Streaming Feed">
-  <meta property="og:description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
-  <meta property="og:image" content="/assets/images/logo.png">
+  <meta property="og:type" id="og-type" content="website">
+  <meta property="og:site_name" content="MISSAV-J">
+  <meta property="og:url" id="og-url" content="https://www.missav-j.web.id">
+  <meta property="og:title" id="og-title" content="MISSAV-J — Premium Video Streaming Feed">
+  <meta property="og:description" id="og-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
+  <meta property="og:image" id="og-image" content="/assets/images/logo.png">
+  <meta property="og:locale" id="og-locale" content="en_US">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" id="twitter-card" content="summary_large_image">
+  <meta name="twitter:title" id="twitter-title" content="MISSAV-J — Premium Video Streaming Feed">
+  <meta name="twitter:description" id="twitter-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
+  <meta name="twitter:image" id="twitter-image" content="/assets/images/logo.png">
+
+  <!-- JSON-LD Structured Data (dynamically updated by app.js) -->
+  <script type="application/ld+json" id="json-ld-data">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "MISSAV-J",
+    "url": "https://www.missav-j.web.id",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://www.missav-j.web.id/en/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 
   <!-- Google Fonts - Roboto & Playfair Display -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
