@@ -12,9 +12,9 @@ window.missavJAdConfig = {
   // Tentukan provider banner: 'exoclick' atau 'adsterra'
   bannerProvider: 'exoclick',
   // Ganti placeholder dengan Key asli (Adsterra) atau Zone ID asli (ExoClick) dari dashboard Anda
-  topBannerKey: 'placeholder_top_banner_728x90',
-  belowPlayerBannerKey: 'placeholder_below_player_300x250',
-  sidebarBannerKey: 'placeholder_sidebar_300x250'
+  topBannerKey: '5933300',
+  belowPlayerBannerKey: '5933316',
+  sidebarBannerKey: '5933316'
 };
 
 /**
@@ -43,7 +43,7 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 
   // Load via Iframe syndication ExoClick untuk kompatibilitas SPA penuh
   const iframe = document.createElement('iframe');
-  iframe.src = `https://syndication.exoclick.com/ads-iframe-display.php?zone=${zoneId}`;
+  iframe.src = `https://a.magsrv.com/iframe.php?idzone=${zoneId}&size=${width}x${height}`;
   iframe.width = width;
   iframe.height = height;
   iframe.scrolling = 'no';
