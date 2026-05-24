@@ -1364,15 +1364,36 @@
 /* ==========================================
    A-Z ALPHABETICAL FILTER BAR
    ========================================== */
+.az-filter-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 1023px) {
+  .az-filter-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 48px;
+    background: linear-gradient(to right, rgba(18, 18, 18, 0), var(--color-background, #121212));
+    pointer-events: none;
+    z-index: 5;
+    transition: opacity 0.3s ease;
+  }
+}
+
 .az-filter-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: var(--space-6);
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   overflow-x: auto;
   scrollbar-width: none; /* Hide scrollbar for Firefox */
+  -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
 }
 
 .az-filter-bar::-webkit-scrollbar {
@@ -1410,12 +1431,20 @@
   box-shadow: 0 0 10px rgba(255, 0, 60, 0.35);
 }
 
-/* Custom design adjustments on mobile viewport */
-@media (max-width: 767px) {
+/* Custom design adjustments on mobile & tablet viewports */
+@media (max-width: 1023px) {
   .az-filter-bar {
     flex-wrap: nowrap;
     padding-bottom: var(--space-3);
-    -webkit-overflow-scrolling: touch;
+  }
+  
+  .az-letter-btn {
+    padding: 6px 10px;
+    font-size: 0.76rem;
+    min-width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md, 8px);
   }
 }
 

@@ -99,8 +99,10 @@ export function init() {
     </div>
 
     <!-- A-Z Alphabetical Index Filter Bar -->
-    <div class="az-filter-bar" id="az-filter-bar">
-      ${alphabetHtml}
+    <div class="az-filter-container">
+      <div class="az-filter-bar" id="az-filter-bar">
+        ${alphabetHtml}
+      </div>
     </div>
     
     <div class="actors-grid all-actors-grid" id="actors-grid"></div>

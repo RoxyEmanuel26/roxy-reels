@@ -222,10 +222,10 @@ const routes = {
   '/tag':       () => import('./feed.js?v=1.1.3').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=1.1.3').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=1.1.4').then(m => m.init()),
   '/popular-actors':  () => import('./popular_actors.js?v=1.1.3').then(m => m.init()),
   '/studios':         () => import('./studios.js?v=1.1.3').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=1.1.3').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=1.1.4').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),

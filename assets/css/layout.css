@@ -499,6 +499,16 @@ body.sidebar-collapsed-layout .main-content {
     font-size: 0.6rem !important;
     padding: 2px 5px !important;
   }
+
+  .taxonomy-search-wrapper {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .taxonomy-search-input {
+    padding: 10px 16px 10px 38px !important;
+    font-size: 0.8rem !important;
+  }
   
   .scroll-top-btn {
     bottom: var(--space-4);
@@ -534,11 +544,11 @@ body.sidebar-collapsed-layout .main-content {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Grid tablet untuk Aktris & Kategori (3 Kolom Seimbang) */
+  /* Grid tablet untuk Aktris & Kategori (2 Kolom Seimbang agar nama tidak squished) */
   .actors-grid.all-actors-grid,
   .actors-grid.all-categories-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: var(--space-3) !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--space-4) !important;
   }
 }
 
@@ -553,5 +563,26 @@ body.sidebar-collapsed-layout .main-content {
 @media (min-width: 1280px) {
   .video-grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Global Touch Viewports (Mobile & Tablet <= 1023px) UI/UX Enhancements */
+@media (max-width: 1023px) {
+  /* Lock text clamping to prevent layout jumping/popping when touched */
+  .all-actors-grid .actor-browse-card:hover .actor-browse-name,
+  .all-categories-grid .category-browse-card:hover .category-browse-name {
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* High-fidelity haptic-like active tap micro-interactions for cards */
+  .actor-browse-card:active,
+  .category-browse-card:active {
+    transform: scale(0.97) !important;
+    border-color: var(--color-accent) !important;
+    background-color: var(--color-surface-2) !important;
+    box-shadow: 0 4px 12px rgba(255, 82, 123, 0.15) !important;
+    transition: transform 0.1s ease, border-color 0.1s ease !important;
   }
 }
