@@ -390,6 +390,19 @@ body.sidebar-collapsed-layout .main-content {
     transform: translateX(0);
   }
   
+  .header {
+    padding: 0 var(--space-2);
+  }
+
+  .header-left {
+    gap: var(--space-1);
+  }
+
+  .logo {
+    font-size: 1.15rem;
+    white-space: nowrap;
+  }
+
   .main-content {
     margin-left: 0 !important;
     padding: var(--space-3);

@@ -240,6 +240,12 @@ function navigate(urlPath) {
     i18n.setLang(lang, false); // Set active language segment without invoking popstate routing loops
   }
 
+  // Auto-close mobile sidebar drawer on navigation
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  if (sidebarOverlay) sidebarOverlay.classList.remove('visible');
+
   // Normalize path slug watch routes (e.g. /watch/abp-123-sakura-imai-82597 -> /watch)
   let matchedRoutePath = routePath;
   if (routePath.startsWith('/watch/')) {

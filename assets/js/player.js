@@ -25,25 +25,30 @@ const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.
 function getSecureIframeMarkup(iframeHtml) {
   if (!iframeHtml) return `<div class="player-loading-shimmer">${i18n.t('player_not_available')}</div>`;
   
-  const srcMatch = iframeHtml.match(/src=["']([^"']+)["']/i);
-  if (!srcMatch) {
-    return `<div class="player-loading-shimmer">${i18n.t('player_format_not_supported')}</div>`;
+  // Clean up ampersands inside the src attribute of the iframe safely to prevent token errors
+  let cleanedHtml = iframeHtml
+    .replace(/&#038;/g, '&')
+    .replace(/&amp;/g, '&');
+  
+  // Force 100% width and height style on the iframe for fully responsive presentation inside containers
+  if (cleanedHtml.includes('style=')) {
+    cleanedHtml = cleanedHtml.replace(/style=["']([^"']+)["']/i, 'style="width: 100%; height: 100%; display: block;"');
+  } else {
+    cleanedHtml = cleanedHtml.replace('<iframe', '<iframe style="width: 100%; height: 100%; display: block;"');
   }
-  
-  // Ganti HTML entity &#038; atau &amp; dengan ampersand asli (&) agar query parameter tidak rusak
-  let rawSrc = srcMatch[1].replace(/&#038;/g, '&').replace(/&amp;/g, '&');
-  const safeSrc = ui.escapeHTML(rawSrc);
-  
-  return `
-    <iframe 
-      src="${safeSrc}" 
-      frameborder="0"
-      scrolling="no"
-      title="MISSAV-J safe embed player"
-      allow="autoplay; fullscreen; encrypted-media"
-      style="width: 100%; height: 100%; display: block;"
-    ></iframe>
-  `;
+
+  // Ensure full permissions for autoplay, picture-in-picture, fullscreen, etc., are explicitly allowed
+  if (!cleanedHtml.includes('allow=')) {
+    cleanedHtml = cleanedHtml.replace('<iframe', '<iframe allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; web-share"');
+  } else {
+    cleanedHtml = cleanedHtml.replace(/allow=["']([^"']+)["']/i, 'allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; web-share"');
+  }
+
+  if (!cleanedHtml.includes('allowfullscreen')) {
+    cleanedHtml = cleanedHtml.replace('<iframe', '<iframe allowfullscreen="true"');
+  }
+
+  return cleanedHtml;
 }
 
 /**
