@@ -23,9 +23,7 @@ const POPULAR_ACTORS = [
   { name: 'Tsukasa Aoi', native: '葵つかさ', letter: 'T' },
   { name: 'Ai Uehara', native: '上原亜衣', letter: 'A' },
   { name: 'Maria Ozawa', native: '小沢マリア', letter: 'M' },
-  { name: 'Sora Aoi', native: '蒼井そら', letter: 'S' },
-  { name: 'Kano Yura', native: '架乃ゆら', letter: 'K' },
-  { name: 'Eimi Fukada', native: '深田えいmi', letter: 'F' }
+  { name: 'Sora Aoi', native: '蒼井そら', letter: 'S' }
 ];
 
 // Hilangkan duplikasi nama jika ada

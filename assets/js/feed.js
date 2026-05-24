@@ -309,6 +309,42 @@ async function fetchAndRenderFeed(isInitial = false) {
     }
 
     if (data.posts.length === 0 && isInitial) {
+      // Smart Name-Swap Retry: If an actor search returned 0 results and the name
+      // has 2+ words, automatically retry with the words reversed (handles
+      // Japanese name order "Kano Yura" vs Western order "Yura Kano").
+      if (currentFilters.actor) {
+        const nameParts = currentFilters.actor.trim().split(/\s+/);
+        if (nameParts.length >= 2) {
+          const swappedName = nameParts.reverse().join(' ');
+          console.log(`[Feed] Actor "${currentFilters.actor}" returned 0 results, retrying with swapped name: "${swappedName}"`);
+          const retryData = await api.getPosts({ page: currentPage, ...currentFilters, actor: swappedName });
+
+          if (retryData.posts.length > 0) {
+            // Success! Update filters and UI to reflect the corrected name
+            currentFilters.actor = swappedName;
+            totalPages = retryData.totalPages;
+            hasMore = currentPage < totalPages;
+
+            // Update banner title to show the corrected name
+            const bannerTitle = document.querySelector('.taxonomy-banner .banner-title');
+            if (bannerTitle) bannerTitle.textContent = swappedName;
+
+            if (totalCountEl) {
+              totalCountEl.textContent = i18n.t('video_available', { total: retryData.total.toLocaleString(i18n.getLang()) });
+            }
+            if (pageTrackEl) {
+              pageTrackEl.textContent = i18n.t('page_format', { current: currentPage, total: totalPages });
+            }
+
+            const cardsHtml = retryData.posts
+              .map((post, idx) => renderVideoCard(post, idx))
+              .join('');
+            grid.innerHTML = cardsHtml;
+            return;
+          }
+        }
+      }
+
       const querySearch = currentFilters.search || '';
       ui.showEmpty(querySearch, grid);
       hasMore = false;
