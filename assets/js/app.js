@@ -556,7 +556,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Switch player container to floating mode (PiP)
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=1.1.9').then(m => {
+    import('./player.js?v=1.2.0').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -593,6 +593,8 @@ function navigate(urlPath) {
         const playerContainer = document.getElementById('player-container');
         if (playerContainer) {
           playerContainer.style.transform = '';
+          playerContainer.style.width = '';
+          playerContainer.style.height = '';
         }
         
         if (floatTitle) {
@@ -681,6 +683,8 @@ export function closeFloatingPlayer() {
   const playerContainer = document.getElementById('player-container');
   if (playerContainer) {
     playerContainer.style.transform = '';
+    playerContainer.style.width = '';
+    playerContainer.style.height = '';
     playerContainer.innerHTML = '';
   }
   
@@ -688,7 +692,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=1.1.9').then(m => {
+  import('./player.js?v=1.2.0').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -792,7 +796,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=1.1.9').then(m => {
+      import('./player.js?v=1.2.0').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
