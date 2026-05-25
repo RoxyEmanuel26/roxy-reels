@@ -1109,6 +1109,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setupFloatingPlayerDOM();
   setupKeyboardHotkeys();
   
+  // Collapse sidebar by default on tablet viewports (768px to 1023px)
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+  const sidebar = document.getElementById('sidebar');
+  if (isTablet && sidebar) {
+    sidebar.classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed-layout');
+  }
+  
   // Sync selected language segmentation state
   if (lang) {
     i18n.setLang(lang, false);
