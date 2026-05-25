@@ -845,6 +845,7 @@ function setupKeyboardHotkeys() {
 function setupLegalModals() {
   const btn2257 = document.getElementById('sidebar-legal-2257-btn');
   const btnDmca = document.getElementById('sidebar-legal-dmca-btn');
+  const btnContact = document.getElementById('sidebar-legal-contact-btn');
   const overlay = document.getElementById('legal-modal-overlay');
   const title = document.getElementById('legal-modal-title');
   const body = document.getElementById('legal-modal-body');
@@ -1090,6 +1091,112 @@ function setupLegalModals() {
         emailText: 'Envie sua reclamação diretamente para nosso endereço de e-mail de conformidade ativo: compliance@missav-j.web.id',
         footer: 'Processaremos sua solicitação e removeremos os links infratores em até 24 a 48 horas úteis.'
       }
+    },
+    'contact': {
+      'en': {
+        adsHeader: 'Partnerships & Advertising',
+        adsText: 'For advertising placements, banner sponsorships, partnerships, or business proposals, please contact our advertising team.',
+        supportHeader: 'General Support',
+        supportText: 'For website feedback, technical issues, content inquiries, or general support requests, feel free to reach out.',
+        emailText: 'Send your inquiries directly to our contact email: compliance@missav-j.web.id',
+        footer: 'We typically respond to all legitimate inquiries within 24 to 48 business hours.'
+      },
+      'id': {
+        adsHeader: 'Kemitraan & Iklan',
+        adsText: 'Untuk penawaran iklan, penempatan banner, kemitraan, atau proposal bisnis, silakan hubungi tim periklanan kami.',
+        supportHeader: 'Dukungan Umum',
+        supportText: 'Untuk pertanyaan umum, kendala teknis, masukan situs web, atau bantuan lainnya, jangan ragu untuk menghubungi kami.',
+        emailText: 'Kirim pertanyaan Anda langsung ke email kontak kami: compliance@missav-j.web.id',
+        footer: 'Kami biasanya menanggapi semua pertanyaan resmi dalam waktu 24 hingga 48 jam hari kerja.'
+      },
+      'zh-TW': {
+        adsHeader: '商務合作與廣告',
+        adsText: '如需廣告投放、橫幅贊助、合作夥伴關係或商業提案，請與我們的廣告團隊聯絡。',
+        supportHeader: '一般支援',
+        supportText: '對於網站反饋、技術問題、內容諮詢或一般支援請求，請隨時與我們聯絡。',
+        emailText: '請將您的諮詢直接發送至我們的聯絡電子郵件：compliance@missav-j.web.id',
+        footer: '我們通常會在 24 至 48 個工作小時內回覆所有合法諮詢。'
+      },
+      'zh-CN': {
+        adsHeader: '商务合作与广告',
+        adsText: '如需广告投放、横幅赞助、合作伙伴关系 or 商业提案，请与我们的广告团队联络。',
+        supportHeader: '一般支援',
+        supportText: '对于网站反馈、技术问题、内容咨询 or 一般支援请求，请随时与我们联络。',
+        emailText: '请将您的咨询直接发送至我们的联络电子邮件：compliance@missav-j.web.id',
+        footer: '我们通常会在 24 至 48 个工作小时内回复所有合法咨询。'
+      },
+      'ja': {
+        adsHeader: 'パートナーシップ・広告掲載',
+        adsText: '広告掲載、バナースポンサーシップ、提携、またはビジネス提案については、広告チームまでお問い合わせください。',
+        supportHeader: '一般的なサポート',
+        supportText: 'ウェブサイトのフィードバック、技術的な問題、コンテンツに関するお問い合わせ、または一般的なサポートリクエストについては、お気軽にお問い合わせください。',
+        emailText: 'お問い合わせは、連絡先メールアドレスまで直接送信してください：compliance@missav-j.web.id',
+        footer: '通常、営業日24〜48時間以内にすべての正当なお問い合わせに対応いたします。'
+      },
+      'ko': {
+        adsHeader: '제휴 및 광고',
+        adsText: '광고 게재, 배너 후원, 제휴 또는 비즈니스 제안은 광고 팀에 문의하십시오.',
+        supportHeader: '일반 지원',
+        supportText: '웹사이트 피드백, 기술적 문제, 콘텐츠 문의 또는 일반적인 지원 요청은 언제든지 문의해 주십시오.',
+        emailText: '문의 사항은 공식 연락처 이메일로 직접 보내주십시오: compliance@missav-j.web.id',
+        footer: '당사는 영업일 기준 24~48시간 이내에 모든 합법적인 문의에 답변해 드립니다.'
+      },
+      'ms': {
+        adsHeader: 'Kerjasama & Pengiklanan',
+        adsText: 'Untuk penempatan iklan, penajaan banner, perkongsian, atau cadangan perniagaan, sila hubungi pasukan pengiklanan kami.',
+        supportHeader: 'Sokongan Umum',
+        supportText: 'Untuk maklum balas laman web, isu teknikal, pertanyaan kandungan, atau permintaan sokongan umum, sila hubungi kami.',
+        emailText: 'Hantar pertanyaan anda terus ke e-mel hubungan kami: compliance@missav-j.web.id',
+        footer: 'Kami biasanya maklum balas kepada semua pertanyaan rasmi dalam masa 24 hingga 48 jam waktu bekerja.'
+      },
+      'th': {
+        adsHeader: 'พันธมิตรและการโฆษณา',
+        adsText: 'สำหรับการลงโฆษณา สปอนเซอร์แบนเนอร์ พันธมิตร หรือข้อเสนอทางธุรกิจ โปรดติดต่อทีมโฆษณาของเรา',
+        supportHeader: 'การสนับสนุนทั่วไป',
+        supportText: 'สำหรับข้อเสนอแนะเกี่ยวกับเว็บไซต์ ปัญหาทางเทคนิค การสอบถามข้อมูลเนื้อหา หรือคำขอรับความช่วยเหลือทั่วไป โปรดติดต่อเรา',
+        emailText: 'ส่งคำถามของคุณโดยตรงไปที่อีเมลติดต่อของเรา: compliance@missav-j.web.id',
+        footer: 'ปกติเราจะตอบกลับคำถามที่เป็นทางการทั้งหมดภายใน 24 ถึง 48 ชั่วโมงทำการ'
+      },
+      'de': {
+        adsHeader: 'Partnerschaften & Werbung',
+        adsText: 'Für Werbeplatzierungen, Bannersponsorings, Partnerships oder Geschäftsvorschläge wenden Sie sich bitte an unser Werbeteam.',
+        supportHeader: 'Allgemeiner Support',
+        supportText: 'Bei Feedback zur Website, technischen Problemen, Inhaltsanfragen oder allgemeinen Supportanfragen können Sie sich gerne an uns wenden.',
+        emailText: 'Senden Sie Ihre Anfragen direkt an unsere Kontakt-E-Mail: compliance@missav-j.web.id',
+        footer: 'Wir antworten in der Regel auf alle legitimen Anfragen innerhalb von 24 bis 48 Geschäftsstunden.'
+      },
+      'fr': {
+        adsHeader: 'Partenariats & Publicité',
+        adsText: 'Pour les placements publicitaires, les parrainages de bannières, les partenariats ou les propositions commerciales, veuillez contacter notre équipe publicitaire.',
+        supportHeader: 'Support Général',
+        supportText: 'Pour les retours sur le site web, les problèmes techniques, les demandes de contenu ou les demandes de support général, n\'hésitez pas à nous contacter.',
+        emailText: 'Envoyez vos demandes directement à notre adresse e-mail de contact : compliance@missav-j.web.id',
+        footer: 'Nous répondons généralement à toutes les demandes légitimes dans les 24 à 48 heures ouvrables.'
+      },
+      'vi': {
+        adsHeader: 'Hợp tác & Quảng cáo',
+        adsText: 'Đối với các vị trí đặt quảng cáo, tài trợ biểu ngữ, quan hệ đối tác hoặc đề xuất kinh doanh, vui lòng liên hệ với nhóm quảng cáo của chúng tôi.',
+        supportHeader: 'Hỗ trợ chung',
+        supportText: 'Đối với phản hồi về trang web, sự cố kỹ thuật, câu hỏi về nội dung hoặc yêu cầu hỗ trợ chung, vui lòng liên hệ với chúng tôi.',
+        emailText: 'Gửi yêu cầu của bạn trực tiếp đến email liên hệ của chúng tôi: compliance@missav-j.web.id',
+        footer: 'Chúng tôi thường phản hồi tất cả các yêu cầu hợp lệ trong vòng 24 đến 48 giờ làm việc.'
+      },
+      'fil': {
+        adsHeader: 'Pakikipagtulungan at Patalastas',
+        adsText: 'Para sa mga pagkakalagay ng patalastas, mga sponsorship ng banner, pakikipagtulungan, o mga panukalang negosyo, mangyaring makipag-ugnayan sa aming koponan sa patalastas.',
+        supportHeader: 'Pangkalahatang Suporta',
+        supportText: 'Para sa feedback sa website, mga teknikal na isyu, mga pagtatanong sa nilalaman, o mga pangkalahatang kahilingan sa suporta, huwag mag-atubiling makipag-ugnayan.',
+        emailText: 'Ipadala ang iyong mga katanungan nang direkta sa aming contact email: compliance@missav-j.web.id',
+        footer: 'Karaniwan kaming tumutugon sa lahat ng lehitimong katanungan sa loob ng 24 hanggang 48 oras ng negosyo.'
+      },
+      'pt': {
+        adsHeader: 'Parcerias & Publicidade',
+        adsText: 'Para veiculação de anúncios, patrocínio de banners, parcerias ou propostas comerciais, entre em contato com nossa equipe de publicidade.',
+        supportHeader: 'Suporte Geral',
+        supportText: 'Para feedback do site, problemas técnicos, consultas de conteúdo ou solicitações de suporte geral, sinta-se à vontade para entrar em contato.',
+        emailText: 'Envie suas dúvidas diretamente para o nosso e-mail de contato: compliance@missav-j.web.id',
+        footer: 'Geralmente respondemos a todas as consultas legítimas dentro de 24 a 48 horas úteis.'
+      }
     }
   };
 
@@ -1175,6 +1282,45 @@ function setupLegalModals() {
         `;
       }
       body.innerHTML = bodyHtml;
+    } else if (type === 'contact') {
+      title.textContent = i18n.t('legal_contact_title') || 'Contact Us & Partnerships';
+
+      const contentLang = LEGAL_TEXTS['contact'][activeLang] || LEGAL_TEXTS['contact']['en'];
+      const contentEn = LEGAL_TEXTS['contact']['en'];
+
+      let bodyHtml = `
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: var(--color-text, #fff); font-size: 1rem; font-weight: 700; margin-bottom: 8px;">📢 ${contentLang.adsHeader}</h3>
+          <p style="margin-bottom: 16px; line-height: 1.5;">${contentLang.adsText}</p>
+          
+          <h3 style="color: var(--color-text, #fff); font-size: 1rem; font-weight: 700; margin-bottom: 8px;">🛠️ ${contentLang.supportHeader}</h3>
+          <p style="margin-bottom: 16px; line-height: 1.5;">${contentLang.supportText}</p>
+          
+          <p style="margin-bottom: 12px; line-height: 1.5;">
+            ${contentLang.emailText.replace('compliance@missav-j.web.id', '<strong style="color: var(--color-accent, #ff003c); font-weight: 700;">compliance@missav-j.web.id</strong>')}
+          </p>
+          <p style="margin-bottom: 12px; line-height: 1.5; color: var(--color-text-muted, #aaa);">${contentLang.footer}</p>
+        </div>
+      `;
+
+      if (!isEn) {
+        bodyHtml += `
+          <hr style="border: 0; border-top: 1px solid var(--color-border, rgba(255,255,255,0.08)); margin: 16px 0;">
+          <div style="opacity: 0.7;">
+            <h3 style="color: var(--color-text, #fff); font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">📢 ${contentEn.adsHeader} (Original)</h3>
+            <p style="margin-bottom: 16px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.adsText}</p>
+            
+            <h3 style="color: var(--color-text, #fff); font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">🛠️ ${contentEn.supportHeader} (Original)</h3>
+            <p style="margin-bottom: 16px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.supportText}</p>
+            
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">
+              ${contentEn.emailText.replace('compliance@missav-j.web.id', '<strong style="font-weight: 700;">compliance@missav-j.web.id</strong>')}
+            </p>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.footer}</p>
+          </div>
+        `;
+      }
+      body.innerHTML = bodyHtml;
     }
   };
 
@@ -1194,6 +1340,13 @@ function setupLegalModals() {
     btnDmca.addEventListener('click', (e) => {
       e.preventDefault();
       showModal('dmca');
+    });
+  }
+
+  if (btnContact) {
+    btnContact.addEventListener('click', (e) => {
+      e.preventDefault();
+      showModal('contact');
     });
   }
 

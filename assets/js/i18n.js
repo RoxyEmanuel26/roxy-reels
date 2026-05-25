@@ -536,6 +536,12 @@ const TITLE_DICTIONARY = {
   legal_dmca_title: {
     en: 'DMCA Copyright Policy', id: 'Kebijakan Hak Cipta DMCA', 'zh-TW': 'DMCA 著作權政策', 'zh-CN': 'DMCA 著作权政策', ja: 'DMCA著作権ポリシー', ko: 'DMCA 저작권 정책', ms: 'Polisi Hak Cipta DMCA', th: 'นโยบายลิขสิทธิ์ DMCA', de: 'DMCA-Urheberrechtsrichtlinie', fr: 'Politique de droits d\'auteur DMCA', vi: 'Chính sách bản quyền DMCA', fil: 'Patakaran sa Karapatang-ari ng DMCA', pt: 'Política de Direitos Autorais DMCA'
   },
+  legal_contact_link: {
+    en: 'Contact Us', id: 'Hubungi Kami', 'zh-TW': '聯絡我們', 'zh-CN': '联络我们', ja: 'お問い合わせ', ko: '문의하기', ms: 'Hubungi Kami', th: 'ติดต่อเรา', de: 'Kontakt', fr: 'Contactez-nous', vi: 'Liên hệ', fil: 'Contact Us', pt: 'Contate-nos'
+  },
+  legal_contact_title: {
+    en: 'Contact Us & Partnerships', id: 'Hubungi Kami & Kemitraan', 'zh-TW': '聯絡我們與商務合作', 'zh-CN': '联络我们与商务合作', ja: 'お問い合わせ・広告掲載', ko: '문의하기 및 제휴', ms: 'Hubungi Kami & Kerjasama', th: 'ติดต่อเราและโฆษณา', de: 'Kontakt & Partnerschaften', fr: 'Contactez-nous & Partenariats', vi: 'Liên hệ & Hợp tác', fil: 'Makipag-ugnayan & Pakikipagtulungan', pt: 'Contato & Parcerias'
+  },
   share_modal_title: {
     en: 'Share Video', id: 'Bagikan Video', 'zh-TW': '分享影片', 'zh-CN': '分享视频', ja: '動画を共有', ko: '비디오 공유', ms: 'Kongsi Video', th: 'แชร์วิดีโอ', de: 'Video teilen', fr: 'Partager la vidéo', vi: 'Chia sẻ Video', fil: 'Ibahagi ang Video', pt: 'Compartilhar Vídeo'
   },
