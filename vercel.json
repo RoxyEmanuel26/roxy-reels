@@ -10,6 +10,10 @@
     { "source": "/sitemaps/studios.xml", "destination": "/sitemaps/sitemap_studios.xml" },
     { "source": "/sitemaps/:lang-:page.xml", "destination": "/sitemaps/sitemap_videos_en_:page.xml" },
     { "source": "/sitemaps/:file", "destination": "/api/sitemap?file=:file" },
+    { "source": "/watch", "destination": "/api/watch-og.js" },
+    { "source": "/:lang/watch", "destination": "/api/watch-og.js?lang=:lang" },
+    { "source": "/watch/:slug", "destination": "/api/watch-og.js?slug=:slug" },
+    { "source": "/:lang/watch/:slug", "destination": "/api/watch-og.js?lang=:lang&slug=:slug" },
     { "source": "/((?!api|assets|favicon.svg|.*\\..*).*)", "destination": "/index.html" }
   ],
   "headers": [
