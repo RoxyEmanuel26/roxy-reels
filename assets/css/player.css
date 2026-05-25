@@ -4,31 +4,6 @@
  * pendaran Ambient Mode, dan kerangka pemutar melayang (PiP) YouTube-style.
  */
 
-:root {
-  /* PC (Desktop) */
-  --floating-width: 290px;
-  --floating-scale: 0.3021;
-  --scroll-top-bottom-offset: 225px;
-}
-
-@media (min-width: 768px) and (max-width: 1199px) {
-  /* Tablet */
-  :root {
-    --floating-width: 350px;
-    --floating-scale: 0.3646;
-    --scroll-top-bottom-offset: 260px;
-  }
-}
-
-@media (max-width: 767px) {
-  /* Mobile (HP) */
-  :root {
-    --floating-width: 310px;
-    --floating-scale: 0.3229;
-    --scroll-top-bottom-offset: 230px;
-  }
-}
-
 .player-page-layout {
   display: flex;
   gap: var(--space-6);
@@ -438,7 +413,7 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: var(--floating-width);
+  width: 320px;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -446,13 +421,6 @@
   z-index: 999;
   animation: floatSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   transition: opacity var(--transition), transform var(--transition);
-}
-
-@media (max-width: 767px) {
-  .floating-player-wrapper.mode-floating {
-    bottom: 16px;
-    right: 16px;
-  }
 }
 
 .floating-player-wrapper.mode-floating .floating-player-header {
@@ -557,23 +525,15 @@
   transform-origin: top left;
 }
 
-/* Floating mode: scale the 960px reference down to floating width.
-   We force the width and height with !important in mode-floating to override
-   any lingering watch page inline styles (e.g. on mobile/tablet) and prevent
-   browser auto-squishing or scaling issues. */
+/* Floating mode: scale the 960px reference down to 320px visual width */
 .floating-player-wrapper.mode-floating #player-container {
-  width: 960px !important;
-  height: 540px !important;
-  min-width: 960px !important;
-  min-height: 540px !important;
-  transform: scale(var(--floating-scale)) !important;
-  transform-origin: top left !important;
+  transform: scale(0.3333);
 }
 
 /* NEAT STACKING LOGIC USING CSS :has SELECTOR
-   Ketika pemutar melayang sedang aktif (mode-floating), tombol scroll-to-top naik di atasnya! */
+   Ketika pemutar melayang sedang aktif (mode-floating), tombol scroll-to-top naik 235px di atasnya! */
 body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
-  bottom: var(--scroll-top-bottom-offset) !important;
+  bottom: 235px;
 }
 
 /* Media Queries untuk Kolom Watch */
@@ -632,6 +592,10 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
 
   #floating-player-title {
     max-width: 120px;
+  }
+
+  body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
+    bottom: 180px;
   }
 }
 
