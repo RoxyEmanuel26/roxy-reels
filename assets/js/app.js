@@ -840,6 +840,381 @@ function setupKeyboardHotkeys() {
 }
 
 /**
+ * Sets up 18 U.S.C. 2257 & DMCA modal events and text contents
+ */
+function setupLegalModals() {
+  const btn2257 = document.getElementById('sidebar-legal-2257-btn');
+  const btnDmca = document.getElementById('sidebar-legal-dmca-btn');
+  const overlay = document.getElementById('legal-modal-overlay');
+  const title = document.getElementById('legal-modal-title');
+  const body = document.getElementById('legal-modal-body');
+  const closeBtn = document.getElementById('legal-modal-close-btn');
+
+  if (!overlay || !title || !body || !closeBtn) return;
+
+  const LEGAL_TEXTS = {
+    '2257': {
+      'en': {
+        header: '18 U.S.C. § 2257 Record-Keeping Compliance Statement',
+        p1: 'All visual materials displayed on this website (including images, preview clips, and video players) are produced and hosted by third-party content providers. Pursuant to Federal Law (18 U.S.C. § 2257), all actors, models, and performers appearing in these materials were of the age of majority (18 years of age or older) at the time the content was produced.',
+        p2: 'Age verification and record-keeping compliance documentation for all performers are maintained by the original content producers and publishers of said content. This website does not produce, shoot, or upload any materials directly, and acts solely as an index/search interface for embedded external content.'
+      },
+      'id': {
+        header: 'Pernyataan Kepatuhan Pencatatan 18 U.S.C. § 2257',
+        p1: 'Semua materi visual yang ditampilkan di situs ini (termasuk gambar, cuplikan video, dan video player) diproduksi dan di-host oleh penyedia konten pihak ketiga. Sesuai dengan Hukum Federal Amerika Serikat (18 U.S.C. § 2257), semua aktor, model, dan pemeran yang muncul dalam materi ini berumur 18 tahun atau lebih pada saat materi tersebut diproduksi.',
+        p2: 'Dokumentasi kepatuhan verifikasi usia dan pencatatan untuk semua pemeran diarsipkan dan dipelihara secara hukum oleh produser asli dan penerbit dari konten tersebut. Situs ini tidak memproduksi, merekam, atau mengunggah materi apa pun secara langsung, dan hanya berfungsi sebagai indeks/antarmuka pencarian untuk menyematkan (embed) konten eksternal.'
+      },
+      'zh-TW': {
+        header: '18 U.S.C. § 2257 記錄保存合規聲明',
+        p1: '本網站上顯示的所有視覺材料（包括圖片、預覽剪輯和影片播放器）均由第三方內容提供商製作和託管。根據美國聯邦法律（18 U.S.C. § 2257），此類材料中出現的所有演員、模特兒和表演者在內容製作時均已達到法定年齡（18歲或以上）。',
+        p2: '所有表演者的年齡驗證和記錄保存合規文件均由該內容的原始內容製作商和發行商維護。本網站不直接製作、拍攝或上傳任何材料，僅作為嵌入式外部內容的索引/搜尋介面。'
+      },
+      'zh-CN': {
+        header: '18 U.S.C. § 2257 记录保存合规声明',
+        p1: '本网站上显示的所有视觉材料（包括图片、预览剪辑和视频播放器）均由第三方内容提供商制作和托管。根据美国联邦法律（18 U.S.C. § 2257），此类材料中出现的所有演员、模特和表演者在内容制作时均已达到法定年龄（18岁或以上）。',
+        p2: '所有表演者的年龄验证和记录保存合规文件均由该内容的原始内容制作商和发行商维护。本网站不直接制作、拍摄或上传任何材料，仅作为嵌入式外部内容的索引/搜索界面。'
+      },
+      'ja': {
+        header: '18 U.S.C. § 2257 記録保持遵守声明',
+        p1: '当ウェブサイトに表示されるすべてのビジュアル資料（画像、プレビュークリップ、ビデオプレーヤーを含む）は、サードパーティのコンテンツプロバイダーによって制作およびホストされています。米国連邦法（18 U.S.C. § 2257）に基づき、これらの資料に登場するすべての俳優、モデル、およびパフォーマーは、コンテンツの制作時に成人年齢（18歳以上）に達していました。',
+        p2: 'すべてのパフォーマーの年齢確認および記録保持コンプライアンス文書は、当該コンテンツの元のコンテンツプロデューサーおよびパブリッシャーによって維持されています。当ウェブサイトは、素材を直接制作、撮影、またはアップロードすることはなく、埋め込まれた外部コンテンツのインデックス/検索インターフェースとしてのみ機能します。'
+      },
+      'ko': {
+        header: '18 U.S.C. § 2257 기록 보존 준수 선언문',
+        p1: '본 웹사이트에 표시되는 모든 시각적 자료(이미지, 미리보기 클립 및 비디오 플레이어 포함)는 제3자 콘텐츠 제공업체에서 제작 및 호스팅합니다. 미국 연방법(18 U.S.C. § 2257)에 따라 이 자료에 출연하는 모든 배우, 모델 및 출연자는 콘텐츠가 제작될 당시 성인 연령(18세 이상)이었습니다.',
+        p2: '모든 출연자의 연령 확인 및 기록 보존 준수 문서는 해당 콘텐츠의 원본 콘텐츠 제작자 및 게시자가 유지 및 관리합니다. 본 웹사이트는 어떠한 자료도 직접 제작, 촬영 또는 업로드하지 않으며, 삽입된 외부 콘텐츠의 색인/검색 인터페이스 역할만 수행합니다.'
+      },
+      'ms': {
+        header: 'Pernyataan Pematuhan Penyimpanan Rekod 18 U.S.C. § 2257',
+        p1: 'Semua bahan visual yang dipaparkan di laman web ini (termasuk imej, klip pratonton, dan pemain video) dihasilkan dan dihoskan oleh penyedia kandungan pihak ketiga. Menurut Undang-undang Persekutuan (18 U.S.C. § 2257), semua pelakon, model, dan penghibur yang muncul dalam bahan-bahan ini telah mencapai umur dewasa (18 tahun ke atas) pada masa kandungan itu dihasilkan.',
+        p2: 'Dokumentasi pengesahan umur dan pematuhan penyimpanan rekod untuk semua penghibur diselenggara oleh pengeluar kandungan dan penerbit asal kandungan tersebut. Laman web ini tidak menghasilkan, merakam, atau memuat naik sebarang bahan secara langsung, dan hanya bertindak sebagai antarmuka indeks/carian untuk kandungan luaran yang disematkan.'
+      },
+      'th': {
+        header: 'คำแถลงการปฏิบัติตามการเก็บรักษาบันทึกตาม 18 U.S.C. § 2257',
+        p1: 'วัสดุทางภาพทั้งหมดที่แสดงบนเว็บไซต์นี้ (รวมถึงรูปภาพ คลิปตัวอย่าง และเครื่องเล่นวิดีโอ) ผลิตและจัดทำโดยผู้ให้บริการเนื้อหาบุคคลที่สาม ตามกฎหมายของสหพันธรัฐ (18 U.S.C. § 2257) นักแสดง นายแบบ และผู้แสดงทั้งหมดที่ปรากฏในวัสดุเหล่านี้มีอายุบรรลุนิติภาวะ (18 ปีขึ้นไป) ณ เวลาที่ผลิตเนื้อหา',
+        p2: 'เอกสารการตรวจสอบอายุและการปฏิบัติตามการเก็บรักษาบันทึกสำหรับผู้แสดงทุกคนได้รับการดูแลโดยผู้ผลิตเนื้อหาและผู้เผยแพร่ต้นฉบับของเนื้อหาดังกล่าว เว็บไซต์นี้ไม่ได้ผลิต ถ่ายทำ หรืออัปโหลดวัสดุใด ๆ โดยตรง และทำหน้าที่เป็นเพียงอินเทอร์เฟซดัชนี/การค้นหาสำหรับเนื้อหาภายนอกที่ฝังไว้เท่านั้น'
+      },
+      'de': {
+        header: '18 U.S.C. § 2257 Erklärung zur Einhaltung der Aufzeichnungspflichten',
+        p1: 'Alle auf dieser Website angezeigten visuellen Materialien (einschließlich Bildern, Vorschau-Clips und Videoplayern) werden von Drittanbietern von Inhalten erstellt und gehostet. Gemäß dem Bundesgesetz (18 U.S.C. § 2257) waren alle in diesen Materialien auftretenden Schauspieler, Models und Darsteller zum Zeitpunkt der Erstellung der Inhalte volljährig (18 Jahre oder älter).',
+        p2: 'Die Dokumentation zur Altersverifizierung und Einhaltung der Aufzeichnungspflichten für alle Darsteller wird von den ursprünglichen Inhaltsproduzenten und Herausgebern der genannten Inhalte gepflegt. Diese Website produziert, dreht oder lädt keine Materialien direkt hoch und fungiert ausschließlich als Index-/Suchoberfläche für eingebettete externe Inhalte.'
+      },
+      'fr': {
+        header: 'Déclaration de conformité à la tenue des registres 18 U.S.C. § 2257',
+        p1: 'Tous les documents visuels affichés sur ce site Web (y compris les images, les clips d\'aperçu et les lecteurs vidéo) sont produits et hébergés par des fournisseurs de contenu tiers. Conformément à la loi fédérale (18 U.S.C. § 2257), tous les acteurs, modèles et interprètes apparaissant dans ces documents étaient majeurs (âgés de 18 ans ou plus) au moment de la production du contenu.',
+        p2: 'La documentation de vérification de l\'âge et de conformité à la tenue des registres pour tous les interprètes est tenue par les producteurs et éditeurs de contenu originaux desdits contenus. Ce site Web ne produit, ne filme ni ne télécharge aucun matériel directement, et agit uniquement en tant qu\'interface d\'indexation/recherche pour le contenu externe intégré.'
+      },
+      'vi': {
+        header: 'Tuyên bố tuân thủ lưu trữ hồ sơ theo 18 U.S.C. § 2257',
+        p1: 'Tất cả các tài liệu trực quan được hiển thị trên trang web này (bao gồm hình ảnh, clip xem trước và trình phát video) đều được sản xuất và lưu trữ bởi các nhà cung cấp nội dung bên thứ ba. Theo Luật Liên bang (18 U.S.C. § 2257), tất cả các diễn viên, người mẫu và người biểu diễn xuất hiện trong các tài liệu này đều đã đến tuổi trưởng thành (từ 18 tuổi trở lên) tại thời điểm nội dung được sản xuất.',
+        p2: 'Tài liệu xác minh độ tuổi và tuân thủ lưu trữ hồ sơ cho tất cả những người biểu diễn được duy trì bởi các nhà sản xuất và nhà xuất bản nội dung gốc của nội dung đó. Trang web này không trực tiếp sản xuất, quay phim hoặc tải lên bất kỳ tài liệu nào và chỉ đóng vai trò là giao diện chỉ mục/tìm kiếm cho nội dung bên ngoài được nhúng.'
+      },
+      'fil': {
+        header: 'Pahayag ng Pagsunod sa Pagpapanatili ng Rekord ng 18 U.S.C. § 2257',
+        p1: 'Ang lahat ng visual na materyales na ipinapakita sa website na ito (kabilang ang mga larawan, preview clip, at video player) ay ginawa at hino-host ng mga third-party content provider. Alinsunod sa Batas Pederal (18 U.S.C. § 2257), ang lahat ng aktor, modelo, at performer na lumalabas sa mga materyales na ito ay nasa legal na edad (18 taong gulang o mas matanda) sa oras na ginawa ang nilalaman.',
+        p2: 'Ang pagpapatunay ng edad at mga dokumento ng pagsunod sa pagpapanatili ng rekord para sa lahat ng performer ay pinapanatili ng mga orihinal na producer at publisher ng nasabing nilalaman. Ang website na ito ay hindi direktang gumagawa, kumukuha ng video, o nag-a-upload ng anumang materyales, at nagsisilbi lamang bilang index/search interface para sa mga naka-embed na panlabas na nilalaman.'
+      },
+      'pt': {
+        header: 'Declaração de Conformidade de Manutenção de Registros 18 U.S.C. § 2257',
+        p1: 'Todos os materiais visuais exibidos neste site (incluindo imagens, clipes de visualização e players de vídeo) são produzidos e hospedados por provedores de conteúdo terceirizados. De acordo com a Lei Federal (18 U.S.C. § 2257), todos os artistas que aparecem nesses materiais eram maiores de idade (18 anos ou mais) no momento em que o conteúdo foi produzido.',
+        p2: 'A documentação de verificação de idade e conformidade com a manutenção de registros de todos os artistas é mantida pelos produtores e editores de conteúdo originais dos referidos conteúdos. Este site não produz, filma ou envia quaisquer materiais diretamente, e atua exclusivamente como uma interface de índice/busca para conteúdo externo incorporado.'
+      }
+    },
+    'dmca': {
+      'en': {
+        header: 'DMCA (Digital Millennium Copyright Act) Policy',
+        p1: 'MISSAV-J respects the intellectual property rights of others. We are a search and indexing portal for third-party videos and do not host, store, or stream any video files on our own servers. All videos are embedded from external sources.',
+        p2: 'If you believe that your copyrighted work has been linked to or displayed on this website in a way that constitutes copyright infringement, please submit a formal DMCA take-down notice.',
+        listIntro: 'Your notice must include:',
+        li1: 'A physical or electronic signature of the copyright owner or authorized representative.',
+        li2: 'Identification of the copyrighted work claimed to have been infringed.',
+        li3: 'Specific URL links on our site containing the link you wish to have removed.',
+        li4: 'Your contact details including Name, Email, and Phone.',
+        li5: 'A statement that you have a good faith belief that use of the material is unauthorized.',
+        emailText: 'Please send your complaint directly to our workable compliance email address: compliance@missav-j.web.id',
+        footer: 'We will process your request and remove the infringing links within 24 to 48 business hours.'
+      },
+      'id': {
+        header: 'Kebijakan Hak Cipta DMCA',
+        p1: 'MISSAV-J menghormati hak kekayaan intelektual orang lain. Kami adalah portal pencarian dan indeks untuk video pihak ketiga dan tidak meng-host, menyimpan, atau menayangkan file video apa pun di server kami. Semua video disematkan (embed) dari sumber luar.',
+        p2: 'Jika Anda percaya bahwa karya berhak cipta Anda telah ditautkan atau ditampilkan di situs ini dengan cara yang melanggar hak cipta, silakan kirimkan pemberitahuan penghapusan resmi (DMCA).',
+        listIntro: 'Pemberitahuan Anda harus menyertakan:',
+        li1: 'Tanda tangan fisik atau elektronik dari pemilik hak cipta atau perwakilan resmi.',
+        li2: 'Identifikasi karya berhak cipta yang diklaim telah dilanggar.',
+        li3: 'URL spesifik di situs kami yang ingin dihapus.',
+        li4: 'Informasi kontak Anda termasuk Nama, Email, dan Telepon.',
+        li5: 'Pernyataan iktikad baik bahwa penggunaan materi tersebut tidak sah.',
+        emailText: 'Silakan kirimkan pengaduan Anda langsung ke email kepatuhan kami yang aktif: compliance@missav-j.web.id',
+        footer: 'Kami akan memproses permintaan Anda dan menghapus tautan yang melanggar dalam waktu 24 hingga 48 jam kerja.'
+      },
+      'zh-TW': {
+        header: 'DMCA (數位千禧年著作權法) 政策',
+        p1: 'MISSAV-J 尊重他人的智慧財產權。我們是第三方影片的搜尋和索引門戶網站，不在我們自己的伺服器上託管、儲存或串流傳輸任何影片檔案。所有影片均嵌入自外部來源。',
+        p2: '如果您認為您的有著作權作品以構成著作權侵權的方式在本網站上被連結或顯示，請提交正式的 DMCA 下架通知。',
+        listIntro: '您的通知必須包括：',
+        li1: '著作權所有人或授權代表的實體或電子簽名。',
+        li2: '聲稱受到侵權的有著作權作品的識別。',
+        li3: '我們網站上包含您希望刪除的連結的具體 URL 連結。',
+        li4: '您的聯絡方式，包括姓名、電子郵件和電話。',
+        li5: '聲明您誠實地相信該材料的使用未經授權。',
+        emailText: '請將您的投訴直接發送至我們的合規電子郵件地址：compliance@missav-j.web.id',
+        footer: '我們將在 24 至 48 個工作小時內處理您的請求並刪除侵權連結。'
+      },
+      'zh-CN': {
+        header: 'DMCA (数字千年版权法) 政策',
+        p1: 'MISSAV-J 尊重他人的知识产权。我们是第三方视频的搜索和索引门户网站，不在我们自己的服务器上托管、存储或流式传输任何视频文件。所有视频均嵌入自外部来源。',
+        p2: '如果您认为您的有著作权作品以构成著作权侵权的方式在本网站上被链接或显示，请提交正式的 DMCA 下架通知。',
+        listIntro: '您的通知必须包括：',
+        li1: '著作权所有人或授权代表的实体或电子签名。',
+        li2: '声称受到侵权的有著作权作品的识别。',
+        li3: '我们网站上包含您希望删除的链接的具体 URL 链接。',
+        li4: '您的联络方式，包括姓名、电子邮件和电话。',
+        li5: '声明您诚实地相信该材料的使用未经授权。',
+        emailText: '请将您的投诉直接发送至我们的合规电子邮件地址：compliance@missav-j.web.id',
+        footer: '我们将在 24 至 48 个工作小时内处理您的请求并删除侵权链接。'
+      },
+      'ja': {
+        header: 'DMCA (デジタルミレニアム著作権法) ポリシー',
+        p1: 'MISSAV-Jは他者の知的財産権を尊重します。当サイトはサードパーティ動画の検索およびインデックスポータルであり、自社サーバーで動画ファイルをホスト、保存、またはストリーミングすることはありません。すべての動画は外部ソースから埋め込まれています。',
+        p2: 'ご自身の著作物が著作権侵害にあたる方法で当ウェブサイトにリンクまたは表示されていると思われる場合は、正式なDMCA削除申し立てを送付してください。',
+        listIntro: '通知には以下を含める必要があります：',
+        li1: '著作権者または授権代理人の物理的または電子的な署名。',
+        li2: '侵害されたと主張する著作物の特定。',
+        li3: '削除を希望するリンクが含まれている、当サイト上の特定のURLリンク。',
+        li4: '氏名、メールアドレス、電話番号を含む連絡先詳細。',
+        li5: '素材の使用が許可されていないと善意で信じる旨の声明。',
+        emailText: '苦情は、弊社のアクティブなコンプライアンス電子メールアドレスに直接送信してください：compliance@missav-j.web.id',
+        footer: '弊社はリクエストを処理し、24〜48営業時間内に対象リンクを削除いたします。'
+      },
+      'ko': {
+        header: 'DMCA (디지털 밀레니엄 저작권법) 정책',
+        p1: 'MISSAV-J는 타인의 지적 재산권을 존중합니다. 본 사이트는 제3자 비디오의 검색 및 색인 포털이며, 자체 서버에 비디오 파일을 호스팅, 저장 또는 스트리밍하지 않습니다. 모든 비디오는 외부 소스에서 삽입되었습니다.',
+        p2: '귀하의 저작물이 저작권을 침해하는 방식으로 본 웹사이트에 링크되거나 표시되었다고 판단되는 경우, 공식 DMCA 침해 신고서를 제출해 주시기 바랍니다.',
+        listIntro: '침해 신고서에는 다음 사항이 포함되어야 합니다:',
+        li1: '저작권자 또는 권한을 위임받은 대리인의 실물 또는 전자 서명.',
+        li2: '침해를 주장하는 저작물에 대한 정보.',
+        li3: '삭제를 원하는 링크가 포함된 본 사이트의 특정 URL 주소.',
+        li4: '성명, 이메일, 전화번호를 포함한 귀하의 연락처 정보.',
+        li5: '해당 자료의 사용이 허가되지 않았다는 신념을 표명하는 진술서.',
+        emailText: '침해 신고는 당사의 활성 컴플라이언스 이메일 주소로 직접 보내주시기 바랍니다: compliance@missav-j.web.id',
+        footer: '당사는 귀하의 요청을 처리하고 영업일 기준 24~48시간 이내에 침해 링크를 제거합니다.'
+      },
+      'ms': {
+        header: 'Polisi DMCA (Digital Millennium Copyright Act)',
+        p1: 'MISSAV-J menghormati hak harta intelek orang lain. Kami ialah portal carian dan indeks untuk video pihak ketiga dan tidak mengehos, menyimpan atau menstrim sebarang fail video pada pelayan kami sendiri. Semua video disematkan daripada sumber luaran.',
+        p2: 'Jika anda percaya bahawa karya hak cipta anda telah dipautkan atau dipaparkan di laman web ini dengan cara yang membentuk pelanggaran hak cipta, sila serahkan notis penyingkiran DMCA rasmi.',
+        listIntro: 'Notis anda mesti termasuk:',
+        li1: 'Tandatangan fizikal atau elektronik pemilik hak cipta atau wakil sah.',
+        li2: 'Pengenalan karya berhak cipta yang didakwa telah dilanggar.',
+        li3: 'Pautan URL khusus di laman web kami yang mengandungi pautan yang anda mahu dialih keluar.',
+        li4: 'Butiran hubungan anda termasuk Nama, E-mel dan Telefon.',
+        li5: 'Pernyataan bahawa anda mempunyai kepercayaan dengan niat baik bahawa penggunaan bahan tersebut tidak dibenarkan.',
+        emailText: 'Sila hantar aduan anda terus ke alamat e-mel pematuhan kami yang aktif: compliance@missav-j.web.id',
+        footer: 'Kami akan memproses permintaan anda dan mengalih keluar pautan yang melanggar dalam tempoh 24 hingga 48 jam perniagaan.'
+      },
+      'th': {
+        header: 'นโยบาย DMCA (Digital Millennium Copyright Act)',
+        p1: 'MISSAV-J เคารพสิทธิ์ในทรัพย์สินทางปัญญาของผู้อื่น เราเป็นพอร์ทัลค้นหาและจัดทำดัชนีสำหรับวิดีโอของบุคคลที่สาม และไม่ได้โฮสต์ จัดเก็บ หรือสตรีมไฟล์วิดีโอใด ๆ บนเซิร์ฟเวอร์ของเราเอง วิดีโอทั้งหมดถูกฝังมาจากแหล่งภายนอก',
+        p2: 'หากคุณเชื่อว่าผลงานที่มีลิขสิทธิ์ของคุณถูกลิงก์หรือแสดงบนเว็บไซต์นี้ในลักษณะที่เป็นการละเมิดลิขสิทธิ์ โปรดส่งคำแจ้งเตือนการนำ DMCA ออกอย่างเป็นทางการ',
+        listIntro: 'คำประกาศของคุณต้องประกอบด้วย:',
+        li1: 'ลายเซ็นจริงหรือลายเซ็นอิเล็กทรอนิกส์ของเจ้าของลิขสิทธิ์หรือตัวแทนที่ได้รับมอบอำนาจ',
+        li2: 'การระบุผลงานที่มีลิขสิทธิ์ซึ่งถูกอ้างว่าถูกละเมิด',
+        li3: 'ลิงก์ URL เฉพาะบนไซต์ของเราที่มีลิงก์ที่คุณต้องการให้นำออก',
+        li4: 'รายละเอียดการติดต่อของคุณ รวมถึงชื่อ อีเมล และโทรศัพท์',
+        li5: 'คำแถลงว่าคุณเชื่อโดยสุจริตว่าการใช้เนื้อหานั้นไม่ได้รับอนุญาต',
+        emailText: 'โปรดส่งข้อร้องเรียนของคุณไปยังที่อยู่อีเมลการปฏิบัติตามข้อกำหนดของเราโดยตรงที่: compliance@missav-j.web.id',
+        footer: 'เราจะดำเนินการตามคำขอของคุณและนำลิงก์ที่ละเมิดออกภายใน 24 ถึง 48 ชั่วโมงทำการ'
+      },
+      'de': {
+        header: 'DMCA-Richtlinie (Digital Millennium Copyright Act)',
+        p1: 'MISSAV-J respektiert die Rechte an geistigem Eigentum anderer. Wir sind ein Such- und Indexierungsportal für Videos von Drittanbietern und hosten, speichern oder streamen keine Videodateien auf unseren eigenen Servern. Alle Videos sind aus externen Quellen eingebettet.',
+        p2: 'Wenn Sie glauben, dass Ihr urheberrechtlich geschütztes Werk auf eine Weise verlinkt oder auf dieser Website angezeigt wurde, die eine Urheberrechtsverletzung darstellt, reichen Sie bitte eine formelle DMCA-Takedown-Benachrichtigung ein.',
+        listIntro: 'Ihre Benachrichtigung muss Folgendes enthalten:',
+        li1: 'Eine physische oder elektronische Unterschrift des Urheberrechtsinhabers oder des bevollmächtigten Vertreters.',
+        li2: 'Identifizierung des urheberrechtlich geschützten Werks, das angeblich verletzt wurde.',
+        li3: 'Spezifische URL-Links auf unserer Website, die den zu entfernenden Link enthalten.',
+        li4: 'Ihre Kontaktdaten einschließlich Name, E-Mail-Adresse und Telefonnummer.',
+        li5: 'Eine Erklärung, dass Sie in gutem Glauben davon ausgehen, dass die Nutzung des Materials nicht genehmigt ist.',
+        emailText: 'Bitte senden Sie Ihre Beschwerde direkt an unsere aktive Compliance-E-Mail-Adresse: compliance@missav-j.web.id',
+        footer: 'Wir werden Ihre Anfrage bearbeiten und die verletzenden Links innerhalb von 24 bis 48 Geschäftsstunden entfernen.'
+      },
+      'fr': {
+        header: 'Politique DMCA (Digital Millennium Copyright Act)',
+        p1: 'MISSAV-J respecte les droits de propriété intellectuelle de l\'autrui. Nous sommes un portail de recherche et d\'indexation de vidéos tierces et n\'hébergeons, ne stockons ni ne diffusons aucun fichier vidéo sur nos propres serveurs. Toutes les vidéos sont intégrées à partir de sources externes.',
+        p2: 'Si vous pensez que votre œuvre protégée par le droit d\'auteur a été liée ou affichée sur ce site Web d\'une manière qui constitue une violation du droit d\'auteur, veuillez soumettre un avis de suppression formel DMCA.',
+        listIntro: 'Votre avis doit inclure :',
+        li1: 'Une signature physique ou électronique du titulaire des droits d\'auteur ou de son représentant autorisé.',
+        li2: 'Identification de l\'œuvre protégée par le droit d\'auteur prétendument contrefaite.',
+        li3: 'Liens URL spécifiques sur notre site contenant le lien que vous souhaitez faire supprimer.',
+        li4: 'Vos coordonnées y compris votre nom, adresse e-mail et numéro de téléphone.',
+        li5: 'Une déclaration selon laquelle vous croyez de bonne foi que l\'utilisation du matériel n\'est pas autorisée.',
+        emailText: 'Veuillez envoyer votre plainte directement à notre adresse e-mail de conformité active : compliance@missav-j.web.id',
+        footer: 'Nous traiterons votre demande et supprimerons les liens contrefaits dans un délai de 24 à 48 heures ouvrables.'
+      },
+      'vi': {
+        header: 'Chính sách DMCA (Digital Millennium Copyright Act)',
+        p1: 'MISSAV-J tôn trọng quyền sở hữu trí tuệ của người khác. Chúng tôi là cổng tìm kiếm và lập chỉ mục cho các video của bên thứ ba, đồng thời không lưu trữ, lưu giữ hoặc phát trực tuyến bất kỳ tệp video nào trên máy chủ của riêng mình. Tất cả các video đều được nhúng từ các nguồn bên ngoài.',
+        p2: 'Nếu bạn tin rằng tác phẩm có bản quyền của mình đã được liên kết hoặc hiển thị trên trang web này theo cách cấu thành hành vi vi phạm bản quyền, vui lòng gửi thông báo gỡ bỏ DMCA chính thức.',
+        listIntro: 'Thông báo của bạn phải bao gồm:',
+        li1: 'Chữ ký vật lý hoặc điện tử của chủ sở hữu bản quyền hoặc đại diện được ủy quyền.',
+        li2: 'Xác định tác phẩm có bản quyền bị cáo buộc là vi phạm.',
+        li3: 'Các liên kết URL cụ thể trên trang web của chúng tôi chứa liên kết bạn muốn xóa.',
+        li4: 'Thông tin liên hệ của bạn bao gồm Tên, Email và Điện thoại.',
+        li5: 'Một tuyên bố rằng bạn tin tưởng một cách thiện chí rằng việc sử dụng tài liệu đó là không được phép.',
+        emailText: 'Vui lòng gửi khiếu nại của bạn trực tiếp đến địa chỉ email tuân thủ đang hoạt động của chúng tôi: compliance@missav-j.web.id',
+        footer: 'Chúng tôi sẽ xử lý yêu cầu của bạn và xóa các liên kết vi phạm trong vòng 24 đến 48 giờ làm việc.'
+      },
+      'fil': {
+        header: 'Patakaran ng DMCA (Digital Millennium Copyright Act)',
+        p1: 'Ipinapasa ng MISSAV-J ang mga karapatan sa ari-ariang intelektwal ng iba. Kami ay isang portal ng paghahanap at pag-index para sa mga video ng ikatlong partido at hindi nagho-host, nag-iimbak, o nag-i-stream ng anumang mga file ng video sa aming sariling mga server. Ang lahat ng mga video ay naka-embed mula sa mga panlabas na mapagkukunan.',
+        p2: 'Kung naniniwala ka na ang iyong gawaing may karapatang-ari ay na-link o naipakita sa website na ito sa paraang lumalabag sa karapatang-ari, mangyaring magsumite ng pormal na paunawa ng pagtanggal ng DMCA.',
+        listIntro: 'Ang iyong paunawa ay dapat maglaman ng:',
+        li1: 'Fisikal o elektronikong lagda ng may-ari ng karapatang-ari o awtorisadong kinatawan.',
+        li2: 'Pagtukoy sa gawaing may karapatang-ari na inaangking nilabag.',
+        li3: 'Tiyak na mga URL link sa aming site na naglalaman ng link na nais mong alisin.',
+        li4: 'Iyong mga detalye sa pakikipag-ugnayan kabilang ang Pangalan, Email, at Telepono.',
+        li5: 'Isang pahayag na naniniwala ka nang may mabuting katapatan na ang paggamit ng materyal ay walang pahintulot.',
+        emailText: 'Mangyaring ipadala ang iyong reklamo nang direkta sa aming aktibong email address ng pagsunod: compliance@missav-j.web.id',
+        footer: 'Ipoproseso namin ang iyong kahilingan at aalisin ang mga lumalabag na link sa loob ng 24 hanggang 48 oras ng negosyo.'
+      },
+      'pt': {
+        header: 'Política do DMCA (Digital Millennium Copyright Act)',
+        p1: 'O MISSAV-J respeita os direitos de propriedade intelectual de terceiros. Somos um portal de busca e indexação de vídeos de terceiros e não hospedamos, armazenamos ou transmitimos quaisquer arquivos de vídeo em nossos próprios servidores. Todos os vídeos são incorporados de fontes externas.',
+        p2: 'Se você acredita que seu trabalho protegido por direitos autorais foi vinculado ou exibido neste site de uma forma que constitua violação de direitos autorais, envie uma notificação formal de remoção do DMCA.',
+        listIntro: 'Sua notificação deve incluir:',
+        li1: 'Uma assinatura física ou eletrônica do proprietário dos direitos autorais ou representante autorizado.',
+        li2: 'Identificação do trabalho protegido por direitos autorais que se alega ter sido violado.',
+        li3: 'Links de URL específicos em nosso site contendo o link que você deseja remover.',
+        li4: 'Seus detalhes de contato, incluindo Nome, E-mail e Telefone.',
+        li5: 'Uma declaração de que você acredita de boa-fé que o uso do material não é autorizado.',
+        emailText: 'Envie sua reclamação diretamente para nosso endereço de e-mail de conformidade ativo: compliance@missav-j.web.id',
+        footer: 'Processaremos sua solicitação e removeremos os links infratores em até 24 a 48 horas úteis.'
+      }
+    }
+  };
+
+  const showModal = (type) => {
+    document.body.style.overflow = 'hidden';
+    overlay.classList.remove('hidden');
+
+    const activeLang = i18n.getLang() || 'en';
+    const isEn = activeLang === 'en';
+
+    if (type === '2257') {
+      title.textContent = i18n.t('legal_2257_title') || '18 U.S.C. 2257 Compliance Statement';
+      
+      const contentLang = LEGAL_TEXTS['2257'][activeLang] || LEGAL_TEXTS['2257']['en'];
+      const contentEn = LEGAL_TEXTS['2257']['en'];
+
+      let bodyHtml = `
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: var(--color-text, #fff); font-size: 1rem; font-weight: 700; margin-bottom: 8px;">${contentLang.header}</h3>
+          <p style="margin-bottom: 12px; line-height: 1.5;">${contentLang.p1}</p>
+          <p style="margin-bottom: 12px; line-height: 1.5;">${contentLang.p2}</p>
+        </div>
+      `;
+
+      if (!isEn) {
+        bodyHtml += `
+          <hr style="border: 0; border-top: 1px solid var(--color-border, rgba(255,255,255,0.08)); margin: 16px 0;">
+          <div style="opacity: 0.7;">
+            <h3 style="color: var(--color-text, #fff); font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">${contentEn.header} (Original)</h3>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.p1}</p>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.p2}</p>
+          </div>
+        `;
+      }
+      body.innerHTML = bodyHtml;
+
+    } else if (type === 'dmca') {
+      title.textContent = i18n.t('legal_dmca_title') || 'DMCA Copyright Policy';
+
+      const contentLang = LEGAL_TEXTS['dmca'][activeLang] || LEGAL_TEXTS['dmca']['en'];
+      const contentEn = LEGAL_TEXTS['dmca']['en'];
+
+      let bodyHtml = `
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: var(--color-text, #fff); font-size: 1rem; font-weight: 700; margin-bottom: 8px;">${contentLang.header}</h3>
+          <p style="margin-bottom: 12px; line-height: 1.5;">${contentLang.p1}</p>
+          <p style="margin-bottom: 12px; line-height: 1.5;">${contentLang.p2}</p>
+          <p style="margin-bottom: 12px; line-height: 1.5;"><strong>${contentLang.listIntro}</strong></p>
+          <ul style="margin-bottom: 12px; padding-left: 20px; list-style-type: disc; line-height: 1.5;">
+            <li>${contentLang.li1}</li>
+            <li>${contentLang.li2}</li>
+            <li>${contentLang.li3}</li>
+            <li>${contentLang.li4}</li>
+            <li>${contentLang.li5}</li>
+          </ul>
+          <p style="margin-bottom: 12px; line-height: 1.5;">
+            ${contentLang.emailText.replace('compliance@missav-j.web.id', '<strong style="color: var(--color-accent, #ff003c); font-weight: 700;">compliance@missav-j.web.id</strong>')}
+          </p>
+          <p style="margin-bottom: 12px; line-height: 1.5;">${contentLang.footer}</p>
+        </div>
+      `;
+
+      if (!isEn) {
+        bodyHtml += `
+          <hr style="border: 0; border-top: 1px solid var(--color-border, rgba(255,255,255,0.08)); margin: 16px 0;">
+          <div style="opacity: 0.7;">
+            <h3 style="color: var(--color-text, #fff); font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">${contentEn.header} (Original)</h3>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.p1}</p>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.p2}</p>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);"><strong>${contentEn.listIntro}</strong></p>
+            <ul style="margin-bottom: 12px; padding-left: 20px; list-style-type: disc; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">
+              <li>${contentEn.li1}</li>
+              <li>${contentEn.li2}</li>
+              <li>${contentEn.li3}</li>
+              <li>${contentEn.li4}</li>
+              <li>${contentEn.li5}</li>
+            </ul>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">
+              ${contentEn.emailText.replace('compliance@missav-j.web.id', '<strong style="font-weight: 700;">compliance@missav-j.web.id</strong>')}
+            </p>
+            <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.footer}</p>
+          </div>
+        `;
+      }
+      body.innerHTML = bodyHtml;
+    }
+  };
+
+  const closeModal = () => {
+    document.body.style.overflow = '';
+    overlay.classList.add('hidden');
+  };
+
+  if (btn2257) {
+    btn2257.addEventListener('click', (e) => {
+      e.preventDefault();
+      showModal('2257');
+    });
+  }
+
+  if (btnDmca) {
+    btnDmca.addEventListener('click', (e) => {
+      e.preventDefault();
+      showModal('dmca');
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeModal);
+  }
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+}
+
+/**
  * Initializes global click events and mobile sidebar states
  */
 function initGlobalEvents() {
@@ -1108,6 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupScrollTopButton();
   setupFloatingPlayerDOM();
   setupKeyboardHotkeys();
+  setupLegalModals();
   
   // Collapse sidebar by default on tablet viewports (768px to 1023px)
   const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;

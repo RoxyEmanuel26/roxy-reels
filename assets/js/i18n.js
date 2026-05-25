@@ -517,6 +517,24 @@ const TITLE_DICTIONARY = {
   },
   leak: {
     en: 'Leak', id: 'Bocor', 'zh-TW': '流出', 'zh-CN': '流出', ja: '流出', ko: '유출', ms: 'Bocor', th: 'หลุด', de: 'Leak', fr: 'Fuite', vi: 'Rò rỉ', fil: 'Leak', pt: 'Vazamento'
+  },
+  legal_section_title: {
+    en: 'Legal', id: 'Hukum', 'zh-TW': '法律資訊', 'zh-CN': '法律信息', ja: '法的情報', ko: '법적 고지', ms: 'Undang-Undang', th: 'ข้อกฎหมาย', de: 'Rechtliches', fr: 'Légal', vi: 'Pháp lý', fil: 'Legal', pt: 'Legal'
+  },
+  legal_2257_link: {
+    en: '18 U.S.C. 2257', id: '18 U.S.C. 2257', 'zh-TW': '18 U.S.C. 2257', 'zh-CN': '18 U.S.C. 2257', ja: '18 U.S.C. 2257', ko: '18 U.S.C. 2257', ms: '18 U.S.C. 2257', th: '18 U.S.C. 2257', de: '18 U.S.C. 2257', fr: '18 U.S.C. 2257', vi: '18 U.S.C. 2257', fil: '18 U.S.C. 2257', pt: '18 U.S.C. 2257'
+  },
+  legal_dmca_link: {
+    en: 'DMCA Policy', id: 'Kebijakan DMCA', 'zh-TW': 'DMCA 政策', 'zh-CN': 'DMCA 政策', ja: 'DMCAポリシー', ko: 'DMCA 정책', ms: 'Polisi DMCA', th: 'นโยบาย DMCA', de: 'DMCA-Richtlinie', fr: 'Politique DMCA', vi: 'Chính sách DMCA', fil: 'Patakaran ng DMCA', pt: 'Política DMCA'
+  },
+  legal_modal_close: {
+    en: 'Close', id: 'Tutup', 'zh-TW': '關閉', 'zh-CN': '关闭', ja: '閉じる', ko: '닫기', ms: 'Tutup', th: 'ปิด', de: 'Schließen', fr: 'Fermer', vi: 'Đóng', fil: 'Isara', pt: 'Fechar'
+  },
+  legal_2257_title: {
+    en: '18 U.S.C. 2257 Compliance Statement', id: 'Pernyataan Kepatuhan 18 U.S.C. 2257', 'zh-TW': '18 U.S.C. § 2257 記錄保存合規聲明', 'zh-CN': '18 U.S.C. § 2257 记录保存合规声明', ja: '18 U.S.C. § 2257 記録保持遵守声明', ko: '18 U.S.C. § 2257 기록 보존 준수 선언문', ms: 'Pernyataan Pematuhan Penyimpanan Rekod 18 U.S.C. § 2257', th: 'คำแถลงการปฏิบัติตามการเก็บรักษาบันทึกตาม 18 U.S.C. § 2257', de: '18 U.S.C. § 2257 Erklärung zur Einhaltung der Aufzeichnungspflichten', fr: 'Déclaration de conformité à la tenue des registres 18 U.S.C. § 2257', vi: 'Tuyên bố tuân thủ lưu trữ hồ sơ theo 18 U.S.C. § 2257', fil: 'Pahayag ng Pagsunod sa Pagpapanatili ng Rekord ng 18 U.S.C. § 2257', pt: 'Declaração de Conformidade de Manutenção de Registros 18 U.S.C. § 2257'
+  },
+  legal_dmca_title: {
+    en: 'DMCA Copyright Policy', id: 'Kebijakan Hak Cipta DMCA', 'zh-TW': 'DMCA 著作權政策', 'zh-CN': 'DMCA 著作权政策', ja: 'DMCA著作権ポリシー', ko: 'DMCA 저작권 정책', ms: 'Polisi Hak Cipta DMCA', th: 'นโยบายลิขสิทธิ์ DMCA', de: 'DMCA-Urheberrechtsrichtlinie', fr: 'Politique de droits d\'auteur DMCA', vi: 'Chính sách bản quyền DMCA', fil: 'Patakaran sa Karapatang-ari ng DMCA', pt: 'Política de Direitos Autorais DMCA'
   }
 };
 
