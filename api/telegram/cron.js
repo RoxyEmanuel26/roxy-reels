@@ -2,6 +2,7 @@
  * MISSAV-J — Automated Telegram Channel Poster (Cron Job)
  * Fetches the latest videos from the API, checks if they have already been posted 
  * (using Supabase to track state), and automatically publishes them to a Telegram Channel.
+ * Designed to be triggered externally by cron-job.org or similar services.
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL;

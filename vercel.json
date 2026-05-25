@@ -29,11 +29,5 @@
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type, X-API-Key, X-Client-Site" }
       ]
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/telegram-cron",
-      "schedule": "*/30 * * * *"
-    }
   ]
 }
