@@ -14,9 +14,6 @@ import i18n from './i18n.js';
 const likedVideos = new Set();
 const dislikedVideos = new Set();
 
-// Observer untuk mendeteksi perubahan ukuran placeholder pemutar
-let placeholderObserver = null;
-
 // Premium inline SVG fallback ketika thumbnail gagal dimuat
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22168%22 height=%2294%22 viewBox=%220 0 168 94%22><rect width=%22168%22 height=%2294%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2210%22>NO IMAGE</text></svg>`;
 
@@ -63,9 +60,6 @@ export async function init(id) {
     ui.showError(i18n.t('invalid_video_id'));
     return;
   }
-
-  // Bersihkan observer lama jika ada sebelum memuat halaman baru
-  disconnectPlaceholderObserver();
 
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
@@ -184,7 +178,8 @@ export async function init(id) {
       floatWrapper.classList.remove('mode-floating');
       floatWrapper.classList.add('mode-theater');
       alignGlobalPlayerWithPlaceholder();
-      setupPlaceholderObserver();
+      setTimeout(alignGlobalPlayerWithPlaceholder, 50);
+      setTimeout(alignGlobalPlayerWithPlaceholder, 200);
     }
 
     if (isCurrentlyPlaying) {
@@ -863,8 +858,6 @@ function bindRelatedClicks(list) {
 }
 /**
  * Aligns the persistent floating-player-wrapper exactly over the watch page placeholder.
- * Menggunakan deteksi koordinat absolut bebas-scroll (offsetParent traversal) untuk mencegah
- * pergeseran posisi akibat jeda reflow layout dan sinkronisasi scroll browser (scroll lag).
  */
 export function alignGlobalPlayerWithPlaceholder() {
   const container = document.getElementById('floating-player-wrapper');
@@ -874,30 +867,10 @@ export function alignGlobalPlayerWithPlaceholder() {
   
   const placeholder = document.querySelector('.player-container-placeholder');
   if (placeholder) {
-    // 1. Hitung koordinat dokumen absolut menggunakan penelusuran offsetParent (kebal scroll)
-    let docTop = 0;
-    let docLeft = 0;
-    let curr = placeholder;
-    while (curr) {
-      docTop += curr.offsetTop || 0;
-      docLeft += curr.offsetLeft || 0;
-      curr = curr.offsetParent;
-    }
-
     const rect = placeholder.getBoundingClientRect();
-    
-    // 2. Jika perbedaan koordinat penelusuran dengan getBoundingClientRect + scroll kecil (< 15px),
-    // gunakan getBoundingClientRect + scroll untuk presisi sub-pixel. Jika ada selisih besar (lag scroll/reflow),
-    // gunakan penelusuran offsetParent untuk kestabilan penuh agar bingkai tidak bergeser.
-    const rectDocTop = rect.top + window.scrollY;
-    const rectDocLeft = rect.left + window.scrollX;
-    
-    const finalTop = Math.abs(rectDocTop - docTop) < 15 ? rectDocTop : docTop;
-    const finalLeft = Math.abs(rectDocLeft - docLeft) < 15 ? rectDocLeft : docLeft;
-
     container.style.position = 'absolute';
-    container.style.top = finalTop + 'px';
-    container.style.left = finalLeft + 'px';
+    container.style.top = (rect.top + window.scrollY) + 'px';
+    container.style.left = (rect.left + window.scrollX) + 'px';
     container.style.width = rect.width + 'px';
     container.style.height = rect.height + 'px';
     
@@ -913,36 +886,4 @@ export function alignGlobalPlayerWithPlaceholder() {
   }
 }
 
-/**
- * Menginisialisasi ResizeObserver pada placeholder untuk menyelaraskan pemutar secara dinamis
- * saat ukuran layar berubah, sidebar diciutkan, atau reflow layout DOM selesai.
- */
-export function setupPlaceholderObserver() {
-  disconnectPlaceholderObserver();
-  
-  const placeholder = document.querySelector('.player-container-placeholder');
-  if (!placeholder) return;
-  
-  placeholderObserver = new ResizeObserver(() => {
-    alignGlobalPlayerWithPlaceholder();
-  });
-  
-  placeholderObserver.observe(placeholder);
-}
-
-/**
- * Membersihkan ResizeObserver saat meninggalkan halaman watch atau menutup pemutar
- */
-export function disconnectPlaceholderObserver() {
-  if (placeholderObserver) {
-    placeholderObserver.disconnect();
-    placeholderObserver = null;
-  }
-}
-
-export default { 
-  init, 
-  alignGlobalPlayerWithPlaceholder, 
-  setupPlaceholderObserver, 
-  disconnectPlaceholderObserver 
-};
+export default { init, alignGlobalPlayerWithPlaceholder };
