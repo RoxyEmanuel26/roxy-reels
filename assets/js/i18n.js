@@ -535,6 +535,12 @@ const TITLE_DICTIONARY = {
   },
   legal_dmca_title: {
     en: 'DMCA Copyright Policy', id: 'Kebijakan Hak Cipta DMCA', 'zh-TW': 'DMCA 著作權政策', 'zh-CN': 'DMCA 著作权政策', ja: 'DMCA著作権ポリシー', ko: 'DMCA 저작권 정책', ms: 'Polisi Hak Cipta DMCA', th: 'นโยบายลิขสิทธิ์ DMCA', de: 'DMCA-Urheberrechtsrichtlinie', fr: 'Politique de droits d\'auteur DMCA', vi: 'Chính sách bản quyền DMCA', fil: 'Patakaran sa Karapatang-ari ng DMCA', pt: 'Política de Direitos Autorais DMCA'
+  },
+  share_modal_title: {
+    en: 'Share Video', id: 'Bagikan Video', 'zh-TW': '分享影片', 'zh-CN': '分享视频', ja: '動画を共有', ko: '비디오 공유', ms: 'Kongsi Video', th: 'แชร์วิดีโอ', de: 'Video teilen', fr: 'Partager la vidéo', vi: 'Chia sẻ Video', fil: 'Ibahagi ang Video', pt: 'Compartilhar Vídeo'
+  },
+  share_modal_copy: {
+    en: 'Copy Link', id: 'Salin Tautan', 'zh-TW': '複製連結', 'zh-CN': '复制链接', ja: 'リンクをコピー', ko: '링크 복사', ms: 'Salin Pautan', th: 'คัดลอกลิงก์', de: 'Link kopieren', fr: 'Copier le lien', vi: 'Sao chép liên kết', fil: 'Kopyahin ang Link', pt: 'Copiar Link'
   }
 };
 
@@ -671,7 +677,7 @@ export function setLang(langCode, triggerRedirect = true) {
  */
 export function t(key, params = {}) {
   const lang = getLang();
-  const translations = DICTIONARY[key];
+  const translations = DICTIONARY[key] || TITLE_DICTIONARY[key];
   if (!translations) return '';
 
   let text = translations[lang] || translations['en'] || '';

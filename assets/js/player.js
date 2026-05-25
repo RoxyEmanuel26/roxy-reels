@@ -128,6 +128,10 @@ export async function init(id) {
               <div class="studio-badge-wrapper" id="player-studio-wrapper">
                 <!-- Diisi Studio -->
               </div>
+              <a id="player-download-btn" href="#" target="_blank" class="download-badge-btn" style="display: none;">
+                <span class="btn-icon">📥</span>
+                <span>Download</span>
+              </a>
               <div class="video-code-badge" id="player-code">KODE</div>
             </div>
             
@@ -298,6 +302,7 @@ export function renderPostMeta(post, id) {
   const dateEl = document.getElementById('player-publish-date');
   const studioWrapper = document.getElementById('player-studio-wrapper');
   const codeEl = document.getElementById('player-code');
+  const downloadBtn = document.getElementById('player-download-btn');
   
   const actorsList = document.getElementById('player-actors-list');
   const categoriesList = document.getElementById('player-categories-list');
@@ -336,6 +341,35 @@ export function renderPostMeta(post, id) {
     } else {
       codeEl.style.display = 'none';
     }
+  }
+
+  // Setup Download Button with random redirect link
+  if (downloadBtn) {
+    const downloadLinks = [
+      "https://omg10.com/4/10806721",
+      "https://omg10.com/4/10806736",
+      "https://omg10.com/4/10806719",
+      "https://omg10.com/4/10806723",
+      "https://omg10.com/4/10806731",
+      "https://omg10.com/4/10806726",
+      "https://omg10.com/4/10806729",
+      "https://omg10.com/4/10806728",
+      "https://omg10.com/4/10806730",
+      "https://omg10.com/4/10806727",
+      "https://glamournakedemployee.com/dktyyvhhvs?key=2135b8086ad561259d59a35e74d4dae3",
+      "https://glamournakedemployee.com/bxj9v8xs?key=bbcc03541721fe595f6d0a199086c628",
+      "https://glamournakedemployee.com/d1ydygn4?key=ae04db9758f66d571a2d122b08635af3",
+      "https://glamournakedemployee.com/c5xf7679?key=80dc863578016519ca9167abc7090944",
+      "https://glamournakedemployee.com/npkvzf46m?key=8060ea72a291acdeae897405426a6013",
+      "https://glamournakedemployee.com/xdn13p8ti?key=d9dbf00859cec6d1da89b3855b9f40df",
+      "https://glamournakedemployee.com/r0ue7gdeb8?key=0f351b4656e9db04d06bdd25deb60f05",
+      "https://glamournakedemployee.com/vfag6svjx?key=ba78cf78789f91aa7ace1942fce8a322",
+      "https://glamournakedemployee.com/jpnevpwu8?key=53b3ae6972e09ad30eb53ce3f99890a5",
+      "https://glamournakedemployee.com/xdi7pkz9wh?key=46862d356a0f361ac92be23fe00a265a"
+    ];
+    const randomUrl = downloadLinks[Math.floor(Math.random() * downloadLinks.length)];
+    downloadBtn.href = randomUrl;
+    downloadBtn.style.display = 'inline-flex';
   }
 
   if (studioWrapper) {
@@ -392,11 +426,9 @@ export function renderPostMeta(post, id) {
   if (shareBtn) {
     shareBtn.addEventListener('click', () => {
       const shareUrl = window.location.href;
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        ui.showToast(i18n.t('toast_share_success'));
-      }).catch(() => {
-        ui.showToast(i18n.t('toast_share_failed'));
-      });
+      const translatedTitle = i18n.translateVideoTitle(post.title);
+      const thumbnailUrl = post.thumbnail ? (post.thumbnail.startsWith('http') ? post.thumbnail : window.location.origin + post.thumbnail) : '';
+      showShareModal(translatedTitle, shareUrl, thumbnailUrl);
     });
   }
 }
@@ -938,6 +970,94 @@ export function disconnectPlaceholderObserver() {
     placeholderObserver.disconnect();
     placeholderObserver = null;
   }
+}
+
+/**
+ * Menampilkan modal popup Share Premium dengan dukungan sosial media (Pinterest, X, Facebook, Copy Link)
+ */
+export function showShareModal(title, shareUrl, thumbnailUrl) {
+  let modal = document.getElementById('share-modal-overlay');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'share-modal-overlay';
+    modal.className = 'share-modal-overlay hidden';
+    modal.innerHTML = `
+      <div class="share-modal-card">
+        <div class="share-modal-header">
+          <h3 data-i18n="share_modal_title">Share Video</h3>
+          <button class="share-modal-close" aria-label="Close Share Dialog">✕</button>
+        </div>
+        <div class="share-modal-body">
+          <div class="share-options-grid">
+            <a href="#" target="_blank" class="share-option-btn opt-facebook">
+              <span class="share-icon">📘</span>
+              <span>Facebook</span>
+            </a>
+            <a href="#" target="_blank" class="share-option-btn opt-x">
+              <span class="share-icon">𝕏</span>
+              <span>X (Twitter)</span>
+            </a>
+            <a href="#" target="_blank" class="share-option-btn opt-pinterest">
+              <span class="share-icon">📌</span>
+              <span>Pinterest</span>
+            </a>
+            <button class="share-option-btn opt-copy">
+              <span class="share-icon">🔗</span>
+              <span data-i18n="share_modal_copy">Copy Link</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const closeBtn = modal.querySelector('.share-modal-close');
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+  }
+
+  // Update dynamic links
+  const fbBtn = modal.querySelector('.opt-facebook');
+  const xBtn = modal.querySelector('.opt-x');
+  const pinBtn = modal.querySelector('.opt-pinterest');
+  const copyBtn = modal.querySelector('.opt-copy');
+
+  fbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  xBtn.href = `https://x.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
+  pinBtn.href = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&media=${encodeURIComponent(thumbnailUrl)}&description=${encodeURIComponent(title)}`;
+
+  copyBtn.onclick = (e) => {
+    e.preventDefault();
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      ui.showToast(i18n.t('toast_share_success') || 'Link successfully copied to clipboard! 📋');
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }).catch(() => {
+      ui.showToast(i18n.t('toast_share_failed') || 'Failed to copy link.');
+    });
+  };
+
+  // Translate modal static texts
+  if (typeof i18n.translateStaticUI === 'function') {
+    i18n.translateStaticUI();
+  }
+
+  // Show
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
 export default { 

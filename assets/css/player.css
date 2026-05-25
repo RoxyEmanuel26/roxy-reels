@@ -757,3 +757,159 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
     padding: 0 var(--space-2);
   }
 }
+
+/* ==========================================================================
+   DOWNLOAD BUTTON & SHARE MODAL STYLES
+   ========================================================================== */
+
+.download-badge-btn {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #fff;
+  background-color: var(--color-accent, #ff003c);
+  padding: 6px var(--space-4);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: opacity var(--transition), transform var(--transition);
+  cursor: pointer;
+}
+
+.download-badge-btn:hover {
+  opacity: 0.9;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.download-badge-btn .btn-icon {
+  font-size: var(--text-sm);
+}
+
+/* Share Modal Styles */
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease;
+}
+
+.share-modal-overlay.hidden {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.share-modal-card {
+  background-color: var(--color-surface-2, #1f1f1f);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4, 16px);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.share-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text, #fff);
+}
+
+.share-modal-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #aaa);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color var(--transition);
+}
+
+.share-modal-close:hover {
+  color: var(--color-text, #fff);
+}
+
+.share-modal-body {
+  padding: var(--space-4, 16px);
+}
+
+.share-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3, 12px);
+}
+
+.share-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-3, 12px);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background-color: var(--color-surface, #181818);
+  color: var(--color-text, #fff);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.share-option-btn:hover {
+  background-color: var(--color-surface-3, #2a2a2a);
+  transform: translateY(-2px);
+}
+
+.share-icon {
+  font-size: 1.25rem;
+}
+
+/* Hover Colors for specific share buttons */
+.opt-facebook:hover {
+  border-color: #1877f2;
+}
+
+.opt-x:hover {
+  border-color: #ffffff;
+}
+
+.opt-pinterest:hover {
+  border-color: #bd081c;
+}
+
+.opt-copy:hover {
+  border-color: var(--color-blue, #3b82f6);
+}
+
+/* Mobile responsive styling for the download button */
+@media (max-width: 768px) {
+  .download-badge-btn {
+    width: 100%;
+    justify-content: center;
+    order: 2; /* Put it between studio and code in stacked layout */
+  }
+}
