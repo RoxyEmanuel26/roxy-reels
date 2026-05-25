@@ -22,9 +22,5 @@ yarn-error.log*
 dist/
 out/
 build/
-generate*
-sitemaps/
-sitemap_index.xml
-sitemap_*.xml
+sitemaps/*.state
 sitemap_index.xml.state
-.vercel

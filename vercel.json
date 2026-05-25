@@ -3,7 +3,12 @@
     { "source": "/api/posts", "destination": "/api/posts.js" },
     { "source": "/api/posts/:id", "destination": "/api/posts.js?id=:id" },
     { "source": "/api/player/:id", "destination": "/api/player.js?id=:id" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/sitemap.xml", "destination": "/sitemaps/sitemap_index.xml" },
+    { "source": "/sitemaps/pages.xml", "destination": "/sitemaps/sitemap_pages.xml" },
+    { "source": "/sitemaps/actors_:id.xml", "destination": "/sitemaps/sitemap_actors_:id.xml" },
+    { "source": "/sitemaps/categories.xml", "destination": "/sitemaps/sitemap_categories.xml" },
+    { "source": "/sitemaps/studios.xml", "destination": "/sitemaps/sitemap_studios.xml" },
+    { "source": "/sitemaps/:lang-:page.xml", "destination": "/sitemaps/sitemap_videos_en_:page.xml" },
     { "source": "/sitemaps/:file", "destination": "/api/sitemap?file=:file" },
     { "source": "/((?!api|assets|favicon.svg|.*\\..*).*)", "destination": "/index.html" }
   ],
