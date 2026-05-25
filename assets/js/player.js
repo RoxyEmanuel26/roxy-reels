@@ -879,21 +879,9 @@ export function alignGlobalPlayerWithPlaceholder() {
     // inside the embed player from apijav.com.
     const playerContainer = document.getElementById('player-container');
     if (playerContainer) {
-      const isMobileOrTablet = window.innerWidth < 1024;
-      if (isMobileOrTablet) {
-        // Pada tablet/mobile, gunakan scale dari ukuran desktop 960x540
-        // untuk mencegah apiJAV merender layout iklan vertikal di sisi kanan (yang menggeser video)
-        const scaleFactor = rect.width / 960;
-        playerContainer.style.width = '960px';
-        playerContainer.style.height = '540px';
-        playerContainer.style.transform = `scale(${scaleFactor})`;
-        playerContainer.style.transformOrigin = 'top left';
-      } else {
-        // Pada PC/desktop, gunakan resize langsung untuk ketajaman visual maksimal (100% native)
-        playerContainer.style.transform = 'none';
-        playerContainer.style.width = rect.width + 'px';
-        playerContainer.style.height = rect.height + 'px';
-      }
+      playerContainer.style.transform = 'none';  // ← Hapus transform
+      playerContainer.style.width = rect.width + 'px';   // ← Resize langsung
+      playerContainer.style.height = rect.height + 'px';
     }
   }
 }
