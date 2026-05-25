@@ -593,8 +593,6 @@ function navigate(urlPath) {
         const playerContainer = document.getElementById('player-container');
         if (playerContainer) {
           playerContainer.style.transform = '';
-          playerContainer.style.width = '';
-          playerContainer.style.height = '';
         }
         
         if (floatTitle) {
