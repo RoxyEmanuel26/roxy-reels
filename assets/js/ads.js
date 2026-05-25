@@ -70,6 +70,69 @@ window.missavJAdConfig = {
 };
 
 /**
+ * Menyesuaikan skala banner yang ditandai scalable agar pas dengan lebar kontainernya
+ */
+export function adjustScaledBanners() {
+  const scaledContainers = document.querySelectorAll('[data-scalable="true"]');
+  scaledContainers.forEach(container => {
+    const iframe = container.querySelector('iframe');
+    if (!iframe) return;
+    
+    const nativeWidth = parseInt(container.getAttribute('data-native-width')) || 728;
+    const nativeHeight = parseInt(container.getAttribute('data-native-height')) || 90;
+    
+    // Dapatkan lebar parent kontainer untuk presisi tata letak (menghindari overflow)
+    const parentWidth = container.parentElement ? container.parentElement.clientWidth : window.innerWidth;
+    
+    // Kurangi sedikit padding pengaman agar tidak mepet ke tepi layar
+    const padding = 16;
+    const availableWidth = Math.min(parentWidth - padding, nativeWidth);
+    const scaleFactor = availableWidth / nativeWidth;
+    
+    if (scaleFactor < 1) {
+      iframe.style.position = 'absolute';
+      iframe.style.left = '50%';
+      iframe.style.top = '0';
+      iframe.style.transform = `translate(-50%, 0) scale(${scaleFactor})`;
+      iframe.style.transformOrigin = 'top center';
+      
+      const scaledHeight = nativeHeight * scaleFactor;
+      container.style.height = `${scaledHeight}px`;
+      container.style.minHeight = '0px'; // Bypass stylesheet min-height during scaling
+      container.style.position = 'relative';
+      container.style.overflow = 'hidden';
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'flex-start';
+    } else {
+      // Kembalikan ke default jika tidak perlu di-scale
+      iframe.style.position = '';
+      iframe.style.left = '';
+      iframe.style.top = '';
+      iframe.style.transform = '';
+      iframe.style.transformOrigin = '';
+      
+      container.style.height = '';
+      container.style.minHeight = ''; // Restore stylesheet min-height
+      container.style.position = '';
+      container.style.overflow = '';
+      container.style.display = '';
+      container.style.justifyContent = '';
+      container.style.alignItems = '';
+    }
+  });
+}
+
+// Inisialisasi event listener resize global dengan debounce
+if (typeof window !== 'undefined') {
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(adjustScaledBanners, 100);
+  });
+}
+
+/**
  * Memuat banner ExoClick secara dinamis menggunakan iframe (Aman untuk SPA & Bebas document.write)
  */
 export function loadExoClickBanner(containerId, zoneId, width, height) {
@@ -78,14 +141,34 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 
   container.innerHTML = '';
 
+  // Setel ulang atribut scaling bawaan jika ada
+  container.removeAttribute('data-scalable');
+  container.removeAttribute('data-native-width');
+  container.removeAttribute('data-native-height');
+  container.style.height = '';
+  container.style.overflow = '';
+  container.style.display = '';
+  container.style.justifyContent = '';
+  container.style.alignItems = '';
+
+  // Khusus untuk global-top-ad di mobile, kita selalu muat 728x90 lalu di-scale.
+  // Karena ExoClick Zone ID 5933300 dikonfigurasi khusus untuk ukuran 728x90 di ExoClick,
+  // me-request ukuran 320x50 ke zone ini akan menyebabkan tampilan terpotong.
+  let targetWidth = width;
+  let targetHeight = height;
+  if (containerId === 'global-top-ad' && window.innerWidth < 768) {
+    targetWidth = 728;
+    targetHeight = 90;
+  }
+
   // Jika kunci masih berbentuk placeholder, tampilkan placeholder premium bermotif dark mode neon
   if (!zoneId || String(zoneId).startsWith('placeholder_')) {
     container.innerHTML = `
-      <div class="premium-ad-placeholder" style="max-width: ${width}px; height: ${height}px; margin: 0 auto; width: 100%;">
+      <div class="premium-ad-placeholder" style="max-width: ${targetWidth}px; height: ${targetHeight}px; margin: 0 auto; width: 100%;">
         <div class="ad-placeholder-glow"></div>
         <div class="ad-placeholder-content">
           <span class="ad-badge">EXOCLICK SLOT</span>
-          <span class="ad-size">${width} × ${height}</span>
+          <span class="ad-size">${targetWidth} × ${targetHeight}</span>
           <span class="ad-hint">Trafik Tinggi & Responsif</span>
         </div>
       </div>
@@ -95,9 +178,9 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 
   // Load via Iframe syndication ExoClick untuk kompatibilitas SPA penuh
   const iframe = document.createElement('iframe');
-  iframe.src = `https://a.magsrv.com/iframe.php?idzone=${zoneId}&size=${width}x${height}`;
-  iframe.width = width;
-  iframe.height = height;
+  iframe.src = `https://a.magsrv.com/iframe.php?idzone=${zoneId}&size=${targetWidth}x${targetHeight}`;
+  iframe.width = targetWidth;
+  iframe.height = targetHeight;
   iframe.scrolling = 'no';
   iframe.frameBorder = '0';
   iframe.style.border = 'none';
@@ -106,6 +189,14 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
   iframe.style.margin = '0 auto';
 
   container.appendChild(iframe);
+
+  // Tandai kontainer sebagai scalable jika targetWidth >= 728 (seperti banner atas)
+  if (targetWidth >= 728) {
+    container.setAttribute('data-scalable', 'true');
+    container.setAttribute('data-native-width', targetWidth);
+    container.setAttribute('data-native-height', targetHeight);
+    adjustScaledBanners();
+  }
 }
 
 /**
@@ -260,5 +351,6 @@ window.missavJAds = {
   initPlayerAdOverlay,
   loadWatchPageAds,
   loadGlobalTopAd,
-  initAdsterraPopunder
+  initAdsterraPopunder,
+  adjustScaledBanners
 };
