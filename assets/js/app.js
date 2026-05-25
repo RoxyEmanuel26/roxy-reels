@@ -492,11 +492,15 @@ function navigate(urlPath) {
   const prevPath = window.missavJState.currentPath;
   window.missavJState.currentPath = matchedRoutePath;
 
+  // Set route attribute on body for CSS styling targeting
+  document.body.setAttribute('data-route', matchedRoutePath);
+
   // Manage Global Top Ad Visibility and Loading
   const globalTopAd = document.getElementById('global-top-ad');
   if (globalTopAd) {
     if (matchedRoutePath === '/watch') {
       globalTopAd.style.display = 'none';
+      globalTopAd.innerHTML = ''; // Hancurkan iframe iklan lama agar tidak nyangkut/memakan memori
     } else {
       globalTopAd.style.display = '';
       if (window.missavJAds && typeof window.missavJAds.loadGlobalTopAd === 'function') {
