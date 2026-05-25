@@ -484,26 +484,6 @@ body.sidebar-collapsed-layout .main-content {
     font-size: 1.3rem;
   }
 
-  .sidebar {
-    width: var(--sidebar-collapsed);
-  }
-  
-  .sidebar .nav-text, 
-  .sidebar .sidebar-section-title, 
-  .sidebar .sidebar-divider {
-    display: none;
-  }
-  
-  .sidebar .sidebar-nav a, 
-  .sidebar .sidebar-nav button {
-    justify-content: center;
-    padding: var(--space-3) 0;
-  }
-  
-  .main-content {
-    margin-left: var(--sidebar-collapsed);
-  }
-  
   .video-grid {
     grid-template-columns: repeat(2, 1fr);
   }

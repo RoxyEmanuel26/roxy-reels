@@ -892,6 +892,13 @@ function initGlobalEvents() {
   }
   
   ui.initTheme();
+  
+  // Collapse sidebar by default on tablet viewports (768px to 1023px)
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+  if (isTablet && sidebar) {
+    sidebar.classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed-layout');
+  }
 
   window.addEventListener('hashchange', () => {
     if (sidebar) {
