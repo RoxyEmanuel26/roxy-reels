@@ -64,6 +64,7 @@
   letter-spacing: 0.5px;
   color: var(--color-text);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .logo-icon {
@@ -479,6 +480,10 @@ body.sidebar-collapsed-layout .main-content {
 
 /* Tablet: Viewports 768px to 1023px */
 @media (min-width: 768px) and (max-width: 1023px) {
+  .logo {
+    font-size: 1.3rem;
+  }
+
   .sidebar {
     width: var(--sidebar-collapsed);
   }
