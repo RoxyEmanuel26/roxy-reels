@@ -271,6 +271,49 @@ export function loadAdBanner(containerId, key, width, height) {
   }
 }
 
+// Helper to clear Adsterra frequency cap cookies & storage
+function clearAdsterraSession() {
+  try {
+    // Clear cookies
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i];
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+      // Adsterra cookies typically have random names/hashes or start with _
+      if (name.includes('adsterra') || name.startsWith('__') || name.length > 10) {
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=." + window.location.hostname.replace(/^www\./, '');
+      }
+    }
+    // Clear localStorage
+    for (let key in localStorage) {
+      if (key.includes('adsterra') || key.includes('pop') || key.length > 10) {
+        localStorage.removeItem(key);
+      }
+    }
+    // Clear sessionStorage
+    for (let key in sessionStorage) {
+      if (key.includes('adsterra') || key.includes('pop') || key.length > 10) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    console.error('[Ads] Error clearing ad session:', e);
+  }
+}
+
+// Global click interceptor to dynamically clear Adsterra session 500ms after any click
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', () => {
+    // Check if we are on watch page before clearing session
+    if (window.missavJState && window.missavJState.currentPath === '/watch') {
+      setTimeout(clearAdsterraSession, 500);
+    }
+  }, { capture: true, passive: true });
+}
+
 /**
  * Menginisialisasi klik pelindung transparan di atas player untuk pemicu popunder
  */
@@ -285,11 +328,24 @@ export function initPlayerAdOverlay() {
   const newOverlay = adOverlay.cloneNode(true);
   adOverlay.parentNode.replaceChild(newOverlay, adOverlay);
 
+  let overlayTimeout = null;
+
   newOverlay.addEventListener('click', (e) => {
-    console.log('[Ads] Popunder triggered on player first click.');
+    console.log('[Ads] Popunder triggered on player click.');
+
+    // Hapus sesi pembatasan frekuensi Adsterra agar iklan berikutnya bisa muncul
+    clearAdsterraSession();
 
     // Sembunyikan pelindung transparan dengan efek transisi cepat
     newOverlay.classList.add('hidden');
+
+    if (overlayTimeout) clearTimeout(overlayTimeout);
+
+    // Tampilkan kembali overlay setelah 40 detik (cooldown agar 2-3 kali per 2 menit)
+    overlayTimeout = setTimeout(() => {
+      console.log('[Ads] Restoring player ad overlay for next popunder trigger.');
+      newOverlay.classList.remove('hidden');
+    }, 40000); // 40 detik
   });
 }
 
