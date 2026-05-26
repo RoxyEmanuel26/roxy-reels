@@ -1,7 +1,7 @@
 /**
  * MISSAV-J — Automated Telegram Channel Poster (Cron Job)
- * Fetches the latest videos from the API, checks if they have already been posted 
- * (using Supabase to track state), and automatically publishes them to a Telegram Channel.
+ * Fetches the latest videos or a random video from the API, 
+ * and automatically publishes them to a Telegram Channel.
  * Designed to be triggered externally by cron-job.org or similar services.
  */
 
@@ -14,78 +14,104 @@ const CRON_SECRET = process.env.CRON_SECRET || 'missav_telegram_secret_key_123';
 // 13-language localized caption content and buttons
 const LOCALIZATION = {
   id: {
+    newTitle: 'NEW VIDEO',
+    randomTitle: 'REKOMENDASI VIDEO',
     watchBtn: '🎬 TONTON SEKARANG (WATCH NOW)',
     tagline: '🍿 Nonton video streaming gratis dengan kualitas HD tanpa lemot hanya di MISSAV-J!',
     actors: 'Aktris',
     categories: 'Kategori'
   },
   'zh-TW': {
+    newTitle: '最新影片',
+    randomTitle: '推薦影片',
     watchBtn: '🎬 立即觀看 (WATCH NOW)',
     tagline: '🍿 在 MISSAV-J 免費觀看無卡頓的高清串流影片！',
     actors: '女優',
     categories: '分類'
   },
   'zh-CN': {
+    newTitle: '最新视频',
+    randomTitle: '推荐视频',
     watchBtn: '🎬 立即观看 (WATCH NOW)',
     tagline: '🍿 在 MISSAV-J 免费观看无卡顿的高清串流视频！',
     actors: '女优',
     categories: '分类'
   },
   en: {
+    newTitle: 'NEW VIDEO',
+    randomTitle: 'RECOMMENDED',
     watchBtn: '🎬 WATCH NOW',
     tagline: '🍿 Watch free video streaming in HD quality without buffering only on MISSAV-J!',
     actors: 'Actresses',
     categories: 'Categories'
   },
   ja: {
+    newTitle: '新着動画',
+    randomTitle: 'おすすめ動画',
     watchBtn: '🎬 今すぐ視聴 (WATCH NOW)',
     tagline: '🍿 MISSAV-Jでバッファリングなしの超高画質ストリーミング動画を無料視聴しよう！',
     actors: '女優',
     categories: 'カテゴリー'
   },
   ko: {
+    newTitle: '최신 비디오',
+    randomTitle: '추천 비디오',
     watchBtn: '🎬 지금 시청하기 (WATCH NOW)',
     tagline: '🍿 오직 MISSAV-J에서 버퍼링 없이 고화질 HD 무료 비디오 스트리밍을 즐겨보세요!',
     actors: '여배우',
     categories: '카테고리'
   },
   ms: {
+    newTitle: 'VIDEO BARU',
+    randomTitle: 'REKOMENDASI VIDEO',
     watchBtn: '🎬 TONTON SEKARANG (WATCH NOW)',
     tagline: '🍿 Tonton video streaming percuma dengan kualiti HD tanpa buffering hanya di MISSAV-J!',
     actors: 'Aktris',
     categories: 'Kategori'
   },
   th: {
+    newTitle: 'วิดีโอใหม่',
+    randomTitle: 'วิดีโอแนะนำ',
     watchBtn: '🎬 รับชมตอนนี้ (WATCH NOW)',
     tagline: '🍿 รับชมวิดีโอสตรีมมิ่งฟรีคุณภาพสูงระดับ HD แบบไม่กระตุกที่ MISSAV-J เท่านั้น!',
     actors: 'นักแสดงหญิง',
     categories: 'หมวดหมู่'
   },
   de: {
+    newTitle: 'NEUES VIDEO',
+    randomTitle: 'EMPFEHLUNG',
     watchBtn: '🎬 JETZT ANSEHEN (WATCH NOW)',
     tagline: '🍿 Kostenloses Videostreaming in HD-Qualität ohne Ruckeln nur auf MISSAV-J!',
     actors: 'Schauspielerinnen',
     categories: 'Kategorien'
   },
   fr: {
+    newTitle: 'NOUVELLE VIDÉO',
+    randomTitle: 'RECOMMANDÉ',
     watchBtn: '🎬 REGARDER MAINTENANT (WATCH NOW)',
     tagline: '🍿 Regardez du streaming vidéo gratuit en qualité HD sans ralentissement uniquement sur MISSAV-J!',
     actors: 'Actrices',
     categories: 'Catégories'
   },
   vi: {
+    newTitle: 'VIDEO MỚI',
+    randomTitle: 'GỢI Ý VIDEO',
     watchBtn: '🎬 XEM NGAY (WATCH NOW)',
     tagline: '🍿 Xem video phát trực tuyến miễn phí chất lượng HD không giật lag chỉ có tại MISSAV-J!',
     actors: 'Diễn viên',
     categories: 'Danh mục'
   },
   fil: {
+    newTitle: 'BAGONG VIDEO',
+    randomTitle: 'INIREREKOMENDA',
     watchBtn: '🎬 PANOORIN NGAYON (WATCH NOW)',
     tagline: '🍿 Manood ng libreng video streaming na may HD quality nang walang buffer sa MISSAV-J lang!',
     actors: 'Mga Aktris',
     categories: 'Mga Kategorya'
   },
   pt: {
+    newTitle: 'NOVO VÍDEO',
+    randomTitle: 'RECOMENDADO',
     watchBtn: '🎬 ASSISTIR AGORA (WATCH NOW)',
     tagline: '🍿 Assista a streaming de vídeo gratuito em qualidade HD sem travamentos apenas no MISSAV-J!',
     actors: 'Atrizes',
@@ -169,35 +195,71 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Missing chat_id parameter or environment variable' });
   }
 
-  // Check language from query parameter, default to 'id'
+  // Check language and type from query parameters
   const lang = req.query.lang || 'id';
+  const type = req.query.type || 'new'; // Options: 'new' (default) or 'random'
 
   try {
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const host = req.headers.host;
     
-    // Fetch latest 5 posts in the requested language
-    const apiUrl = `${protocol}://${host}/api/posts?per_page=5&lang=${lang}`;
-    const apiRes = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'X-Client-Site': `${protocol}://${host}`
+    let posts = [];
+    
+    if (type === 'random') {
+      // Get the total number of posts first by calling api/posts for 1 post
+      const preUrl = `${protocol}://${host}/api/posts?per_page=1&lang=${lang}`;
+      const preRes = await fetch(preUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Client-Site': `${protocol}://${host}`
+        }
+      });
+      
+      let totalPosts = 100;
+      if (preRes.ok) {
+        totalPosts = parseInt(preRes.headers.get('X-WP-Total') || '100', 10);
       }
-    });
+      
+      // Select a random page index
+      const randomPage = Math.floor(Math.random() * totalPosts) + 1;
+      
+      // Fetch the single random post
+      const randomUrl = `${protocol}://${host}/api/posts?per_page=1&page=${randomPage}&lang=${lang}`;
+      const randomRes = await fetch(randomUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Client-Site': `${protocol}://${host}`
+        }
+      });
+      
+      if (randomRes.ok) {
+        posts = await randomRes.json();
+      }
+    } else {
+      // Default: Fetch latest 5 posts in the requested language
+      const apiUrl = `${protocol}://${host}/api/posts?per_page=5&lang=${lang}`;
+      const apiRes = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Client-Site': `${protocol}://${host}`
+        }
+      });
 
-    if (!apiRes.ok) {
-      throw new Error(`Failed to fetch posts: ${apiRes.status}`);
+      if (apiRes.ok) {
+        posts = await apiRes.json();
+      } else {
+        throw new Error(`Failed to fetch posts: ${apiRes.status}`);
+      }
     }
 
-    const posts = await apiRes.json();
-    if (!posts || !Array.isArray(posts)) {
+    if (!posts || !Array.isArray(posts) || posts.length === 0) {
       return res.status(200).json({ message: 'No posts found to process' });
     }
 
     const results = [];
 
     // Process posts in chronological order (oldest first to post in order)
-    const reversedPosts = [...posts].reverse();
+    const reversedPosts = type === 'random' ? posts : [...posts].reverse();
 
     // Get localization strings for the target language (default to 'en' then 'id')
     const loc = LOCALIZATION[lang] || LOCALIZATION['en'] || LOCALIZATION['id'];
@@ -210,19 +272,19 @@ module.exports = async (req, res) => {
         translations = {};
       }
 
-      // Handle backwards compatibility and multi-language posting status
+      // Check duplicate posting ONLY for 'new' video postings (not for random recommendations)
       let postedMap = {};
-      if (typeof translations.telegram_posted === 'boolean') {
-        // Legacy: if it was true, we treat it as posted in the default 'id' language
-        postedMap = { id: translations.telegram_posted };
-      } else if (typeof translations.telegram_posted === 'object' && translations.telegram_posted !== null) {
-        postedMap = translations.telegram_posted;
-      }
+      if (type === 'new') {
+        if (typeof translations.telegram_posted === 'boolean') {
+          postedMap = { id: translations.telegram_posted };
+        } else if (typeof translations.telegram_posted === 'object' && translations.telegram_posted !== null) {
+          postedMap = translations.telegram_posted;
+        }
 
-      // Check if already posted for the specific requested language
-      if (postedMap[lang]) {
-        results.push({ id, status: 'skipped', reason: `already posted for lang: ${lang}` });
-        continue;
+        if (postedMap[lang]) {
+          results.push({ id, status: 'skipped', reason: `already posted for lang: ${lang}` });
+          continue;
+        }
       }
 
       // Prepare Telegram content
@@ -236,8 +298,12 @@ module.exports = async (req, res) => {
         hashtags.push(`#${primaryActor.replace(/[\s\-_]+/g, '')}`);
       }
 
+      // Determine label based on type
+      const label = type === 'random' ? loc.randomTitle : loc.newTitle;
+      const icon = type === 'random' ? '🎲' : '🔥';
+
       const captionText = 
-`🔥 *[${escapeMarkdown(code)}] ${escapeMarkdown(title)}*
+`${icon} *[${label} — ${escapeMarkdown(code)}] ${escapeMarkdown(title)}*
 
 ${loc.tagline}
 
@@ -296,10 +362,12 @@ ${hashtags.join(' ')}`;
       }
 
       if (telegramSuccess) {
-        // Update Supabase to prevent duplicate postings for this specific language
-        postedMap[lang] = true;
-        translations.telegram_posted = postedMap;
-        await saveTranslationToDb(id, translations);
+        if (type === 'new') {
+          // Update Supabase to prevent duplicate postings for this specific language
+          postedMap[lang] = true;
+          translations.telegram_posted = postedMap;
+          await saveTranslationToDb(id, translations);
+        }
         results.push({ id, status: 'posted', code });
       } else {
         results.push({ id, status: 'failed', reason: 'telegram send failed' });
