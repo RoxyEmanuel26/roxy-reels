@@ -346,16 +346,6 @@ export function renderPostMeta(post, id) {
   // Setup Download Button with random redirect link
   if (downloadBtn) {
     const downloadLinks = [
-      "https://omg10.com/4/10806721",
-      "https://omg10.com/4/10806736",
-      "https://omg10.com/4/10806719",
-      "https://omg10.com/4/10806723",
-      "https://omg10.com/4/10806731",
-      "https://omg10.com/4/10806726",
-      "https://omg10.com/4/10806729",
-      "https://omg10.com/4/10806728",
-      "https://omg10.com/4/10806730",
-      "https://omg10.com/4/10806727",
       "https://glamournakedemployee.com/dktyyvhhvs?key=2135b8086ad561259d59a35e74d4dae3",
       "https://glamournakedemployee.com/bxj9v8xs?key=bbcc03541721fe595f6d0a199086c628",
       "https://glamournakedemployee.com/d1ydygn4?key=ae04db9758f66d571a2d122b08635af3",
