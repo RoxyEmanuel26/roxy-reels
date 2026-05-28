@@ -768,18 +768,18 @@ function setupFloatingTelegramButton() {
 
   const TG_LINKS = {
     id: 'https://t.me/missav_jav_subindo',
-    en: 'https://t.me/missav_j_channel',
-    'zh-TW': 'https://t.me/missav_j_channel',
-    'zh-CN': 'https://t.me/missav_j_channel',
-    ja: 'https://t.me/missav_j_channel',
-    ko: 'https://t.me/missav_j_channel',
-    ms: 'https://t.me/missav_j_channel',
-    th: 'https://t.me/missav_j_channel',
-    de: 'https://t.me/missav_j_channel',
-    fr: 'https://t.me/missav_j_channel',
-    vi: 'https://t.me/missav_j_channel',
-    fil: 'https://t.me/missav_j_channel',
-    pt: 'https://t.me/missav_j_channel'
+    en: 'https://t.me/missav_jav_english',
+    'zh-TW': 'https://t.me/missav_jav_tw',
+    'zh-CN': 'https://t.me/missav_jav_cn',
+    ja: 'https://t.me/missav_jav_japan',
+    ko: 'https://t.me/missav_jav_korea',
+    ms: 'https://t.me/missav_jav_malaysia',
+    th: 'https://t.me/missav_jav_thai',
+    de: 'https://t.me/missav_jav_english',
+    fr: 'https://t.me/missav_jav_english',
+    vi: 'https://t.me/missav_jav_vietnam',
+    fil: 'https://t.me/missav_jav_philippines',
+    pt: 'https://t.me/missav_jav_english'
   };
 
   const TEXTS = {
