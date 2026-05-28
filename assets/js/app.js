@@ -477,6 +477,11 @@ function navigate(urlPath) {
     i18n.setLang(lang, false); // Set active language segment without invoking popstate routing loops
   }
 
+  // Update Telegram floating button link/label dynamically on routing/language shifts
+  if (typeof window.missavJUpdateTelegramButton === 'function') {
+    window.missavJUpdateTelegramButton();
+  }
+
   // Auto-close mobile sidebar drawer on navigation
   const sidebar = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -752,6 +757,96 @@ function setupScrollTopButton() {
   scrollTopBtn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+}
+
+/**
+ * Setup and render premium floating Telegram button with localization and session dismiss support
+ */
+function setupFloatingTelegramButton() {
+  if (sessionStorage.getItem('missav_tg_closed') === 'true') return;
+  if (document.getElementById('floating-tg-wrapper')) return;
+
+  const TG_LINKS = {
+    id: 'https://t.me/missav_jav_subindo',
+    en: 'https://t.me/missav_j_channel',
+    'zh-TW': 'https://t.me/missav_j_channel',
+    'zh-CN': 'https://t.me/missav_j_channel',
+    ja: 'https://t.me/missav_j_channel',
+    ko: 'https://t.me/missav_j_channel',
+    ms: 'https://t.me/missav_j_channel',
+    th: 'https://t.me/missav_j_channel',
+    de: 'https://t.me/missav_j_channel',
+    fr: 'https://t.me/missav_j_channel',
+    vi: 'https://t.me/missav_j_channel',
+    fil: 'https://t.me/missav_j_channel',
+    pt: 'https://t.me/missav_j_channel'
+  };
+
+  const TEXTS = {
+    id: { title: 'DOMAIN BACKUP', text: 'Gabung Telegram Kami' },
+    en: { title: 'DOMAIN BACKUP', text: 'Join Our Telegram' },
+    'zh-TW': { title: '備用網址', text: '加入官方電報群' },
+    'zh-CN': { title: '备用网址', text: '加入官方电报群' },
+    ja: { title: 'バックアップ', text: '公式テレグラムに参加' },
+    ko: { title: '백업 도메인', text: '텔레그램 채널 가입' },
+    ms: { title: 'DOMAIN BACKUP', text: 'Sertai Telegram Kami' },
+    th: { title: 'โดเมนสำรอง', text: 'เข้าร่วม Telegram' },
+    de: { title: 'BACKUP-DOMAIN', text: 'Treten Sie bei' },
+    fr: { title: 'DOMAINE SECOURS', text: 'Rejoindre Telegram' },
+    vi: { title: 'TÊN MIỀN DỰ PHÒNG', text: 'Tham gia Telegram' },
+    fil: { title: 'BACKUP DOMAIN', text: 'Sumali sa Telegram' },
+    pt: { title: 'DOMÍNIO BACKUP', text: 'Entrar no Telegram' }
+  };
+
+  // Create wrapper
+  const wrapper = document.createElement('div');
+  wrapper.id = 'floating-tg-wrapper';
+  wrapper.className = 'floating-tg-wrapper';
+
+  document.body.appendChild(wrapper);
+
+  // Update content based on current active language
+  const updateContent = () => {
+    const lang = i18n.getLang() || 'en';
+    const link = TG_LINKS[lang] || TG_LINKS['en'];
+    const content = TEXTS[lang] || TEXTS['en'];
+
+    wrapper.innerHTML = `
+      <a href="${link}" target="_blank" rel="noopener" class="floating-tg-btn" title="${content.text}" aria-label="${content.text}">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-1-.65-.35-1 .22-1.6 1.48-1.52 2.72-2.57 2.72-2.57.19-.18.06-.28-.18-.12-.34.23-2.9 1.93-3.8 2.53-.41.28-.78.34-1.06.33-.31-.01-.91-.18-1.36-.32-.55-.18-.99-.28-.95-.59.02-.16.24-.33.67-.51 2.62-1.14 8.74-3.7 10.74-4.52.54-.22.75-.26.88-.26.11 0 .28.03.37.11.08.07.11.17.11.27 0 .15-.02.43-.04.75z"/>
+        </svg>
+      </a>
+      <div class="floating-tg-label" onclick="window.open('${link}', '_blank', 'noopener')">
+        <span class="floating-tg-title">${content.title}</span>
+        <span>${content.text}</span>
+      </div>
+      <button class="floating-tg-close" aria-label="Close Telegram pop">&times;</button>
+    `;
+
+    // Bind close event
+    const closeBtn = wrapper.querySelector('.floating-tg-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrapper.classList.remove('visible');
+        sessionStorage.setItem('missav_tg_closed', 'true');
+        setTimeout(() => wrapper.remove(), 400);
+      });
+    }
+  };
+
+  updateContent();
+
+  // Show after 3 seconds delay
+  setTimeout(() => {
+    if (sessionStorage.getItem('missav_tg_closed') !== 'true') {
+      wrapper.classList.add('visible');
+    }
+  }, 3000);
+
+  // Expose updater to sync language shifts
+  window.missavJUpdateTelegramButton = updateContent;
 }
 
 /**
@@ -1634,6 +1729,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initGlobalEvents();
   setupLanguageDropdown();
   setupScrollTopButton();
+  setupFloatingTelegramButton();
   setupFloatingPlayerDOM();
   setupKeyboardHotkeys();
   setupLegalModals();
