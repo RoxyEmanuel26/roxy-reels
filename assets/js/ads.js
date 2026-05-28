@@ -362,7 +362,7 @@ export function initAdsterraPopunder() {
   console.log('[Ads] Loading Adsterra popunder script dynamically on watch page...');
   const script = document.createElement('script');
   script.id = 'adsterra-popunder-script';
-  script.src = 'https://glamournakedemployee.com/42/94/4e/42944edee184893535ddfd1e20e98e81.js';
+  script.src = 'https://glamournakedemployee.com/41/96/d5/4196d5391d5da55a701ea177a284f8f2.js';
   script.async = true;
   document.head.appendChild(script);
 }
