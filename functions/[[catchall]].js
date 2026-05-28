@@ -89,6 +89,10 @@ export async function onRequest(context) {
                 `<meta name="description" id="meta-description" content="${escapeHtml(description)}"`
               );
               htmlContent = htmlContent.replace(
+                /<link rel="canonical" id="canonical-url" href="[^"]*"/i,
+                `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}"`
+              );
+              htmlContent = htmlContent.replace(
                 /<meta property="og:url" id="og-url" content="[^"]*"/i,
                 `<meta property="og:url" id="og-url" content="${escapeHtml(pageUrl)}"`
               );
