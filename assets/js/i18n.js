@@ -632,10 +632,17 @@ export function translateVideoTitle(title) {
 }
 
 /**
- * Fetch active language code from localStorage with a default fallback to 'en'
+ * Fetch active language code from current URL pathname segment, fallback to localStorage, and default to 'en'
  * @returns {string} Language code (e.g. 'en', 'id', 'ja')
  */
 export function getLang() {
+  const pathname = window.location.pathname;
+  const segments = pathname.replace(/^\//, '').split('/');
+  const firstSegment = segments[0] || '';
+  const isValidLang = LANGS.some(l => l.code === firstSegment);
+  if (isValidLang) {
+    return firstSegment;
+  }
   return localStorage.getItem('missav_lang') || 'en';
 }
 
