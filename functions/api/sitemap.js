@@ -364,7 +364,7 @@ export async function onRequest(context) {
       });
     };
 
-    if (!file) {
+    if (!file || file === 'sitemap_index.xml' || file === 'sitemap.xml') {
       const xml = await generateSitemapIndex(domain);
       return sendXml(xml);
     }
