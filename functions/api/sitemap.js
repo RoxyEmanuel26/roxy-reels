@@ -334,6 +334,11 @@ export async function onRequest(context) {
     'Access-Control-Allow-Headers': 'Content-Type, X-API-Key, X-Client-Site',
   };
 
+  const errorHeaders = {
+    ...corsHeaders,
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+  };
+
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -372,7 +377,7 @@ export async function onRequest(context) {
     if (actorsMatch) {
       const pageNum = parseInt(actorsMatch[1], 10);
       if (pageNum < 1 || pageNum > ACTORS_SITEMAP_COUNT) {
-        return new Response('Not Found', { status: 404, headers: corsHeaders });
+        return new Response('Not Found', { status: 404, headers: errorHeaders });
       }
       return sendXml(generateActorsSitemap(pageNum));
     }
@@ -398,17 +403,17 @@ export async function onRequest(context) {
       lang = oldVideoMatch[1];
       page = parseInt(oldVideoMatch[2], 10);
     } else {
-      return new Response('Not Found', { status: 404, headers: corsHeaders });
+      return new Response('Not Found', { status: 404, headers: errorHeaders });
     }
 
     if (!LANGS.includes(lang)) {
-      return new Response('Unsupported Language', { status: 404, headers: corsHeaders });
+      return new Response('Unsupported Language', { status: 404, headers: errorHeaders });
     }
 
     const result = await generateVideoSitemap(lang, page, domain, SUPABASE_URL, SUPABASE_KEY);
 
     if (result.status !== 200) {
-      return new Response(result.body, { status: result.status, headers: corsHeaders });
+      return new Response(result.body, { status: result.status, headers: errorHeaders });
     }
 
     return sendXml(result.body);
@@ -417,7 +422,7 @@ export async function onRequest(context) {
     console.error('[Sitemap Error]', error);
     return new Response(`Gateway Proxy Error: ${error.message}`, {
       status: 502,
-      headers: corsHeaders
+      headers: errorHeaders
     });
   }
 }
