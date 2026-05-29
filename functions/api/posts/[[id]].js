@@ -120,7 +120,7 @@ async function translateTitle(title, lang) {
   return title;
 }
 
-async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey) {
+async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey, eagerTranslateAll = true) {
   const id = post.id;
   let translations = await getTranslationFromDb(id, supabaseUrl, supabaseKey);
   let needsSave = false;
@@ -137,7 +137,7 @@ async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey) {
     needsSave = true;
   }
 
-  if (Object.keys(translations).length < 12) {
+  if (eagerTranslateAll && Object.keys(translations).length < 12) {
     const promises = supportedLangs.map(async (l) => {
       if (!translations[l]) {
         translations[l] = await translateTitle(post.title, l);
@@ -264,7 +264,7 @@ export async function onRequest(context) {
 
     if (data) {
       if (id && !Array.isArray(data)) {
-        const translations = await getOrTranslatePost(data, lang, SUPABASE_URL, SUPABASE_KEY);
+        const translations = await getOrTranslatePost(data, lang, SUPABASE_URL, SUPABASE_KEY, true);
         if (lang && lang !== 'en' && translations[lang]) {
           data.title = translations[lang];
         }
@@ -276,7 +276,7 @@ export async function onRequest(context) {
         const translatePromises = data.map(async (post) => {
           let translations = translationsMap[post.id];
           if (!translations) {
-            translations = await getOrTranslatePost(post, lang, SUPABASE_URL, SUPABASE_KEY);
+            translations = await getOrTranslatePost(post, lang, SUPABASE_URL, SUPABASE_KEY, false);
           }
           if (lang && lang !== 'en' && translations[lang]) {
             post.title = translations[lang];

@@ -15,6 +15,9 @@ function getActiveLang() {
   return validLangs.includes(lang) ? lang : 'en';
 }
 
+// In-memory cache to prevent redundant API network requests
+const apiCache = new Map();
+
 const api = {
   /**
    * Mengambil daftar video (feed & listing) dengan query parameters.
@@ -36,6 +39,10 @@ const api = {
       const qs = new URLSearchParams(cleanParams).toString();
       const url = `${BASE}/posts?${qs}`;
       
+      if (apiCache.has(url)) {
+        return apiCache.get(url);
+      }
+      
       const res = await fetch(url);
       
       if (!res.ok) {
@@ -48,11 +55,14 @@ const api = {
       const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
       const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
       
-      return {
+      const result = {
         posts: Array.isArray(posts) ? posts : [],
         total,
         totalPages
       };
+      
+      apiCache.set(url, result);
+      return result;
     } catch (error) {
       console.error('[API getPosts Error]', error);
       throw error;
@@ -68,13 +78,21 @@ const api = {
     try {
       if (!id) throw new Error('Post ID wajib disertakan');
       const lang = getActiveLang();
+      const cacheKey = `post:${id}:${lang}`;
+      
+      if (apiCache.has(cacheKey)) {
+        return apiCache.get(cacheKey);
+      }
+      
       const res = await fetch(`${BASE}/posts/${id}?lang=${lang}`);
       
       if (!res.ok) {
         throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
       }
       
-      return await res.json();
+      const post = await res.json();
+      apiCache.set(cacheKey, post);
+      return post;
     } catch (error) {
       console.error(`[API getPost ${id} Error]`, error);
       throw error;
@@ -90,13 +108,21 @@ const api = {
     try {
       if (!id) throw new Error('Player ID wajib disertakan');
       const lang = getActiveLang();
+      const cacheKey = `player:${id}:${lang}`;
+      
+      if (apiCache.has(cacheKey)) {
+        return apiCache.get(cacheKey);
+      }
+      
       const res = await fetch(`${BASE}/player/${id}?lang=${lang}`);
       
       if (!res.ok) {
         throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);
       }
       
-      return await res.json();
+      const player = await res.json();
+      apiCache.set(cacheKey, player);
+      return player;
     } catch (error) {
       console.error(`[API getPlayer ${id} Error]`, error);
       throw error;

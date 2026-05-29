@@ -649,7 +649,7 @@ export async function loadRelatedVideos(post) {
 
     // ── Query 1: Pencarian berdasarkan Aktor Utama ──
     if (post.actors && post.actors.length > 0) {
-      promises.push(api.getPosts({ actor: post.actors[0], per_page: 10 }));
+      promises.push(api.getPosts({ actor: post.actors[0], per_page: 6 }));
       queryLabels.push('actor:' + post.actors[0]);
     }
 
@@ -658,40 +658,28 @@ export async function loadRelatedVideos(post) {
       const seriesPrefix = extractCodeSeriesPrefix(post.code);
       if (seriesPrefix) {
         // Cari video dengan prefix seri yang sama (contoh: ABP → ABP-xxx)
-        promises.push(api.getPosts({ search: seriesPrefix, per_page: 10 }));
+        promises.push(api.getPosts({ search: seriesPrefix, per_page: 6 }));
         queryLabels.push('series:' + seriesPrefix);
       }
     } else {
       // Fallback: kata kunci judul
       const keywords = extractTitleKeywords(post.title);
       if (keywords) {
-        promises.push(api.getPosts({ search: keywords, per_page: 10 }));
+        promises.push(api.getPosts({ search: keywords, per_page: 6 }));
         queryLabels.push('keywords:' + keywords);
       }
     }
 
     // ── Query 3: Pencarian berdasarkan Tag Utama ──
     if (post.tags && post.tags.length > 0) {
-      promises.push(api.getPosts({ tag: post.tags[0], per_page: 10 }));
+      promises.push(api.getPosts({ tag: post.tags[0], per_page: 6 }));
       queryLabels.push('tag:' + post.tags[0]);
     }
 
-    // ── Query 4: Pencarian berdasarkan Tag Kedua ──
-    if (post.tags && post.tags.length > 1) {
-      promises.push(api.getPosts({ tag: post.tags[1], per_page: 10 }));
-      queryLabels.push('tag:' + post.tags[1]);
-    }
-
-    // ── Query 5: Pencarian berdasarkan Kategori Pertama ──
+    // ── Query 4: Pencarian berdasarkan Kategori Pertama ──
     if (post.categories && post.categories.length > 0) {
-      promises.push(api.getPosts({ category: post.categories[0], per_page: 10 }));
+      promises.push(api.getPosts({ category: post.categories[0], per_page: 6 }));
       queryLabels.push('category:' + post.categories[0]);
-    }
-
-    // ── Query 6 (Bonus): Aktor Kedua jika ada ──
-    if (post.actors && post.actors.length > 1) {
-      promises.push(api.getPosts({ actor: post.actors[1], per_page: 8 }));
-      queryLabels.push('actor:' + post.actors[1]);
     }
 
     // Jalankan semua query secara paralel untuk efisiensi tinggi
