@@ -364,11 +364,11 @@ export async function onRequest(context) {
       return sendXml(xml);
     }
 
-    if (file === 'pages.xml') {
+    if (file === 'pages.xml' || file === 'sitemap_pages.xml') {
       return sendXml(generatePagesSitemap());
     }
 
-    const actorsMatch = file.match(/^actors_(\d+)\.xml$/);
+    const actorsMatch = file.match(/^(?:sitemap_)?actors_(\d+)\.xml$/);
     if (actorsMatch) {
       const pageNum = parseInt(actorsMatch[1], 10);
       if (pageNum < 1 || pageNum > ACTORS_SITEMAP_COUNT) {
@@ -377,21 +377,29 @@ export async function onRequest(context) {
       return sendXml(generateActorsSitemap(pageNum));
     }
 
-    if (file === 'categories.xml') {
+    if (file === 'categories.xml' || file === 'sitemap_categories.xml') {
       return sendXml(generateCategoriesSitemap());
     }
 
-    if (file === 'studios.xml') {
+    if (file === 'studios.xml' || file === 'sitemap_studios.xml') {
       return sendXml(generateStudiosSitemap());
     }
 
-    const videoMatch = file.match(/^([a-zA-Z\-]+)-(\d+)\.xml$/);
-    if (!videoMatch) {
+    let lang = '';
+    let page = 0;
+
+    const newVideoMatch = file.match(/^([a-zA-Z\-]+)-(\d+)\.xml$/);
+    const oldVideoMatch = file.match(/^sitemap_videos_([a-zA-Z\-]+)_(\d+)\.xml$/);
+
+    if (newVideoMatch) {
+      lang = newVideoMatch[1];
+      page = parseInt(newVideoMatch[2], 10);
+    } else if (oldVideoMatch) {
+      lang = oldVideoMatch[1];
+      page = parseInt(oldVideoMatch[2], 10);
+    } else {
       return new Response('Not Found', { status: 404, headers: corsHeaders });
     }
-
-    const lang = videoMatch[1];
-    const page = parseInt(videoMatch[2], 10);
 
     if (!LANGS.includes(lang)) {
       return new Response('Unsupported Language', { status: 404, headers: corsHeaders });
