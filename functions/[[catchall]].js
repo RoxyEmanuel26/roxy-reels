@@ -7,10 +7,10 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  // 1. Handle sitemap.xml rewrite
+  // 1. Handle sitemap.xml rewrite to static sitemap_index.xml
   if (pathname === '/sitemap.xml') {
-    const newRequest = new Request(new URL('/api/sitemap', url.origin), request);
-    return fetch(newRequest);
+    const newRequest = new Request(new URL('/sitemaps/sitemap_index.xml', request.url), request);
+    return env.ASSETS.fetch(newRequest);
   }
 
   // 2. Check if this is a Watch page that needs Open Graph tag injection

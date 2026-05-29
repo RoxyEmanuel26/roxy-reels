@@ -28,6 +28,24 @@ if (Test-Path (Join-Path $PSScriptRoot "..\..\index.html")) {
 
 $sitemapsDir = Join-Path $projectRoot "sitemaps"
 
+# Muat berkas .env untuk kredensial Supabase
+$envFile = Join-Path $projectRoot ".env"
+$supabaseUrl = ""
+$supabaseKey = ""
+
+if (Test-Path $envFile) {
+    Get-Content $envFile | Foreach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith('#') -and $line.Contains('=')) {
+            $parts = $line.Split('=', 2)
+            $key = $parts[0].Trim()
+            $val = $parts[1].Trim()
+            if ($key -eq 'SUPABASE_URL') { $supabaseUrl = $val }
+            elseif ($key -eq 'SUPABASE_KEY') { $supabaseKey = $val }
+        }
+    }
+}
+
 # 13 Bahasa yang didukung
 $LANGS = @('zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt')
 $VIDEO_LANGS = @('en') # Hanya menghasilkan sitemap video bahasa Inggris (berisi alternate link ke semua bahasa)
@@ -111,6 +129,105 @@ function Add-Alternates {
 function Get-UrlsetOpen {
     return '<?xml version="1.0" encoding="UTF-8"?>' + "`r`n" + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' + "`r`n"
 }
+
+# Ambil data terjemahan batch dari database Supabase
+function Get-BatchTranslationsFromDb {
+    param(
+        [int[]]$ids
+    )
+    if ($ids.Count -eq 0 -or -not $supabaseUrl -or -not $supabaseKey) {
+        return @{}
+    }
+    
+    $results = @{}
+    $batchSize = 500
+    for ($i = 0; $i -lt $ids.Count; $i += $batchSize) {
+        $endIdx = [Math]::Min($i + $batchSize - 1, $ids.Count - 1)
+        $chunk = $ids[$i..$endIdx]
+        $idsStr = $chunk -join ','
+        
+        $url = "$supabaseUrl/rest/v1/translations?id=in.($idsStr)&select=id,translations"
+        try {
+            $res = Invoke-RestMethod -Uri $url -Method Get -Headers @{
+                'apikey'        = $supabaseKey
+                'Authorization' = "Bearer $supabaseKey"
+            } -TimeoutSec 15
+            
+            if ($res) {
+                foreach ($item in $res) {
+                    $results[[string]$item.id] = $item.translations
+                }
+            }
+        } catch {
+            Write-Host "       [!] Gagal mengambil batch translasi dari Supabase: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+    return $results
+}
+
+# Terjemahkan judul video ke bahasa target menggunakan Google Translate
+function Translate-Title {
+    param(
+        [string]$title,
+        [string]$lang
+    )
+    if ($lang -eq 'en') { return $title }
+    
+    $domains = @('translate.googleapis.com', 'translate.google.com', 'translate.google.co.id')
+    foreach ($domain in $domains) {
+        $encodedTitle = [uri]::EscapeDataString($title)
+        $url = "https://$domain/translate_a/single?client=gtx&sl=auto&tl=$lang&dt=t&q=$encodedTitle"
+        try {
+            $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 10
+            if ($response -and $response[0]) {
+                $segments = @()
+                foreach ($seg in $response[0]) {
+                    if ($seg[0]) { $segments += $seg[0] }
+                }
+                $translated = $segments -join ""
+                if ($translated) {
+                    return $translated.Trim()
+                }
+            }
+        } catch {
+            # Abaikan error dan coba domain berikutnya
+        }
+    }
+    return $title
+}
+
+# Simpan hasil terjemahan ke database Supabase
+function Save-TranslationToDb {
+    param(
+        [int]$id,
+        $translations
+    )
+    if (-not $supabaseUrl -or -not $supabaseKey) {
+        return
+    }
+    
+    $url = "$supabaseUrl/rest/v1/translations"
+    
+    # Supabase UPSERT dengan REST menggunakan header Prefer
+    $body = @{
+        id = $id
+        translations = $translations
+    } | ConvertTo-Json -Depth 10 -Compress
+
+    $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+    
+    try {
+        $headers = @{
+            'apikey'        = $supabaseKey
+            'Authorization' = "Bearer $supabaseKey"
+            'Prefer'        = 'resolution=merge-duplicates'
+        }
+        $res = Invoke-RestMethod -Uri $url -Method Post -Headers $headers -ContentType "application/json; charset=utf-8" -Body $bodyBytes -TimeoutSec 10
+    } catch {
+        Write-Host "       [!] Gagal menyimpan translasi ke Supabase untuk ID $id : $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STATE MANAGEMENT (Auto Save & Resume)
@@ -208,7 +325,7 @@ Write-Host ""
 Write-Host "==================================================" -ForegroundColor DarkCyan
 Write-Host "[STEP 2/5] Membuat sitemap_actors..." -ForegroundColor Cyan
 
-$actorsPerFile  = 5000
+$actorsPerFile  = 2450
 $actorFileNames = @()
 
 if ($ACTORS.Count -gt 0) {
@@ -397,27 +514,72 @@ for ($page = 1; $page -le $totalPages; $page++) {
     $fetchedCount = $posts.Count
     $state.grandTotalVideos += $fetchedCount
 
-    # Pre-compute slugs sekali untuk semua bahasa (karena slug sama untuk semua bahasa)
+    # Pre-compute slugs secara lokal per bahasa menggunakan terjemahan dari database
     $postData = @()
+    
+    # Ambil data terjemahan batch dari database Supabase untuk postingan halaman ini
+    $ids = @()
     foreach ($post in $posts) {
-        $id    = $post.id
-        $code  = if ($post.code) { $post.code } else { '' }
-        $title = if ($post.title) { $post.title } else { '' }
+        $ids += [int]$post.id
+    }
+    $translationsMap = Get-BatchTranslationsFromDb -ids $ids
+
+    foreach ($post in $posts) {
+        $id      = $post.id
+        $code    = if ($post.code) { $post.code } else { '' }
+        $title   = if ($post.title) { $post.title } else { '' }
         $dateVal = if ($post.date -and $post.date.Length -ge 10) { $post.date.Substring(0, 10) } else { $todayStr }
 
-        $cleanCode  = Slugify $code
-        $cleanTitle = Slugify $title
-        $slug = ''
-        if ($cleanCode -and $cleanTitle) { $slug = "$cleanCode-$cleanTitle" }
-        elseif ($cleanCode)              { $slug = $cleanCode }
-        elseif ($cleanTitle)             { $slug = $cleanTitle }
-        else                             { $slug = 'video' }
-        if ($slug.Length -gt 100) { $slug = $slug.Substring(0, 100).TrimEnd('-') }
+        $cleanCode = Slugify $code
+        $translations = $translationsMap[[string]$id]
+        if (-not $translations) {
+            $translations = @{}
+        }
+
+        $translationsHash = @{}
+        if ($translations -is [System.Management.Automation.PSCustomObject]) {
+            foreach ($prop in $translations.PSObject.Properties) {
+                $translationsHash[$prop.Name] = $prop.Value
+            }
+        } elseif ($translations -is [System.Collections.IDictionary]) {
+            $translationsHash = $translations
+        }
+
+        $hasNewTranslation = $false
+        foreach ($altLang in $LANGS) {
+            if ($altLang -eq 'en') { continue }
+            if (-not $translationsHash.ContainsKey($altLang) -or -not $translationsHash[$altLang]) {
+                Write-Host "       [TRANSLATE] ID $id ($altLang)..." -ForegroundColor Yellow
+                $translated = Translate-Title -title $title -lang $altLang
+                $translationsHash[$altLang] = $translated
+                $hasNewTranslation = $true
+            }
+        }
+
+        if ($hasNewTranslation) {
+            Save-TranslationToDb -id ([int]$id) -translations $translationsHash
+        }
+        $translations = $translationsHash
+
+        # Bangun localized slugs untuk seluruh 13 bahasa pendukung
+        $localizedSlugs = @{}
+        foreach ($altLang in $LANGS) {
+            $tTitle = $title
+            if ($translations.ContainsKey($altLang) -and $translations[$altLang]) {
+                $tTitle = $translations[$altLang]
+            }
+            $slug = Slugify $tTitle
+            $slug = if ($cleanCode) { "$cleanCode-$slug" } else { $slug }
+            if ($slug.Length -gt 100) { $slug = $slug.Substring(0, 100).TrimEnd('-') }
+            if (-not $slug) { $slug = 'video' }
+            
+            $localizedSlugs[$altLang] = $slug
+        }
 
         $postData += @{
-            id      = $id
-            slug    = $slug
-            dateVal = $dateVal
+            id             = $id
+            dateVal        = $dateVal
+            localizedSlugs = $localizedSlugs
         }
     }
 
@@ -431,19 +593,20 @@ for ($page = 1; $page -le $totalPages; $page++) {
         [void]$sb.Append((Get-UrlsetOpen))
 
         foreach ($pd in $postData) {
-            $locUrl = "$baseUrl/$lang/watch/$($pd.slug)-$($pd.id)"
+            $enSlug = $pd.localizedSlugs['en']
+            $locUrl = "$baseUrl/$lang/watch/$($pd.localizedSlugs[$lang])-$($pd.id)"
 
             [void]$sb.AppendLine("  <url>")
             [void]$sb.AppendLine("    <loc>$(EscXml $locUrl)</loc>")
             [void]$sb.AppendLine("    <lastmod>$($pd.dateVal)</lastmod>")
 
-            # Alternate links untuk semua bahasa
+            # Alternate links untuk semua bahasa (dengan slug terlokalisasi unik masing-masing bahasa)
             foreach ($altLang in $LANGS) {
-                $altUrl = "$baseUrl/$altLang/watch/$($pd.slug)-$($pd.id)"
+                $altUrl = "$baseUrl/$altLang/watch/$($pd.localizedSlugs[$altLang])-$($pd.id)"
                 [void]$sb.AppendLine("    <xhtml:link rel=`"alternate`" hreflang=`"$altLang`" href=`"$(EscXml $altUrl)`" />")
             }
             # x-default -> English
-            $enUrl = "$baseUrl/en/watch/$($pd.slug)-$($pd.id)"
+            $enUrl = "$baseUrl/en/watch/${enSlug}-$($pd.id)"
             [void]$sb.AppendLine("    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$(EscXml $enUrl)`" />")
 
             [void]$sb.AppendLine("  </url>")
@@ -451,7 +614,7 @@ for ($page = 1; $page -le $totalPages; $page++) {
 
         [void]$sb.Append("</urlset>")
 
-        $fileName = "sitemap_videos_${lang}_${page}.xml"
+        $fileName = "sitemap_videos_${page}.xml"
         $filePath = Join-Path $sitemapsDir $fileName
         [System.IO.File]::WriteAllText($filePath, $sb.ToString(), [System.Text.Encoding]::UTF8)
 
