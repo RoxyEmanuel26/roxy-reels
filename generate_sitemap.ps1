@@ -97,6 +97,34 @@ function EscXml([string]$text) {
     return $result
 }
 
+# Encode path segment URL — hanya encode karakter non-ASCII ke persen-encoding
+# Menjaga karakter ASCII yang aman: a-z A-Z 0-9 - _ . ~ /
+# Contoh: "広瀬リオナ" -> "%E5%BA%83%E7%80%AC%E3%83%AA%E3%82%AA%E3%83%8A"
+function Encode-UrlPath([string]$path) {
+    if (-not $path) { return '' }
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($path)
+    $sb = [System.Text.StringBuilder]::new($bytes.Length * 2)
+    foreach ($b in $bytes) {
+        $c = [char]$b
+        # Karakter ASCII yang aman di URL path: a-z A-Z 0-9 - _ . ~ / : @
+        if (($b -ge 0x41 -and $b -le 0x5A) -or  # A-Z
+            ($b -ge 0x61 -and $b -le 0x7A) -or  # a-z
+            ($b -ge 0x30 -and $b -le 0x39) -or  # 0-9
+            $b -eq 0x2D -or  # -
+            $b -eq 0x5F -or  # _
+            $b -eq 0x2E -or  # .
+            $b -eq 0x7E -or  # ~
+            $b -eq 0x2F -or  # /
+            $b -eq 0x3A -or  # :
+            $b -eq 0x40) {   # @
+            [void]$sb.Append($c)
+        } else {
+            [void]$sb.Append(('%{0:X2}' -f $b))
+        }
+    }
+    return $sb.ToString()
+}
+
 # Slugify teks ke URL-safe slug (Unicode-safe)
 function Slugify([string]$text) {
     if (-not $text) { return '' }
@@ -117,11 +145,13 @@ function Add-Alternates {
     )
     foreach ($l in $LANGS) {
         $url = & $makeUrl $l
-        $escapedUrl = EscXml $url
+        $encodedUrl = Encode-UrlPath $url
+        $escapedUrl = EscXml $encodedUrl
         [void]$sb.AppendLine("    <xhtml:link rel=`"alternate`" hreflang=`"$l`" href=`"$escapedUrl`" />")
     }
     $urlEn = & $makeUrl 'en'
-    $escapedUrlEn = EscXml $urlEn
+    $encodedUrlEn = Encode-UrlPath $urlEn
+    $escapedUrlEn = EscXml $encodedUrlEn
     [void]$sb.AppendLine("    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$escapedUrlEn`" />")
 }
 
@@ -303,7 +333,7 @@ foreach ($route in $STATIC_ROUTES) {
         else { return "$baseUrl/$lang" }
     }
 
-    $canonicalUrl = & $makeUrlFunc 'en'
+    $canonicalUrl = Encode-UrlPath (& $makeUrlFunc 'en')
     [void]$sb.AppendLine("  <url>")
     [void]$sb.AppendLine("    <loc>$(EscXml $canonicalUrl)</loc>")
     [void]$sb.AppendLine("    <lastmod>$todayStr</lastmod>")
@@ -350,7 +380,7 @@ if ($ACTORS.Count -gt 0) {
                 return "$baseUrl/$lang/actor?name=$encoded"
             }
             
-            $canonicalUrl = & $makeUrlFunc 'en'
+            $canonicalUrl = Encode-UrlPath (& $makeUrlFunc 'en')
             [void]$sb.AppendLine("  <url>")
             [void]$sb.AppendLine("    <loc>$(EscXml $canonicalUrl)</loc>")
             [void]$sb.AppendLine("    <lastmod>$todayStr</lastmod>")
@@ -388,7 +418,7 @@ if ($CATEGORIES.Count -gt 0) {
             return "$baseUrl/$lang/category?name=$encoded"
         }
         
-        $canonicalUrl = & $makeUrlFunc 'en'
+        $canonicalUrl = Encode-UrlPath (& $makeUrlFunc 'en')
         [void]$sb.AppendLine("  <url>")
         [void]$sb.AppendLine("    <loc>$(EscXml $canonicalUrl)</loc>")
         [void]$sb.AppendLine("    <lastmod>$todayStr</lastmod>")
@@ -423,7 +453,7 @@ foreach ($studioName in $STUDIOS) {
         return "$baseUrl/$lang/studio?name=$encoded"
     }
     
-    $canonicalUrl = & $makeUrlFunc 'en'
+    $canonicalUrl = Encode-UrlPath (& $makeUrlFunc 'en')
     [void]$sb.AppendLine("  <url>")
     [void]$sb.AppendLine("    <loc>$(EscXml $canonicalUrl)</loc>")
     [void]$sb.AppendLine("    <lastmod>$todayStr</lastmod>")
@@ -594,7 +624,7 @@ for ($page = 1; $page -le $totalPages; $page++) {
 
         foreach ($pd in $postData) {
             $enSlug = $pd.localizedSlugs['en']
-            $locUrl = "$baseUrl/$lang/watch/$($pd.localizedSlugs[$lang])-$($pd.id)"
+            $locUrl = Encode-UrlPath "$baseUrl/$lang/watch/$($pd.localizedSlugs[$lang])-$($pd.id)"
 
             [void]$sb.AppendLine("  <url>")
             [void]$sb.AppendLine("    <loc>$(EscXml $locUrl)</loc>")
@@ -602,11 +632,11 @@ for ($page = 1; $page -le $totalPages; $page++) {
 
             # Alternate links untuk semua bahasa (dengan slug terlokalisasi unik masing-masing bahasa)
             foreach ($altLang in $LANGS) {
-                $altUrl = "$baseUrl/$altLang/watch/$($pd.localizedSlugs[$altLang])-$($pd.id)"
+                $altUrl = Encode-UrlPath "$baseUrl/$altLang/watch/$($pd.localizedSlugs[$altLang])-$($pd.id)"
                 [void]$sb.AppendLine("    <xhtml:link rel=`"alternate`" hreflang=`"$altLang`" href=`"$(EscXml $altUrl)`" />")
             }
             # x-default -> English
-            $enUrl = "$baseUrl/en/watch/${enSlug}-$($pd.id)"
+            $enUrl = Encode-UrlPath "$baseUrl/en/watch/${enSlug}-$($pd.id)"
             [void]$sb.AppendLine("    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$(EscXml $enUrl)`" />")
 
             [void]$sb.AppendLine("  </url>")
