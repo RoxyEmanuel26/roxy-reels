@@ -120,7 +120,7 @@ async function translateTitle(title, lang) {
   return title;
 }
 
-async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey, eagerTranslateAll = true) {
+async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey, eagerTranslateAll = false) {
   const id = post.id;
   let translations = await getTranslationFromDb(id, supabaseUrl, supabaseKey);
   let needsSave = false;
@@ -130,24 +130,15 @@ async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey, ea
     needsSave = true;
   }
 
-  const supportedLangs = ['zh-TW', 'zh-CN', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
-  
+  // OPTIMIZED: Hanya terjemahkan bahasa yang diminta saja (lazy translation).
+  // Eager translation ke 12 bahasa dihapus karena Google Translate 
+  // memblokir IP Cloudflare, menyebabkan loop gagal yang memakan CPU.
   if (targetLang && targetLang !== 'en' && !translations[targetLang]) {
     translations[targetLang] = await translateTitle(post.title, targetLang);
     needsSave = true;
   }
 
-  if (eagerTranslateAll && Object.keys(translations).length < 12) {
-    const promises = supportedLangs.map(async (l) => {
-      if (!translations[l]) {
-        translations[l] = await translateTitle(post.title, l);
-      }
-    });
-    await Promise.all(promises);
-    needsSave = true;
-  }
-
-  if (needsSave) {
+  if (needsSave && Object.keys(translations).length > 0) {
     await saveTranslationToDb(id, translations, supabaseUrl, supabaseKey);
   }
 
@@ -264,7 +255,7 @@ export async function onRequest(context) {
 
     if (data) {
       if (id && !Array.isArray(data)) {
-        const translations = await getOrTranslatePost(data, lang, SUPABASE_URL, SUPABASE_KEY, true);
+        const translations = await getOrTranslatePost(data, lang, SUPABASE_URL, SUPABASE_KEY, false);
         if (lang && lang !== 'en' && translations[lang]) {
           data.title = translations[lang];
         }

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Cloudflare Pages route exclusion — file statis tidak melewati Worker",
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/assets/*",
+    "/sitemaps/*",
+    "/robots.txt",
+    "/favicon.ico",
+    "/assets/favicon.svg",
+    "/_headers",
+    "/b773d20d41194391a49701f57581638e.txt"
+  ]
+}

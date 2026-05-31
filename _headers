@@ -1,3 +1,4 @@
+# === Global Security Headers ===
 /*
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
@@ -6,3 +7,22 @@
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, OPTIONS
   Access-Control-Allow-Headers: Content-Type, X-API-Key, X-Client-Site
+
+# === Static Assets — Long Cache (1 year, immutable) ===
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# === Sitemap XML — Cache 24 jam di CDN ===
+/sitemaps/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=43200
+  CDN-Cache-Control: public, max-age=86400
+  Content-Type: application/xml; charset=utf-8
+
+# === API Endpoints — Cache 5 menit di CDN ===
+/api/*
+  Cache-Control: public, s-maxage=300, stale-while-revalidate=600
+  CDN-Cache-Control: public, max-age=300
+
+# === Robots.txt ===
+/robots.txt
+  Cache-Control: public, max-age=86400

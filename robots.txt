@@ -4,4 +4,8 @@ Disallow: /api/
 Disallow: /assets/js/
 Disallow: /assets/css/
 
-Sitemap: https://www.missav-j.web.id/sitemap.xml
+# Batasi kecepatan crawling robot agar tidak menghabiskan Worker quota
+# (Googlebot menghormati ini jika didaftarkan di Search Console)
+Crawl-delay: 2
+
+Sitemap: https://www.missav-j.web.id/sitemaps/sitemap_index.xml
