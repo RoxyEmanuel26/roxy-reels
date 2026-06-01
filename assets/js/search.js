@@ -19,6 +19,8 @@ let hasMore = true;
 let searchTimeout = null;
 let intersectionObserver = null;
 let currentFilters = {};
+let seenCodes = new Set();
+let seenTitles = new Set();
 
 // Premium inline SVG fallback ketika thumbnail gagal dimuat
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2213%22>NO IMAGE</text></svg>`;
@@ -81,6 +83,8 @@ export async function init(query = '') {
   totalPages = 1;
   isLoading = false;
   hasMore = true;
+  seenCodes = new Set();
+  seenTitles = new Set();
   currentFilters = {
     search: currentQuery,
     per_page: 24,
@@ -152,6 +156,8 @@ export async function init(query = '') {
       currentFilters.search = val;
       currentPage = 1;
       hasMore = true;
+      seenCodes = new Set();
+      seenTitles = new Set();
 
       // Perbarui hash URL tanpa reload SPA router
       const newHash = `#/search?q=${encodeURIComponent(val)}`;
@@ -200,8 +206,19 @@ async function fetchAndRenderSearch(isInitial = false) {
       return;
     }
 
+    // Deduplikasi posts berdasarkan JAV code dan Title unik
+    const uniquePosts = data.posts.filter(p => {
+      const code = (p.code || '').trim().toUpperCase();
+      if (code && seenCodes.has(code)) return false;
+      const title = (p.title || '').trim().toLowerCase();
+      if (title && seenTitles.has(title)) return false;
+      if (code) seenCodes.add(code);
+      if (title) seenTitles.add(title);
+      return true;
+    });
+
     // Merender dengan cascading staggered animation delay
-    const cardsHtml = data.posts
+    const cardsHtml = uniquePosts
       .map((post, idx) => renderSearchVideoCard(post, idx))
       .join('');
 
@@ -256,6 +273,8 @@ async function updateSearchFilters(updatedFilters) {
   currentFilters = { ...currentFilters, ...updatedFilters };
   currentPage = 1;
   hasMore = true;
+  seenCodes = new Set();
+  seenTitles = new Set();
 
   const grid = document.getElementById('search-video-grid');
   if (grid) {

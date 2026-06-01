@@ -696,11 +696,22 @@ export async function loadRelatedVideos(post) {
     // Filter out video yang sedang ditonton
     let filteredPosts = allPosts.filter(p => String(p.id) !== String(post.id));
 
-    // Deduplikasi posts berdasarkan ID unik
+    // Deduplikasi posts berdasarkan ID unik, Code unik, dan Title unik (Mitigasi duplikasi database eksternal)
     const seenIds = new Set();
+    const seenCodes = new Set();
+    const seenTitles = new Set();
     filteredPosts = filteredPosts.filter(p => {
       if (seenIds.has(p.id)) return false;
+      
+      const code = (p.code || '').trim().toUpperCase();
+      if (code && seenCodes.has(code)) return false;
+      
+      const title = (p.title || '').trim().toLowerCase();
+      if (title && seenTitles.has(title)) return false;
+
       seenIds.add(p.id);
+      if (code) seenCodes.add(code);
+      if (title) seenTitles.add(title);
       return true;
     });
 

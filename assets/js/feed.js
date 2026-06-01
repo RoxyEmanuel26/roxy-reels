@@ -17,6 +17,8 @@ let isLoading = false;
 let hasMore = true;
 let currentFilters = {};
 let intersectionObserver = null;
+let seenCodes = new Set();
+let seenTitles = new Set();
 
 // Random Mode State — used on the homepage to show a fresh mix of videos each visit
 let randomMode = false;
@@ -179,6 +181,8 @@ export async function init(filters = {}) {
   isLoading = false;
   hasMore = true;
   usedPages = new Set();
+  seenCodes = new Set();
+  seenTitles = new Set();
   currentFilters = {
     per_page: 24,
     orderby: 'date',
@@ -380,7 +384,17 @@ async function fetchAndRenderFeed(isInitial = false) {
               pageTrackEl.textContent = i18n.t('page_format', { current: currentPage, total: totalPages });
             }
 
-            const cardsHtml = retryData.posts
+            const uniqueRetryPosts = retryData.posts.filter(p => {
+              const code = (p.code || '').trim().toUpperCase();
+              if (code && seenCodes.has(code)) return false;
+              const title = (p.title || '').trim().toLowerCase();
+              if (title && seenTitles.has(title)) return false;
+              if (code) seenCodes.add(code);
+              if (title) seenTitles.add(title);
+              return true;
+            });
+
+            const cardsHtml = uniqueRetryPosts
               .map((post, idx) => renderVideoCard(post, idx))
               .join('');
             grid.innerHTML = cardsHtml;
@@ -395,8 +409,19 @@ async function fetchAndRenderFeed(isInitial = false) {
       return;
     }
 
+    // Deduplikasi posts berdasarkan JAV code dan Title unik
+    const uniquePosts = data.posts.filter(p => {
+      const code = (p.code || '').trim().toUpperCase();
+      if (code && seenCodes.has(code)) return false;
+      const title = (p.title || '').trim().toLowerCase();
+      if (title && seenTitles.has(title)) return false;
+      if (code) seenCodes.add(code);
+      if (title) seenTitles.add(title);
+      return true;
+    });
+
     // Build cards list markup applying cascade staggered delays
-    const cardsHtml = data.posts
+    const cardsHtml = uniquePosts
       .map((post, idx) => renderVideoCard(post, idx))
       .join('');
 
@@ -468,6 +493,8 @@ async function updateFeedFilters(updatedFilters) {
   // Disable random mode when user explicitly changes sort/filter — they want a specific order
   randomMode = false;
   usedPages = new Set();
+  seenCodes = new Set();
+  seenTitles = new Set();
 
   const grid = document.getElementById('video-grid');
   if (grid) {
