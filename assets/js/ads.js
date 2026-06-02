@@ -67,7 +67,7 @@ window.missavJAdConfig = {
   topBannerKey: '5933300',
   belowPlayerBannerKey: '5933316',
   sidebarBannerKey: '5933316',
-  outstreamBannerKey: 'placeholder_outstream' // Ganti dengan ID Zona Outstream dari ExoClick Anda
+  outstreamBannerKey: '5940366' // ID Zona Outstream dari ExoClick Anda
 };
 
 /**
@@ -224,24 +224,27 @@ export function loadExoClickOutstream(containerId, zoneId) {
     return;
   }
 
-  // Load outstream.js script if not already in document head (to avoid multiple loads)
-  if (!document.getElementById('exoclick-outstream-script')) {
+  // Ciptakan tag <ins> ExoClick Outstream Video
+  const ins = document.createElement('ins');
+  ins.className = 'eas6a97888e37';
+  ins.setAttribute('data-zoneid', zoneId);
+  container.appendChild(ins);
+
+  // Memuat script ad-provider.js jika belum ada di document head
+  if (!document.getElementById('exoclick-adprovider-script')) {
     const loaderScript = document.createElement('script');
-    loaderScript.id = 'exoclick-outstream-script';
+    loaderScript.id = 'exoclick-adprovider-script';
     loaderScript.type = 'text/javascript';
-    loaderScript.src = 'https://a.magsrv.com/outstream.js';
+    loaderScript.src = 'https://a.magsrv.com/ad-provider.js';
     loaderScript.async = true;
     document.head.appendChild(loaderScript);
   }
 
-  // Create script invocation element
+  // Ciptakan script push serve
   const adScript = document.createElement('script');
   adScript.type = 'text/javascript';
   adScript.text = `
-    (AdProvider = window.AdProvider || []).push({
-      "idzone": ${zoneId},
-      "type": "outstream"
-    });
+    (AdProvider = window.AdProvider || []).push({"serve": {}});
   `;
   container.appendChild(adScript);
 }
