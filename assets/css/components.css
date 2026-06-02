@@ -1589,27 +1589,11 @@
   grid-column: 1 / -1; /* Mengisi penuh kolom grid */
   width: 100%;
   max-width: 640px;
-  margin: 0 auto; /* Mulai dengan margin 0 agar tidak ada celah kosong */
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  position: relative;
-  transition: max-height 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.6s ease-out,
-              margin 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Slide-down transition when loaded successfully */
-.ad-outstream-container.ad-loaded {
-  max-height: 380px; /* Sesuai tinggi pemutar outstream standar */
-  opacity: 1;
-  margin: var(--space-6) auto; /* Tambahkan margin saat terbuka */
-}
-
-.ad-outstream-container ins.eas6a97888e37 {
+  min-height: 260px;
+  margin: var(--space-6) auto;
   display: block;
-  width: 100%;
-  min-height: 250px;
+  box-sizing: border-box;
+  position: relative;
 }
 
 

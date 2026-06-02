@@ -200,6 +200,17 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
     adjustScaledBanners();
   }
 }
+
+/**
+ * Memuat iklan ExoClick Outstream Video secara dinamis (Aman untuk SPA & Responsive)
+ * 
+ * Strategi multi-layer:
+ * 1. ad-provider.js dimuat secara statis di index.html (primer)
+ * 2. Fallback: dimuat ulang secara dinamis jika belum tersedia
+ * 3. <ins> element diberi dimensi minimum 250px agar langsung terdeteksi oleh ad-provider
+ * 4. Eksekusi AdProvider.push({"serve": {}}) langsung via JS untuk keandalan maksimum di SPA
+ * 5. Diagnostic timer 3 detik untuk mengecek status data-processed dan menampilkan pesan log internal ExoClick
+ */
 export function loadExoClickOutstream(containerId, zoneId) {
   const container = document.getElementById(containerId);
   if (!container) {
@@ -208,7 +219,6 @@ export function loadExoClickOutstream(containerId, zoneId) {
   }
 
   container.innerHTML = '';
-  container.classList.remove('ad-loaded'); // Mulai dengan kondisi tersembunyi (max-height 0)
 
   // Jika zoneId kosong atau placeholder, tampilkan placeholder premium dark mode neon
   if (!zoneId || String(zoneId).startsWith('placeholder_')) {
@@ -222,31 +232,20 @@ export function loadExoClickOutstream(containerId, zoneId) {
         </div>
       </div>
     `;
-    container.classList.add('ad-loaded');
     return;
   }
 
-  // Ciptakan tag <ins> ExoClick Outstream Video
+  // Ciptakan tag <ins> ExoClick Outstream Video dengan dimensi minimum yang jelas
+  // agar deteksi visibilitas (lazy load) ExoClick ad-provider langsung terpicu.
   const ins = document.createElement('ins');
   ins.className = 'eas6a97888e37';
   ins.setAttribute('data-zoneid', zoneId);
   ins.style.display = 'block';
   ins.style.width = '100%';
-  ins.style.minHeight = '250px';
+  ins.style.minHeight = '250px'; // Set minimum height 250px agar terlihat di viewport
   container.appendChild(ins);
 
-  console.log('[Ads] Outstream elements injected. Zone:', zoneId, 'Container:', containerId);
-
-  // Pasang MutationObserver pada tag <ins> untuk mendeteksi kapan ad-provider menyuntikkan konten iklan
-  const observer = new MutationObserver(() => {
-    // Cek apakah ad-provider sudah mulai mengisi konten di dalam tag <ins>
-    if (ins.children.length > 0 || ins.innerHTML.trim().length > 0) {
-      console.log('[Ads] Outstream content detected! Opening container gate smoothly...');
-      container.classList.add('ad-loaded');
-      observer.disconnect(); // Hentikan observasi jika sudah termuat
-    }
-  });
-  observer.observe(ins, { childList: true, subtree: true });
+  console.log('[Ads] Outstream <ins> injected. Zone:', zoneId, 'Container:', containerId);
 
   // Pastikan ad-provider.js sudah dimuat (fallback jika static load di index.html gagal/belum selesai)
   const ensureAdProvider = (callback) => {
@@ -292,7 +291,7 @@ export function loadExoClickOutstream(containerId, zoneId) {
     setTimeout(triggerServeCommand, 200);
   });
 
-  // Diagnostic Checker: periksa 4 detik kemudian apakah iklan berhasil di-proses
+  // Diagnostic Checker: periksa 3 detik kemudian apakah iklan berhasil di-proses
   setTimeout(() => {
     try {
       const checkIns = container.querySelector('ins.eas6a97888e37');
@@ -322,7 +321,7 @@ export function loadExoClickOutstream(containerId, zoneId) {
     } catch (err) {
       console.error('[Ads Diagnostic] Error during diagnostic run:', err);
     }
-  }, 4000);
+  }, 3000);
 }
 
 /**
