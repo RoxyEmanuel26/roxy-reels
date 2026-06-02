@@ -67,7 +67,8 @@ window.missavJAdConfig = {
   topBannerKey: '5933300',
   belowPlayerBannerKey: '5933316',
   sidebarBannerKey: '5933316',
-  outstreamBannerKey: '5940366' // ID Zona Outstream dari ExoClick Anda
+  outstreamBannerKey: '5940366', // ID Zona Outstream dari ExoClick Anda
+  vastZoneId: 'placeholder_vast' // ID Zona In-Stream VAST dari ExoClick Anda (Isi jika sudah dibuat)
 };
 
 /**
@@ -449,12 +450,181 @@ export function loadGlobalTopAd() {
   loadAdBanner('global-top-ad', cfg.topBannerKey, width, height);
 }
 
+/**
+ * Memuat pustaka CSS dan JS Fluid Player secara dinamis jika belum ada
+ */
+function loadFluidPlayerAssets() {
+  return new Promise((resolve) => {
+    if (window.fluidPlayer) {
+      resolve();
+      return;
+    }
+
+    // Load CSS
+    if (!document.getElementById('fluid-player-css')) {
+      const link = document.createElement('link');
+      link.id = 'fluid-player-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css';
+      document.head.appendChild(link);
+    }
+
+    // Load JS
+    if (!document.getElementById('fluid-player-js')) {
+      const script = document.createElement('script');
+      script.id = 'fluid-player-js';
+      script.src = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => {
+        console.error('[Ads] Failed to load Fluid Player script');
+        resolve(); // resolve anyway to trigger fail-safe
+      };
+      document.head.appendChild(script);
+    } else {
+      // If script is in DOM but onload wasn't fired yet, poll until it's loaded
+      const interval = setInterval(() => {
+        if (window.fluidPlayer) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 100);
+    }
+  });
+}
+
+/**
+ * Memuat iklan In-Stream VAST Video Ad secara dinamis menggunakan Fluid Player
+ */
+export async function loadVastAd(containerId, zoneId, onComplete) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    onComplete();
+    return;
+  }
+
+  // Jika zoneId kosong atau placeholder, lewati iklan langsung ke video asli
+  if (!zoneId || String(zoneId).startsWith('placeholder_')) {
+    console.log('[Ads] In-stream VAST ad skipped because zoneId is placeholder or empty.');
+    onComplete();
+    return;
+  }
+
+  console.log('[Ads] Initializing Fluid Player for In-stream VAST ad...');
+  container.innerHTML = '';
+
+  // Buat element video HTML5
+  const video = document.createElement('video');
+  video.id = 'vast-ad-video';
+  video.style.width = '100%';
+  video.style.height = '100%';
+  video.style.objectFit = 'contain';
+  video.style.backgroundColor = '#000';
+  video.setAttribute('autoplay', 'true');
+  video.setAttribute('playsinline', 'true');
+  video.muted = true; // start muted for autoplay compliance
+
+  // Tambahkan video source (blank MP4 video base64 1 detik)
+  const source = document.createElement('source');
+  source.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAr9tZGF0AAACoAYF//+///AAAAMmF2Y0MBZAAK/+EAGWdkAAqs2V+WXAWyAAADAAIAAAMAYB4kSywBAAZo6+PLIsAAAAAYc3R0cwAAAAAAAAABAAAAAQAAAgAAAAAcc3RzYwAAAAAAAAABAAAAAQAAAAEAAAABAAAAFHN0c3oAAAAAAAACtwAAAAEAAAAUc3RjbwAAAAAAAAABAAAAMAAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNTQuNjMuMTA0';
+  source.type = 'video/mp4';
+  video.appendChild(source);
+  container.appendChild(video);
+
+  let adCompleted = false;
+  const finishAd = () => {
+    if (adCompleted) return;
+    adCompleted = true;
+    clearTimeout(failSafeTimeout);
+    
+    // Hancurkan player instance jika ada
+    try {
+      if (playerInstance) {
+        playerInstance.destroy();
+      }
+    } catch (e) {
+      console.warn('[Ads] Error destroying Fluid Player instance:', e);
+    }
+    
+    container.innerHTML = '';
+    onComplete();
+  };
+
+  // Fail-safe timeout 7 detik jika player macet, script terblokir, dll.
+  const failSafeTimeout = setTimeout(() => {
+    console.warn('[Ads] In-stream ad playback timed out. Force playing real video...');
+    finishAd();
+  }, 7000);
+
+  // Muat berkas Fluid Player
+  await loadFluidPlayerAssets();
+
+  if (!window.fluidPlayer) {
+    console.error('[Ads] Fluid Player script is not available. Skipping ad...');
+    finishAd();
+    return;
+  }
+
+  let playerInstance = null;
+  try {
+    let vastTagUrl = `https://syndication.exoclick.com/splash.php?type=18&idzone=${zoneId}`;
+    if (String(zoneId).includes('http://') || String(zoneId).includes('https://')) {
+      vastTagUrl = zoneId;
+    }
+
+    playerInstance = window.fluidPlayer('vast-ad-video', {
+      layoutControls: {
+        autoPlay: true,
+        mute: true,
+        keyboardControl: false,
+        playPauseAnimation: false,
+        showAndHideDelay: 0,
+        controlBar: {
+          autoHide: true,
+          usePlayButton: false
+        }
+      },
+      vast: {
+        vastOptions: {
+          adList: [
+            {
+              roll: 'preRoll',
+              vastTag: vastTagUrl
+            }
+          ],
+          adFinishedCallback: () => {
+            console.log('[Ads] In-stream ad finished.');
+            finishAd();
+          },
+          adSkippedCallback: () => {
+            console.log('[Ads] In-stream ad skipped.');
+            finishAd();
+          },
+          adErrorCallback: (error) => {
+            console.warn('[Ads] In-stream ad error:', error);
+            finishAd();
+          }
+        }
+      }
+    });
+
+    // Menangani error pemutar video itu sendiri
+    video.addEventListener('error', (e) => {
+      console.warn('[Ads] Video player element error:', e);
+      finishAd();
+    });
+  } catch (err) {
+    console.error('[Ads] Failed to initialize Fluid Player:', err);
+    finishAd();
+  }
+}
+
 // Ekspos secara global di namespace window untuk kemudahan integrasi dengan routing SPA
 window.missavJAds = {
   loadAdBanner,
   loadExoClickBanner,
   loadAdsterraBanner,
   loadExoClickOutstream,
+  loadVastAd,
   initPlayerAdOverlay,
   loadWatchPageAds,
   loadGlobalTopAd,

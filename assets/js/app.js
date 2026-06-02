@@ -7,7 +7,7 @@
 import ui from './ui.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
 import i18n from './i18n.js';
-import './ads.js?v=1.1.9';
+import './ads.js?v=1.2.0';
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {
@@ -216,7 +216,7 @@ const routes = {
   '/trending':  () => import('./trending.js?v=1.2.1').then(m => m.init()),
   '/recent':    () => import('./recent.js?v=1.2.1').then(m => m.init()),
   '/search':    (q) => import('./search.js?v=1.2.0').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=1.2.0').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/watch':     (id) => import('./player.js?v=1.2.1').then(m => m.init(id || window.missavJGetCurrentWatchId())),
   '/category':  () => import('./feed.js?v=1.2.1').then(m => m.init({ category: getParam('name') })),
   '/actor':     () => import('./feed.js?v=1.2.1').then(m => m.init({ actor: getParam('name') })),
   '/studio':    () => import('./feed.js?v=1.2.1').then(m => m.init({ studio: getParam('name') })),
@@ -550,7 +550,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=1.2.0').then(m => {
+    import('./player.js?v=1.2.1').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -561,7 +561,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Switch player container to floating mode (PiP)
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=1.2.0').then(m => {
+    import('./player.js?v=1.2.1').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -693,7 +693,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=1.2.0').then(m => {
+  import('./player.js?v=1.2.1').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -887,7 +887,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=1.2.0').then(m => {
+      import('./player.js?v=1.2.1').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }

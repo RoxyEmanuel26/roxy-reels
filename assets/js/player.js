@@ -236,21 +236,66 @@ export async function init(id) {
       
       window.missavJState.activeVideo = post;
       
-      // Inject secure iframe markup into the global player container
+      // Inject secure custom poster markup into the global player container
       const playerContainer = document.getElementById('player-container');
       if (playerContainer) {
         const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
-        playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
         
-        // Hide the watch page loader shimmer when iframe is loaded
-        const iframe = playerContainer.querySelector('iframe');
-        if (iframe) {
-          const hideShimmer = () => {
-            const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
-            if (shimmer) shimmer.style.display = 'none';
-          };
-          iframe.addEventListener('load', hideShimmer);
-          setTimeout(hideShimmer, 3000); // fallback timer
+        const loadRealVideo = () => {
+          playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
+          
+          // Hide the watch page loader shimmer when iframe is loaded
+          const iframe = playerContainer.querySelector('iframe');
+          if (iframe) {
+            const hideShimmer = () => {
+              const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
+              if (shimmer) shimmer.style.display = 'none';
+            };
+            iframe.addEventListener('load', hideShimmer);
+            setTimeout(hideShimmer, 3000); // fallback timer
+          }
+        };
+
+        const adConfig = window.missavJAdConfig;
+        const hasVastAd = adConfig && adConfig.vastZoneId && !adConfig.vastZoneId.startsWith('placeholder_');
+        
+        const secureThumb = ui.escapeHTML(post.thumbnail || SVG_FALLBACK_THUMB);
+        const secureTitle = ui.escapeHTML(post.title || '');
+        const secureCode = ui.escapeHTML(post.code || '');
+        
+        playerContainer.innerHTML = `
+          <div class="player-custom-poster" id="player-custom-poster">
+            <div class="poster-bg" style="background-image: url('${secureThumb}');"></div>
+            <div class="poster-overlay"></div>
+            <div class="poster-play-btn-wrapper">
+              <button class="poster-play-btn" id="poster-play-btn" aria-label="${i18n.t('play_video') || 'Play Video'}">
+                <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+            </div>
+            <div class="poster-meta">
+              ${secureCode ? `<span class="poster-code">${secureCode}</span>` : ''}
+              <h2 class="poster-title">${i18n.translateVideoTitle(secureTitle)}</h2>
+            </div>
+          </div>
+        `;
+        
+        // Hide the watch page loader shimmer when poster is shown
+        const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
+        if (shimmer) shimmer.style.display = 'none';
+
+        // Add play button click listener
+        const playBtn = document.getElementById('poster-play-btn');
+        if (playBtn) {
+          playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (hasVastAd && window.missavJAds && typeof window.missavJAds.loadVastAd === 'function') {
+              window.missavJAds.loadVastAd('player-container', adConfig.vastZoneId, loadRealVideo);
+            } else {
+              loadRealVideo();
+            }
+          });
         }
       }
       
