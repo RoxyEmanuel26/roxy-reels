@@ -68,7 +68,7 @@ window.missavJAdConfig = {
   belowPlayerBannerKey: '5933316',
   sidebarBannerKey: '5933316',
   outstreamBannerKey: '5940366', // ID Zona Outstream dari ExoClick Anda
-  vastZoneId: 'placeholder_vast' // ID Zona In-Stream VAST dari ExoClick Anda (Isi jika sudah dibuat)
+  vastZoneId: 'https://s.magsrv.com/v1/vast.php?idz=5940372' // URL/ID Zona In-Stream VAST dari ExoClick Anda
 };
 
 /**
