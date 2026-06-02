@@ -7,7 +7,7 @@
 import ui from './ui.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
 import i18n from './i18n.js';
-import './ads.js?v=1.2.3';
+import './ads.js?v=1.2.4';
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {

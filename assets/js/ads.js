@@ -207,8 +207,9 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
  * Strategi multi-layer:
  * 1. ad-provider.js dimuat secara statis di index.html (primer)
  * 2. Fallback: dimuat ulang secara dinamis jika belum tersedia
- * 3. <ins> element diberi dimensi eksplisit agar terdeteksi oleh ad-provider
- * 4. Inline <script> tag di-inject persis seperti format ExoClick
+ * 3. <ins> element diberi dimensi minimum 250px agar langsung terdeteksi oleh ad-provider
+ * 4. Eksekusi AdProvider.push({"serve": {}}) langsung via JS untuk keandalan maksimum di SPA
+ * 5. Diagnostic timer 3 detik untuk mengecek status data-processed dan menampilkan pesan log internal ExoClick
  */
 export function loadExoClickOutstream(containerId, zoneId) {
   const container = document.getElementById(containerId);
@@ -234,14 +235,14 @@ export function loadExoClickOutstream(containerId, zoneId) {
     return;
   }
 
-  // Ciptakan tag <ins> ExoClick Outstream Video dengan dimensi eksplisit
-  // agar ad-provider.js bisa mendeteksinya sebagai slot yang visible
+  // Ciptakan tag <ins> ExoClick Outstream Video dengan dimensi minimum yang jelas
+  // agar deteksi visibilitas (lazy load) ExoClick ad-provider langsung terpicu.
   const ins = document.createElement('ins');
   ins.className = 'eas6a97888e37';
   ins.setAttribute('data-zoneid', zoneId);
   ins.style.display = 'block';
   ins.style.width = '100%';
-  ins.style.minHeight = '1px';
+  ins.style.minHeight = '250px'; // Set minimum height 250px agar terlihat di viewport
   container.appendChild(ins);
 
   console.log('[Ads] Outstream <ins> injected. Zone:', zoneId, 'Container:', containerId);
@@ -269,24 +270,58 @@ export function loadExoClickOutstream(containerId, zoneId) {
     }
   };
 
-  // Inject serve command via inline <script> tag — persis format ExoClick standard
-  const injectServeScript = () => {
+  // Panggil serve command langsung via window.AdProvider.push
+  const triggerServeCommand = () => {
     try {
-      // Gunakan inline <script> tag injection persis seperti format ExoClick
-      const serveScript = document.createElement('script');
-      serveScript.type = 'text/javascript';
-      serveScript.textContent = '(AdProvider = window.AdProvider || []).push({"serve": {}});';
-      container.appendChild(serveScript);
-      console.log('[Ads] Outstream serve script injected for zone:', zoneId);
+      if (window.AdProvider && typeof window.AdProvider.push === 'function') {
+        window.AdProvider.push({"serve": {}});
+        console.log('[Ads] Outstream serve command executed directly.');
+      } else {
+        window.AdProvider = window.AdProvider || [];
+        window.AdProvider.push({"serve": {}});
+        console.log('[Ads] Outstream serve command pushed to global queue array.');
+      }
     } catch (e) {
-      console.warn('[Ads] Outstream serve script injection error:', e);
+      console.warn('[Ads] Outstream serve error:', e);
     }
   };
 
   ensureAdProvider(() => {
-    // Tunggu 300ms agar DOM & ad-provider selesai inisialisasi
-    setTimeout(injectServeScript, 300);
+    // Jalankan serve setelah delay singkat untuk memastikan DOM siap
+    setTimeout(triggerServeCommand, 200);
   });
+
+  // Diagnostic Checker: periksa 3 detik kemudian apakah iklan berhasil di-proses
+  setTimeout(() => {
+    try {
+      const checkIns = container.querySelector('ins.eas6a97888e37');
+      if (checkIns) {
+        const isProcessed = checkIns.getAttribute('data-processed') === 'true';
+        console.log(`[Ads Diagnostic] Outstream container inspection for zone ${zoneId}:`, {
+          hasInsTag: true,
+          dataProcessed: isProcessed,
+          currentClass: checkIns.className,
+          visibleHeight: checkIns.clientHeight
+        });
+
+        if (isProcessed) {
+          console.log('[Ads Diagnostic] SUCCESS: ExoClick ad-provider has processed this tag.');
+        } else {
+          console.warn('[Ads Diagnostic] WARNING: ExoClick ad-provider has NOT processed this tag yet. Check for network block or JS exceptions.');
+        }
+      } else {
+        console.error('[Ads Diagnostic] ERROR: <ins> tag missing from container.');
+      }
+
+      // Tampilkan log debug dari ExoClick jika tersedia
+      if (window.AdProvider && typeof window.AdProvider.getDebugMessages === 'function') {
+        const debugMsgs = window.AdProvider.getDebugMessages();
+        console.log('[Ads Diagnostic] ExoClick Internal Debug Logs:', debugMsgs);
+      }
+    } catch (err) {
+      console.error('[Ads Diagnostic] Error during diagnostic run:', err);
+    }
+  }, 3000);
 }
 
 /**
