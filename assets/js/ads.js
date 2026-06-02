@@ -204,9 +204,11 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 /**
  * Memuat iklan ExoClick Outstream Video secara dinamis (Aman untuk SPA & Responsive)
  * 
- * ad-provider.js dimuat secara statis di index.html. Fungsi ini hanya perlu:
- * 1. Meng-inject <ins> tag ke container
- * 2. Memanggil AdProvider.push({"serve": {}}) agar script memindai <ins> baru
+ * Strategi multi-layer:
+ * 1. ad-provider.js dimuat secara statis di index.html (primer)
+ * 2. Fallback: dimuat ulang secara dinamis jika belum tersedia
+ * 3. <ins> element diberi dimensi eksplisit agar terdeteksi oleh ad-provider
+ * 4. Inline <script> tag di-inject persis seperti format ExoClick
  */
 export function loadExoClickOutstream(containerId, zoneId) {
   const container = document.getElementById(containerId);
@@ -232,44 +234,59 @@ export function loadExoClickOutstream(containerId, zoneId) {
     return;
   }
 
-  // Ciptakan tag <ins> ExoClick Outstream Video
+  // Ciptakan tag <ins> ExoClick Outstream Video dengan dimensi eksplisit
+  // agar ad-provider.js bisa mendeteksinya sebagai slot yang visible
   const ins = document.createElement('ins');
   ins.className = 'eas6a97888e37';
   ins.setAttribute('data-zoneid', zoneId);
+  ins.style.display = 'block';
+  ins.style.width = '100%';
+  ins.style.minHeight = '1px';
   container.appendChild(ins);
 
   console.log('[Ads] Outstream <ins> injected. Zone:', zoneId, 'Container:', containerId);
 
-  /**
-   * Panggil AdProvider.push({"serve": {}}) dengan retry.
-   * ad-provider.js dimuat async di index.html, jadi mungkin belum selesai
-   * pada saat feed pertama kali di-render. Retry hingga 5 kali dengan interval 500ms.
-   */
-  let retryCount = 0;
-  const maxRetries = 5;
-
-  const triggerServe = () => {
-    // Cek apakah AdProvider sudah tersedia dan merupakan array yang sudah di-override oleh ad-provider.js
-    if (typeof window.AdProvider !== 'undefined') {
-      try {
-        window.AdProvider.push({"serve": {}});
-        console.log('[Ads] AdProvider.push serve called successfully for zone:', zoneId);
-      } catch (e) {
-        console.warn('[Ads] AdProvider.push serve error:', e);
-      }
+  // Pastikan ad-provider.js sudah dimuat (fallback jika static load di index.html gagal/belum selesai)
+  const ensureAdProvider = (callback) => {
+    // Cek apakah script sudah dimuat
+    const existingScript = document.querySelector('script[src*="ad-provider.js"]');
+    if (!existingScript) {
+      console.log('[Ads] ad-provider.js not found in DOM, loading dynamically as fallback...');
+      const script = document.createElement('script');
+      script.type = 'application/javascript';
+      script.src = 'https://a.magsrv.com/ad-provider.js';
+      script.async = true;
+      script.onload = () => {
+        console.log('[Ads] ad-provider.js loaded dynamically.');
+        callback();
+      };
+      script.onerror = () => {
+        console.warn('[Ads] Failed to load ad-provider.js (mungkin diblokir adblocker).');
+      };
+      document.head.appendChild(script);
     } else {
-      retryCount++;
-      if (retryCount <= maxRetries) {
-        console.log(`[Ads] AdProvider not ready yet. Retry ${retryCount}/${maxRetries} in 500ms...`);
-        setTimeout(triggerServe, 500);
-      } else {
-        console.warn('[Ads] AdProvider not available after', maxRetries, 'retries. Ad-provider.js may be blocked.');
-      }
+      callback();
     }
   };
 
-  // Delay 200ms agar DOM selesai layout sebelum serve
-  setTimeout(triggerServe, 200);
+  // Inject serve command via inline <script> tag — persis format ExoClick standard
+  const injectServeScript = () => {
+    try {
+      // Gunakan inline <script> tag injection persis seperti format ExoClick
+      const serveScript = document.createElement('script');
+      serveScript.type = 'text/javascript';
+      serveScript.textContent = '(AdProvider = window.AdProvider || []).push({"serve": {}});';
+      container.appendChild(serveScript);
+      console.log('[Ads] Outstream serve script injected for zone:', zoneId);
+    } catch (e) {
+      console.warn('[Ads] Outstream serve script injection error:', e);
+    }
+  };
+
+  ensureAdProvider(() => {
+    // Tunggu 300ms agar DOM & ad-provider selesai inisialisasi
+    setTimeout(injectServeScript, 300);
+  });
 }
 
 /**
