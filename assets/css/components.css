@@ -1584,4 +1584,15 @@
   font-weight: 700;
 }
 
+/* Outstream Video Ad Container (Grid placement & Styling) */
+.ad-outstream-container {
+  grid-column: 1 / -1; /* Mengisi penuh kolom grid */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: var(--space-4) 0;
+  box-sizing: border-box;
+}
+
 

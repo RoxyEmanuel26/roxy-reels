@@ -66,7 +66,8 @@ window.missavJAdConfig = {
   // Ganti placeholder dengan Key asli (Adsterra) atau Zone ID asli (ExoClick) dari dashboard Anda
   topBannerKey: '5933300',
   belowPlayerBannerKey: '5933316',
-  sidebarBannerKey: '5933316'
+  sidebarBannerKey: '5933316',
+  outstreamBannerKey: 'placeholder_outstream' // Ganti dengan ID Zona Outstream dari ExoClick Anda
 };
 
 /**
@@ -197,6 +198,52 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
     container.setAttribute('data-native-height', targetHeight);
     adjustScaledBanners();
   }
+}
+
+/**
+ * Memuat iklan ExoClick Outstream Video secara dinamis (Aman untuk SPA & Responsive)
+ */
+export function loadExoClickOutstream(containerId, zoneId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // Jika zoneId kosong atau placeholder, tampilkan placeholder premium dark mode neon
+  if (!zoneId || String(zoneId).startsWith('placeholder_')) {
+    container.innerHTML = `
+      <div class="premium-ad-placeholder outstream-placeholder" style="width: 100%; height: 260px; display: flex; justify-content: center; align-items: center; background: var(--color-surface-2); border-radius: var(--radius-lg); border: 2px dashed rgba(255, 0, 0, 0.35); position: relative; overflow: hidden; box-shadow: var(--shadow-card); transition: all 0.3s ease;">
+        <div class="ad-placeholder-glow" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle, rgba(255,0,0,0.08) 0%, transparent 70%);"></div>
+        <div class="ad-placeholder-content" style="text-align: center; z-index: 1;">
+          <span class="ad-badge" style="font-size: 0.65rem; font-weight: 800; color: var(--color-accent); border: 1px solid var(--color-accent); padding: 3px 10px; border-radius: var(--radius-sm); letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 0 10px rgba(255,0,0,0.2);">EXOCLICK VIDEO OUTSTREAM</span>
+          <div style="font-size: 1.1rem; font-weight: 800; color: var(--color-text); margin-top: 10px; font-family: 'Roboto', sans-serif;">Video Iklan Outstream Disini</div>
+          <div style="font-size: 0.78rem; color: var(--color-text-muted); margin-top: 6px; font-weight: 500;">Otomatis diputar tanpa suara saat di-scroll ke layar</div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Load outstream.js script if not already in document head (to avoid multiple loads)
+  if (!document.getElementById('exoclick-outstream-script')) {
+    const loaderScript = document.createElement('script');
+    loaderScript.id = 'exoclick-outstream-script';
+    loaderScript.type = 'text/javascript';
+    loaderScript.src = 'https://a.magsrv.com/outstream.js';
+    loaderScript.async = true;
+    document.head.appendChild(loaderScript);
+  }
+
+  // Create script invocation element
+  const adScript = document.createElement('script');
+  adScript.type = 'text/javascript';
+  adScript.text = `
+    (AdProvider = window.AdProvider || []).push({
+      "idzone": ${zoneId},
+      "type": "outstream"
+    });
+  `;
+  container.appendChild(adScript);
 }
 
 /**
@@ -404,6 +451,7 @@ window.missavJAds = {
   loadAdBanner,
   loadExoClickBanner,
   loadAdsterraBanner,
+  loadExoClickOutstream,
   initPlayerAdOverlay,
   loadWatchPageAds,
   loadGlobalTopAd,

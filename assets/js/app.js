@@ -7,7 +7,7 @@
 import ui from './ui.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
 import i18n from './i18n.js';
-import './ads.js?v=1.1.7';
+import './ads.js?v=1.1.8';
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {
@@ -212,15 +212,15 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=1.2.0').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=1.2.0').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=1.2.0').then(m => m.init()),
+  '/':          () => import('./feed.js?v=1.2.1').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=1.2.1').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=1.2.1').then(m => m.init()),
   '/search':    (q) => import('./search.js?v=1.2.0').then(m => m.init(q || getParam('q'))),
   '/watch':     (id) => import('./player.js?v=1.2.0').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=1.2.0').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=1.2.0').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=1.2.0').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=1.2.0').then(m => m.init({ tag: getParam('name') })),
+  '/category':  () => import('./feed.js?v=1.2.1').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=1.2.1').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=1.2.1').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=1.2.1').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
   '/actors':          () => import('./actors.js?v=1.1.7').then(m => m.init()),

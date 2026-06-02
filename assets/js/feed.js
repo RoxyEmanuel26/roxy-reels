@@ -394,10 +394,22 @@ async function fetchAndRenderFeed(isInitial = false) {
               return true;
             });
 
-            const cardsHtml = uniqueRetryPosts
-              .map((post, idx) => renderVideoCard(post, idx))
-              .join('');
+            // Build cards list markup applying cascade staggered delays and inject outstream video ad
+            let cardsHtml = '';
+            uniqueRetryPosts.forEach((post, idx) => {
+              cardsHtml += renderVideoCard(post, idx);
+              if (idx === 7) {
+                cardsHtml += `
+                  <div class="ad-outstream-container" id="outstream-ad-home-${currentPage}"></div>
+                `;
+              }
+            });
             grid.innerHTML = cardsHtml;
+
+            // Load Outstream Video Ad if the container was rendered
+            if (uniqueRetryPosts.length > 7 && window.missavJAds && typeof window.missavJAds.loadExoClickOutstream === 'function') {
+              window.missavJAds.loadExoClickOutstream(`outstream-ad-home-${currentPage}`, window.missavJAdConfig.outstreamBannerKey);
+            }
             return;
           }
         }
@@ -420,15 +432,26 @@ async function fetchAndRenderFeed(isInitial = false) {
       return true;
     });
 
-    // Build cards list markup applying cascade staggered delays
-    const cardsHtml = uniquePosts
-      .map((post, idx) => renderVideoCard(post, idx))
-      .join('');
+    // Build cards list markup applying cascade staggered delays and inject outstream video ad
+    let cardsHtml = '';
+    uniquePosts.forEach((post, idx) => {
+      cardsHtml += renderVideoCard(post, idx);
+      if (idx === 7) {
+        cardsHtml += `
+          <div class="ad-outstream-container" id="outstream-ad-home-${currentPage}"></div>
+        `;
+      }
+    });
 
     if (isInitial) {
       grid.innerHTML = cardsHtml;
     } else {
       grid.insertAdjacentHTML('beforeend', cardsHtml);
+    }
+
+    // Load Outstream Video Ad if the container was rendered
+    if (uniquePosts.length > 7 && window.missavJAds && typeof window.missavJAds.loadExoClickOutstream === 'function') {
+      window.missavJAds.loadExoClickOutstream(`outstream-ad-home-${currentPage}`, window.missavJAdConfig.outstreamBannerKey);
     }
 
   } catch (error) {
