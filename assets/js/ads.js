@@ -203,6 +203,9 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 
 /**
  * Memuat iklan ExoClick Outstream Video secara dinamis (Aman untuk SPA & Responsive)
+ * 
+ * Perbaikan race-condition: Menunggu ad-provider.js selesai dimuat sebelum
+ * memanggil AdProvider.push({"serve": {}}) agar <ins> element sudah di-scan.
  */
 export function loadExoClickOutstream(containerId, zoneId) {
   const container = document.getElementById(containerId);
@@ -231,23 +234,42 @@ export function loadExoClickOutstream(containerId, zoneId) {
   ins.setAttribute('data-zoneid', zoneId);
   container.appendChild(ins);
 
+  /**
+   * Helper: Panggil AdProvider.push({"serve": {}}) dengan aman.
+   * Tunggu 150ms agar DOM selesai di-layout dan ad-provider bisa memindai <ins> element baru.
+   */
+  const triggerServe = () => {
+    setTimeout(() => {
+      try {
+        (window.AdProvider = window.AdProvider || []).push({"serve": {}});
+        console.log('[Ads] ExoClick Outstream serve triggered for zone:', zoneId);
+      } catch (e) {
+        console.warn('[Ads] ExoClick Outstream serve error:', e);
+      }
+    }, 150);
+  };
+
   // Memuat script ad-provider.js jika belum ada di document head
-  if (!document.getElementById('exoclick-adprovider-script')) {
+  const existingScript = document.getElementById('exoclick-adprovider-script');
+  if (!existingScript) {
     const loaderScript = document.createElement('script');
     loaderScript.id = 'exoclick-adprovider-script';
     loaderScript.type = 'text/javascript';
     loaderScript.src = 'https://a.magsrv.com/ad-provider.js';
     loaderScript.async = true;
+    // Tunggu script selesai dimuat SEBELUM memanggil serve
+    loaderScript.onload = () => {
+      console.log('[Ads] ad-provider.js loaded successfully.');
+      triggerServe();
+    };
+    loaderScript.onerror = () => {
+      console.warn('[Ads] Failed to load ad-provider.js (mungkin diblokir adblocker).');
+    };
     document.head.appendChild(loaderScript);
+  } else {
+    // Script sudah dimuat sebelumnya — langsung panggil serve untuk <ins> baru
+    triggerServe();
   }
-
-  // Ciptakan script push serve
-  const adScript = document.createElement('script');
-  adScript.type = 'text/javascript';
-  adScript.text = `
-    (AdProvider = window.AdProvider || []).push({"serve": {}});
-  `;
-  container.appendChild(adScript);
 }
 
 /**
@@ -494,10 +516,15 @@ function loadFluidPlayerAssets() {
 
 /**
  * Memuat iklan In-Stream VAST Video Ad secara dinamis menggunakan Fluid Player
+ * 
+ * Perbaikan: Menambahkan timeout yang lebih panjang (15 detik) agar VAST tag
+ * punya waktu cukup untuk di-fetch dan diputar sebelum fail-safe memotong.
+ * Juga menambahkan logging lebih detail untuk debugging.
  */
 export async function loadVastAd(containerId, zoneId, onComplete) {
   const container = document.getElementById(containerId);
   if (!container) {
+    console.warn('[Ads] In-stream VAST container not found:', containerId);
     onComplete();
     return;
   }
@@ -509,21 +536,21 @@ export async function loadVastAd(containerId, zoneId, onComplete) {
     return;
   }
 
-  console.log('[Ads] Initializing Fluid Player for In-stream VAST ad...');
+  console.log('[Ads] Initializing Fluid Player for In-stream VAST ad...', { containerId, zoneId });
   container.innerHTML = '';
 
-  // Buat element video HTML5
+  // Buat element video HTML5 sebagai host untuk Fluid Player
   const video = document.createElement('video');
   video.id = 'vast-ad-video';
   video.style.width = '100%';
   video.style.height = '100%';
   video.style.objectFit = 'contain';
   video.style.backgroundColor = '#000';
-  video.setAttribute('autoplay', 'true');
   video.setAttribute('playsinline', 'true');
   video.muted = true; // start muted for autoplay compliance
+  video.preload = 'auto';
 
-  // Tambahkan video source (blank MP4 video base64 1 detik)
+  // Tambahkan video source (blank MP4 1 detik — diperlukan agar Fluid Player bisa inisialisasi)
   const source = document.createElement('source');
   source.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAr9tZGF0AAACoAYF//+///AAAAMmF2Y0MBZAAK/+EAGWdkAAqs2V+WXAWyAAADAAIAAAMAYB4kSywBAAZo6+PLIsAAAAAYc3R0cwAAAAAAAAABAAAAAQAAAgAAAAAcc3RzYwAAAAAAAAABAAAAAQAAAAEAAAABAAAAFHN0c3oAAAAAAAACtwAAAAEAAAAUc3RjbwAAAAAAAAABAAAAMAAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNTQuNjMuMTA0';
   source.type = 'video/mp4';
@@ -531,10 +558,11 @@ export async function loadVastAd(containerId, zoneId, onComplete) {
   container.appendChild(video);
 
   let adCompleted = false;
-  const finishAd = () => {
+  const finishAd = (reason) => {
     if (adCompleted) return;
     adCompleted = true;
     clearTimeout(failSafeTimeout);
+    console.log('[Ads] In-stream ad finished. Reason:', reason || 'unknown');
     
     // Hancurkan player instance jika ada
     try {
@@ -549,27 +577,33 @@ export async function loadVastAd(containerId, zoneId, onComplete) {
     onComplete();
   };
 
-  // Fail-safe timeout 7 detik jika player macet, script terblokir, dll.
+  // Fail-safe timeout 15 detik (dinaikkan dari 7 detik) — VAST tag dari ExoClick
+  // bisa lambat di jaringan tertentu, sehingga perlu waktu lebih.
   const failSafeTimeout = setTimeout(() => {
-    console.warn('[Ads] In-stream ad playback timed out. Force playing real video...');
-    finishAd();
-  }, 7000);
+    console.warn('[Ads] In-stream ad playback timed out (15s). Force playing real video...');
+    finishAd('timeout');
+  }, 15000);
 
-  // Muat berkas Fluid Player
+  // Muat berkas Fluid Player CSS & JS
   await loadFluidPlayerAssets();
 
   if (!window.fluidPlayer) {
     console.error('[Ads] Fluid Player script is not available. Skipping ad...');
-    finishAd();
+    finishAd('fluidplayer-unavailable');
     return;
   }
 
   let playerInstance = null;
   try {
-    let vastTagUrl = `https://syndication.exoclick.com/splash.php?type=18&idzone=${zoneId}`;
-    if (String(zoneId).includes('http://') || String(zoneId).includes('https://')) {
+    // Tentukan VAST tag URL — jika zoneId sudah berupa URL lengkap, gunakan langsung
+    let vastTagUrl;
+    if (String(zoneId).startsWith('http://') || String(zoneId).startsWith('https://')) {
       vastTagUrl = zoneId;
+    } else {
+      vastTagUrl = `https://syndication.exoclick.com/splash.php?type=18&idzone=${zoneId}`;
     }
+    
+    console.log('[Ads] VAST Tag URL:', vastTagUrl);
 
     playerInstance = window.fluidPlayer('vast-ad-video', {
       layoutControls: {
@@ -583,26 +617,31 @@ export async function loadVastAd(containerId, zoneId, onComplete) {
           usePlayButton: false
         }
       },
-      vast: {
-        vastOptions: {
-          adList: [
-            {
-              roll: 'preRoll',
-              vastTag: vastTagUrl
-            }
-          ],
-          adFinishedCallback: () => {
-            console.log('[Ads] In-stream ad finished.');
-            finishAd();
-          },
-          adSkippedCallback: () => {
-            console.log('[Ads] In-stream ad skipped.');
-            finishAd();
-          },
-          adErrorCallback: (error) => {
-            console.warn('[Ads] In-stream ad error:', error);
-            finishAd();
+      vastOptions: {
+        adList: [
+          {
+            roll: 'preRoll',
+            vastTag: vastTagUrl
           }
+        ],
+        adFinishedCallback: () => {
+          console.log('[Ads] In-stream VAST ad finished playing.');
+          finishAd('ad-finished');
+        },
+        adSkippedCallback: () => {
+          console.log('[Ads] In-stream VAST ad skipped by user.');
+          finishAd('ad-skipped');
+        },
+        adClickedCallback: () => {
+          console.log('[Ads] In-stream VAST ad clicked.');
+        },
+        noVastVideoCallback: () => {
+          console.warn('[Ads] No VAST video returned from tag. Playing real video...');
+          finishAd('no-vast-video');
+        },
+        vastVideoEndedCallback: () => {
+          console.log('[Ads] VAST video ended.');
+          finishAd('vast-ended');
         }
       }
     });
@@ -610,11 +649,20 @@ export async function loadVastAd(containerId, zoneId, onComplete) {
     // Menangani error pemutar video itu sendiri
     video.addEventListener('error', (e) => {
       console.warn('[Ads] Video player element error:', e);
-      finishAd();
+      finishAd('video-element-error');
     });
+
+    // Fallback: jika ad tidak mulai dalam 5 detik setelah player init,
+    // cek apakah ada VAST response
+    setTimeout(() => {
+      if (!adCompleted && video.paused && video.currentTime === 0) {
+        console.warn('[Ads] VAST ad appears stuck (paused at 0s after 5s). May be blocked or empty response.');
+      }
+    }, 5000);
+
   } catch (err) {
     console.error('[Ads] Failed to initialize Fluid Player:', err);
-    finishAd();
+    finishAd('init-error');
   }
 }
 
