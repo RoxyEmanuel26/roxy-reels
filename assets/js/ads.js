@@ -204,12 +204,16 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 /**
  * Memuat iklan ExoClick Outstream Video secara dinamis (Aman untuk SPA & Responsive)
  * 
- * Perbaikan race-condition: Menunggu ad-provider.js selesai dimuat sebelum
- * memanggil AdProvider.push({"serve": {}}) agar <ins> element sudah di-scan.
+ * ad-provider.js dimuat secara statis di index.html. Fungsi ini hanya perlu:
+ * 1. Meng-inject <ins> tag ke container
+ * 2. Memanggil AdProvider.push({"serve": {}}) agar script memindai <ins> baru
  */
 export function loadExoClickOutstream(containerId, zoneId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    console.warn('[Ads] Outstream container not found:', containerId);
+    return;
+  }
 
   container.innerHTML = '';
 
@@ -234,42 +238,38 @@ export function loadExoClickOutstream(containerId, zoneId) {
   ins.setAttribute('data-zoneid', zoneId);
   container.appendChild(ins);
 
+  console.log('[Ads] Outstream <ins> injected. Zone:', zoneId, 'Container:', containerId);
+
   /**
-   * Helper: Panggil AdProvider.push({"serve": {}}) dengan aman.
-   * Tunggu 150ms agar DOM selesai di-layout dan ad-provider bisa memindai <ins> element baru.
+   * Panggil AdProvider.push({"serve": {}}) dengan retry.
+   * ad-provider.js dimuat async di index.html, jadi mungkin belum selesai
+   * pada saat feed pertama kali di-render. Retry hingga 5 kali dengan interval 500ms.
    */
+  let retryCount = 0;
+  const maxRetries = 5;
+
   const triggerServe = () => {
-    setTimeout(() => {
+    // Cek apakah AdProvider sudah tersedia dan merupakan array yang sudah di-override oleh ad-provider.js
+    if (typeof window.AdProvider !== 'undefined') {
       try {
-        (window.AdProvider = window.AdProvider || []).push({"serve": {}});
-        console.log('[Ads] ExoClick Outstream serve triggered for zone:', zoneId);
+        window.AdProvider.push({"serve": {}});
+        console.log('[Ads] AdProvider.push serve called successfully for zone:', zoneId);
       } catch (e) {
-        console.warn('[Ads] ExoClick Outstream serve error:', e);
+        console.warn('[Ads] AdProvider.push serve error:', e);
       }
-    }, 150);
+    } else {
+      retryCount++;
+      if (retryCount <= maxRetries) {
+        console.log(`[Ads] AdProvider not ready yet. Retry ${retryCount}/${maxRetries} in 500ms...`);
+        setTimeout(triggerServe, 500);
+      } else {
+        console.warn('[Ads] AdProvider not available after', maxRetries, 'retries. Ad-provider.js may be blocked.');
+      }
+    }
   };
 
-  // Memuat script ad-provider.js jika belum ada di document head
-  const existingScript = document.getElementById('exoclick-adprovider-script');
-  if (!existingScript) {
-    const loaderScript = document.createElement('script');
-    loaderScript.id = 'exoclick-adprovider-script';
-    loaderScript.type = 'text/javascript';
-    loaderScript.src = 'https://a.magsrv.com/ad-provider.js';
-    loaderScript.async = true;
-    // Tunggu script selesai dimuat SEBELUM memanggil serve
-    loaderScript.onload = () => {
-      console.log('[Ads] ad-provider.js loaded successfully.');
-      triggerServe();
-    };
-    loaderScript.onerror = () => {
-      console.warn('[Ads] Failed to load ad-provider.js (mungkin diblokir adblocker).');
-    };
-    document.head.appendChild(loaderScript);
-  } else {
-    // Script sudah dimuat sebelumnya — langsung panggil serve untuk <ins> baru
-    triggerServe();
-  }
+  // Delay 200ms agar DOM selesai layout sebelum serve
+  setTimeout(triggerServe, 200);
 }
 
 /**
