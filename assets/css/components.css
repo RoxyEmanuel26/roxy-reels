@@ -1594,6 +1594,113 @@
   display: block;
   box-sizing: border-box;
   position: relative;
+  background: var(--color-surface-2, #161616);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Border glow when ad is loaded successfully */
+.ad-outstream-container.ad-loaded {
+  border-color: rgba(255, 0, 60, 0.25);
+  box-shadow: 0 0 25px rgba(255, 0, 60, 0.15), 0 10px 35px rgba(0, 0, 0, 0.5);
+}
+
+/* Ins tag starts hidden and fades/scales in once loaded */
+.ad-outstream-container ins.eas6a97888e37 {
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ad-outstream-container.ad-loaded ins.eas6a97888e37 {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Premium Skeleton Overlay styling */
+.ad-outstream-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(30, 30, 30, 0.85) 0%, rgba(15, 15, 15, 0.98) 100%);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ad-outstream-container.ad-loaded .ad-outstream-skeleton {
+  opacity: 0;
+  transform: scale(1.05);
+}
+
+.skeleton-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer-ad 2.2s infinite linear;
+}
+
+@keyframes skeleton-shimmer-ad {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-content {
+  text-align: center;
+  z-index: 3;
+}
+
+.skeleton-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--color-accent, #ff003c);
+  border: 1px solid var(--color-accent, #ff003c);
+  padding: 3px 10px;
+  border-radius: var(--radius-sm, 4px);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  box-shadow: 0 0 10px rgba(255, 0, 60, 0.2);
+}
+
+.skeleton-player-icon {
+  font-size: 2.2rem;
+  margin-top: 15px;
+  animation: pulse-icon-ad 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-icon-ad {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.9; }
+}
+
+.skeleton-text {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #888);
+  margin-top: 10px;
+  font-weight: 500;
+  display: block;
+  letter-spacing: 0.5px;
 }
 
 

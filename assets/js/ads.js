@@ -209,7 +209,9 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
  * 2. Fallback: dimuat ulang secara dinamis jika belum tersedia
  * 3. <ins> element diberi dimensi minimum 250px agar langsung terdeteksi oleh ad-provider
  * 4. Eksekusi AdProvider.push({"serve": {}}) langsung via JS untuk keandalan maksimum di SPA
- * 5. Diagnostic timer 3 detik untuk mengecek status data-processed dan menampilkan pesan log internal ExoClick
+ * 5. Diagnostic timer 4 detik untuk mengecek status data-processed dan menampilkan pesan log internal ExoClick
+ * 6. MutationObserver untuk mendeteksi kapan ad-provider menyuntikkan konten iklan,
+ *    lalu mentransisikan tampilan secara halus dari Skeleton Loader ke Iklan Video (fade & scale).
  */
 export function loadExoClickOutstream(containerId, zoneId) {
   const container = document.getElementById(containerId);
@@ -219,6 +221,7 @@ export function loadExoClickOutstream(containerId, zoneId) {
   }
 
   container.innerHTML = '';
+  container.classList.remove('ad-loaded'); // Reset status transisi
 
   // Jika zoneId kosong atau placeholder, tampilkan placeholder premium dark mode neon
   if (!zoneId || String(zoneId).startsWith('placeholder_')) {
@@ -236,16 +239,44 @@ export function loadExoClickOutstream(containerId, zoneId) {
   }
 
   // Ciptakan tag <ins> ExoClick Outstream Video dengan dimensi minimum yang jelas
-  // agar deteksi visibilitas (lazy load) ExoClick ad-provider langsung terpicu.
   const ins = document.createElement('ins');
   ins.className = 'eas6a97888e37';
   ins.setAttribute('data-zoneid', zoneId);
   ins.style.display = 'block';
   ins.style.width = '100%';
-  ins.style.minHeight = '250px'; // Set minimum height 250px agar terlihat di viewport
+  ins.style.minHeight = '250px';
+  ins.style.opacity = '0'; // Disembunyikan dulu untuk transisi smooth
+  ins.style.transform = 'scale(0.98)';
+  ins.style.transition = 'opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)';
   container.appendChild(ins);
 
-  console.log('[Ads] Outstream <ins> injected. Zone:', zoneId, 'Container:', containerId);
+  // Ciptakan Skeleton Loader Premium yang mengisi container
+  const skeleton = document.createElement('div');
+  skeleton.className = 'ad-outstream-skeleton';
+  skeleton.innerHTML = `
+    <div class="skeleton-glow"></div>
+    <div class="skeleton-content">
+      <span class="skeleton-badge">SPONSORED</span>
+      <div class="skeleton-player-icon">🎬</div>
+      <span class="skeleton-text">Loading premium video ad...</span>
+    </div>
+  `;
+  container.appendChild(skeleton);
+
+  console.log('[Ads] Outstream elements injected. Zone:', zoneId, 'Container:', containerId);
+
+  // Pasang MutationObserver pada tag <ins> untuk mendeteksi kapan ad-provider menyuntikkan konten iklan
+  const observer = new MutationObserver(() => {
+    // Cek apakah ad-provider sudah mulai mengisi konten di dalam tag <ins>
+    if (ins.children.length > 0 || ins.innerHTML.trim().length > 0) {
+      console.log('[Ads] Outstream content detected! Running portal transition...');
+      container.classList.add('ad-loaded');
+      ins.style.opacity = '1';
+      ins.style.transform = 'scale(1)';
+      observer.disconnect(); // Hentikan observasi jika sudah termuat
+    }
+  });
+  observer.observe(ins, { childList: true, subtree: true });
 
   // Pastikan ad-provider.js sudah dimuat (fallback jika static load di index.html gagal/belum selesai)
   const ensureAdProvider = (callback) => {
@@ -291,7 +322,7 @@ export function loadExoClickOutstream(containerId, zoneId) {
     setTimeout(triggerServeCommand, 200);
   });
 
-  // Diagnostic Checker: periksa 3 detik kemudian apakah iklan berhasil di-proses
+  // Diagnostic Checker: periksa 4 detik kemudian apakah iklan berhasil di-proses
   setTimeout(() => {
     try {
       const checkIns = container.querySelector('ins.eas6a97888e37');
@@ -321,7 +352,7 @@ export function loadExoClickOutstream(containerId, zoneId) {
     } catch (err) {
       console.error('[Ads Diagnostic] Error during diagnostic run:', err);
     }
-  }, 3000);
+  }, 4000);
 }
 
 /**
