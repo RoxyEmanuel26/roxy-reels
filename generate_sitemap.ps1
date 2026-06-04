@@ -40,8 +40,8 @@ if (Test-Path $envFile) {
             $parts = $line.Split('=', 2)
             $key = $parts[0].Trim()
             $val = $parts[1].Trim()
-            if ($key -eq 'SUPABASE_URL') { $supabaseUrl = $val }
-            elseif ($key -eq 'SUPABASE_KEY') { $supabaseKey = $val }
+            if ($key -eq 'SUPABASE_URL') { $supabaseUrl = $val.Trim('"', "'") }
+            elseif ($key -eq 'SUPABASE_KEY') { $supabaseKey = $val.Trim('"', "'") }
         }
     }
 }

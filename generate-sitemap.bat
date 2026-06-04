@@ -3,6 +3,9 @@ setlocal enabledelayedexpansion
 title MISSAV-J — Smart Sitemap Generator v1.0
 color 0F
 
+:: Pastikan direktori kerja aktif adalah tempat script berada
+cd /d "%~dp0"
+
 echo ====================================================
 echo   MISSAV-J Smart Sitemap Generator v1.0
 echo   Multi-Type: Pages, Actors, Categories, Studios, Videos
@@ -58,7 +61,7 @@ if %GIT_AVAILABLE% EQU 0 (
         echo.
         
         echo [*] Menambahkan file sitemap ke git staging...
-        git add sitemaps\*.xml sitemaps\sitemap_index.xml
+        git add sitemaps/
         
         echo [*] Membuat commit...
         git commit -m "chore(sitemap): auto-update sitemaps via generator script"
