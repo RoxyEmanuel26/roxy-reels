@@ -256,46 +256,54 @@ export async function init(id) {
           }
         };
 
-        const adConfig = window.missavJAdConfig;
-        const hasVastAd = adConfig && adConfig.vastZoneId && !adConfig.vastZoneId.startsWith('placeholder_');
+        // Deteksi apakah pengakses adalah bot pencari (seperti Googlebot)
+        const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent);
         
-        const secureThumb = ui.escapeHTML(post.thumbnail || SVG_FALLBACK_THUMB);
-        const secureTitle = ui.escapeHTML(post.title || '');
-        const secureCode = ui.escapeHTML(post.code || '');
-        
-        playerContainer.innerHTML = `
-          <div class="player-custom-poster" id="player-custom-poster">
-            <div class="poster-bg" style="background-image: url('${secureThumb}');"></div>
-            <div class="poster-overlay"></div>
-            <div class="poster-play-btn-wrapper">
-              <button class="poster-play-btn" id="poster-play-btn" aria-label="${i18n.t('play_video') || 'Play Video'}">
-                <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
+        if (isBot) {
+          console.log('[SEO] Bot detected, loading player iframe immediately...');
+          loadRealVideo();
+        } else {
+          const adConfig = window.missavJAdConfig;
+          const hasVastAd = adConfig && adConfig.vastZoneId && !adConfig.vastZoneId.startsWith('placeholder_');
+          
+          const secureThumb = ui.escapeHTML(post.thumbnail || SVG_FALLBACK_THUMB);
+          const secureTitle = ui.escapeHTML(post.title || '');
+          const secureCode = ui.escapeHTML(post.code || '');
+          
+          playerContainer.innerHTML = `
+            <div class="player-custom-poster" id="player-custom-poster">
+              <div class="poster-bg" style="background-image: url('${secureThumb}');"></div>
+              <div class="poster-overlay"></div>
+              <div class="poster-play-btn-wrapper">
+                <button class="poster-play-btn" id="poster-play-btn" aria-label="${i18n.t('play_video') || 'Play Video'}">
+                  <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="poster-meta">
+                ${secureCode ? `<span class="poster-code">${secureCode}</span>` : ''}
+                <h2 class="poster-title">${i18n.translateVideoTitle(secureTitle)}</h2>
+              </div>
             </div>
-            <div class="poster-meta">
-              ${secureCode ? `<span class="poster-code">${secureCode}</span>` : ''}
-              <h2 class="poster-title">${i18n.translateVideoTitle(secureTitle)}</h2>
-            </div>
-          </div>
-        `;
-        
-        // Hide the watch page loader shimmer when poster is shown
-        const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
-        if (shimmer) shimmer.style.display = 'none';
+          `;
+          
+          // Hide the watch page loader shimmer when poster is shown
+          const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
+          if (shimmer) shimmer.style.display = 'none';
 
-        // Add play button click listener
-        const playBtn = document.getElementById('poster-play-btn');
-        if (playBtn) {
-          playBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (hasVastAd && window.missavJAds && typeof window.missavJAds.loadVastAd === 'function') {
-              window.missavJAds.loadVastAd('player-container', adConfig.vastZoneId, loadRealVideo);
-            } else {
-              loadRealVideo();
-            }
-          });
+          // Add play button click listener
+          const playBtn = document.getElementById('poster-play-btn');
+          if (playBtn) {
+            playBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (hasVastAd && window.missavJAds && typeof window.missavJAds.loadVastAd === 'function') {
+                window.missavJAds.loadVastAd('player-container', adConfig.vastZoneId, loadRealVideo);
+              } else {
+                loadRealVideo();
+              }
+            });
+          }
         }
       }
       

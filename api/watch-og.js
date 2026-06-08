@@ -142,7 +142,7 @@ module.exports = async (req, res) => {
         "description": description,
         "thumbnailUrl": imageUrl,
         "uploadDate": post.date ? new Date(post.date).toISOString() : new Date().toISOString(),
-        "embedUrl": post.embed_url || `https://server.apijav.com/embed/${id}`
+        "embedUrl": post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`
       };
       htmlContent = htmlContent.replace(
         /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/i,
