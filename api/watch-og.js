@@ -135,6 +135,7 @@ module.exports = async (req, res) => {
 
     // Dynamic schema metadata for SEO search bots
     if (htmlContent.includes('"@type": "WebSite"')) {
+      const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`;
       const structuredData = {
         "@context": "https://schema.org",
         "@type": "VideoObject",
@@ -142,12 +143,22 @@ module.exports = async (req, res) => {
         "description": description,
         "thumbnailUrl": imageUrl,
         "uploadDate": post.date ? new Date(post.date).toISOString() : new Date().toISOString(),
-        "embedUrl": post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`
+        "embedUrl": cleanEmbedUrl
       };
       htmlContent = htmlContent.replace(
         /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/i,
         `<script type="application/ld+json" id="json-ld-data">${JSON.stringify(structuredData, null, 2)}</script>`
       );
+
+      // Inject iframe into raw HTML for first-wave crawler indexing
+      const seoFallbackContent = `
+        <div class="seo-fallback" style="display: none;">
+          <h1>${escapeHtml(fullTitle)}</h1>
+          <p>${escapeHtml(description)}</p>
+          <iframe src="${escapeHtml(cleanEmbedUrl)}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
+      htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, seoFallbackContent);
     }
 
     // Set caching headers for Edge network to cache the dynamic page for 5 minutes
