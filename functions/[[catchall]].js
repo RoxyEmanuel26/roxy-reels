@@ -120,7 +120,7 @@ export async function onRequest(context) {
             const fullTitle = code ? `[${code}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
             const description = `Nonton video JAV ${code ? code + ' ' : ''}${title} gratis dengan streaming kualitas premium di MISSAV-J.`;
 
-            let imageUrl = post.thumbnail || '';
+            let imageUrl = post.thumbnail || '/assets/images/logo.png';
             if (imageUrl && !imageUrl.startsWith('http')) {
               imageUrl = `${url.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
             }
