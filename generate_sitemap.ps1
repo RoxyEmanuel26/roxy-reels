@@ -560,6 +560,20 @@ for ($page = 1; $page -le $totalPages; $page++) {
         $title   = if ($post.title) { $post.title } else { '' }
         $dateVal = if ($post.date -and $post.date.Length -ge 10) { $post.date.Substring(0, 10) } else { $todayStr }
 
+        $changefreq = 'monthly'
+        $priority = '0.50'
+        try {
+            $postDateObj = [datetime]::ParseExact($dateVal, 'yyyy-MM-dd', $null)
+            $ageDays = ([datetime]::Now - $postDateObj).TotalDays
+            if ($ageDays -lt 7) {
+                $changefreq = 'daily'
+                $priority = '0.90'
+            } elseif ($ageDays -lt 30) {
+                $changefreq = 'weekly'
+                $priority = '0.70'
+            }
+        } catch { }
+
         $cleanCode = Slugify $code
         $translations = $translationsMap[[string]$id]
         if (-not $translations) {
@@ -609,6 +623,8 @@ for ($page = 1; $page -le $totalPages; $page++) {
         $postData += @{
             id             = $id
             dateVal        = $dateVal
+            changefreq     = $changefreq
+            priority       = $priority
             localizedSlugs = $localizedSlugs
         }
     }
@@ -629,6 +645,8 @@ for ($page = 1; $page -le $totalPages; $page++) {
             [void]$sb.AppendLine("  <url>")
             [void]$sb.AppendLine("    <loc>$(EscXml $locUrl)</loc>")
             [void]$sb.AppendLine("    <lastmod>$($pd.dateVal)</lastmod>")
+            [void]$sb.AppendLine("    <changefreq>$($pd.changefreq)</changefreq>")
+            [void]$sb.AppendLine("    <priority>$($pd.priority)</priority>")
 
             # Alternate links untuk semua bahasa (dengan slug terlokalisasi unik masing-masing bahasa)
             foreach ($altLang in $LANGS) {

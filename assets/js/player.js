@@ -9,7 +9,11 @@ import api from './api.js';
 import ui from './ui.js';
 import { renderVideoCard, getDeterministicDuration } from './feed.js';
 import i18n from './i18n.js';
+import { checkAdBlocker } from './ads.js';
+import ReferralSystem from './referral.js';
+import { Analytics } from './analytics.js';
 
+let playerInstance = null;
 // State like/dislike lokal in-memory
 const likedVideos = new Set();
 const dislikedVideos = new Set();
@@ -250,6 +254,9 @@ export async function init(id) {
             const hideShimmer = () => {
               const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
               if (shimmer) shimmer.style.display = 'none';
+              
+              // Track video play event when iframe loads
+              Analytics.trackVideoPlay(id, post.code || '', post.title || '', post.duration || '');
             };
             iframe.addEventListener('load', hideShimmer);
             setTimeout(hideShimmer, 3000); // fallback timer
@@ -468,10 +475,13 @@ export function renderPostMeta(post, id) {
   const shareBtn = document.getElementById('share-btn');
   if (shareBtn) {
     shareBtn.addEventListener('click', () => {
-      const shareUrl = window.location.href;
-      const translatedTitle = i18n.translateVideoTitle(post.title);
+      // Generate referral tracking link instead of basic URL
+      const shareUrl = ReferralSystem.generateShareLink(window.location.href, 'video_share');
+      const titleElement = document.querySelector('.video-details h1');
+      const translatedTitle = titleElement ? titleElement.textContent : i18n.t('btn_share');
       const thumbnailUrl = post.thumbnail ? (post.thumbnail.startsWith('http') ? post.thumbnail : window.location.origin + post.thumbnail) : '';
       showShareModal(translatedTitle, shareUrl, thumbnailUrl);
+      Analytics.trackShare(id, 'modal');
     });
   }
 }
@@ -576,6 +586,7 @@ function setupWatchLaterLogic(post) {
       // Simpan ke tonton nanti
       window.missavJState.watchLater.push(post);
       ui.showToast(i18n.t('toast_saved_watch_later'));
+      Analytics.trackWatchLaterAdd(id, post.title);
     }
     updateButtonVisualState();
   });
@@ -1031,6 +1042,10 @@ export function showShareModal(title, shareUrl, thumbnailUrl) {
         </div>
         <div class="share-modal-body">
           <div class="share-options-grid">
+            <a href="#" target="_blank" class="share-option-btn opt-telegram">
+              <span class="share-icon">✈️</span>
+              <span>Telegram</span>
+            </a>
             <a href="#" target="_blank" class="share-option-btn opt-facebook">
               <span class="share-icon">📘</span>
               <span>Facebook</span>
@@ -1072,11 +1087,13 @@ export function showShareModal(title, shareUrl, thumbnailUrl) {
   }
 
   // Update dynamic links
+  const tgBtn = modal.querySelector('.opt-telegram');
   const fbBtn = modal.querySelector('.opt-facebook');
   const xBtn = modal.querySelector('.opt-x');
   const pinBtn = modal.querySelector('.opt-pinterest');
   const copyBtn = modal.querySelector('.opt-copy');
 
+  tgBtn.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
   fbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
   xBtn.href = `https://x.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
   pinBtn.href = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&media=${encodeURIComponent(thumbnailUrl)}&description=${encodeURIComponent(title)}`;

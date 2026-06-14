@@ -7,6 +7,8 @@
 import ui from './ui.js';
 import { renderVideoCard, bindHoverPreviews } from './feed.js';
 import i18n from './i18n.js';
+import { Analytics } from './analytics.js';
+import ReferralSystem from './referral.js';
 import './ads.js?v=1.2.7';
 
 // Initialize Global In-Memory SPA States
@@ -467,6 +469,9 @@ function updateDynamicMetaTags(routePath, canonicalUrl) {
       jsonLdEl.textContent = JSON.stringify(websiteSchema);
     }
   }
+
+  // Update Breadcrumb UI
+  ui.renderBreadcrumbs(cleanRoutePath, document.title);
 }
 
 function navigate(urlPath) {
@@ -661,6 +666,7 @@ function navigate(urlPath) {
   route(routeArg).then(() => {
     i18n.translateStaticUI();
     updateSEOTags(matchedRoutePath, targetId);
+    Analytics.trackPageView(window.location.pathname, document.title, document.documentElement.lang);
   }).catch(err => {
     console.error(`Error loading route ${matchedRoutePath}:`, err);
     ui.showError(i18n.t('error_load_page', { message: err.message }));
@@ -1683,6 +1689,25 @@ function setupLanguageDropdown() {
 
 // Bootstrap router elements when page finishes parsing DOM
 document.addEventListener('DOMContentLoaded', () => {
+  Analytics.init();
+  ReferralSystem.init();
+
+  // Back to Top Button Logic
+  const backToTopBtn = document.getElementById('back-to-top');
+  if (backToTopBtn) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 500) {
+        backToTopBtn.classList.remove('hidden');
+      } else {
+        backToTopBtn.classList.add('hidden');
+      }
+    }, { passive: true });
+
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
   // 1. Backward Compatibility: Catch hash-based legacy paths and replace state to localized URL path segments
   if (window.location.hash) {
     const hashPath = window.location.hash.replace('#', '') || '/';
@@ -1733,6 +1758,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupFloatingPlayerDOM();
   setupKeyboardHotkeys();
   setupLegalModals();
+  Analytics.init(); // GA4 tracking — configure ID in analytics.js
   
   // Collapse sidebar by default on tablet viewports (768px to 1023px)
   const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;

@@ -207,6 +207,65 @@ const ui = {
       `;
       themeBtn.setAttribute('title', 'Ganti ke Mode Gelap');
     }
+  },
+
+  /**
+   * Render dynamic breadcrumbs based on the current path and active language
+   */
+  renderBreadcrumbs(routePath, title = '') {
+    const breadcrumbNav = document.getElementById('breadcrumb-nav');
+    if (!breadcrumbNav) return;
+
+    // Hide breadcrumbs on home page
+    if (!routePath || routePath === '/' || routePath === '') {
+      breadcrumbNav.classList.add('hidden');
+      breadcrumbNav.innerHTML = '';
+      return;
+    }
+
+    breadcrumbNav.classList.remove('hidden');
+    const items = [];
+    
+    // Always start with Home
+    items.push({ label: 'Home', url: '/' });
+
+    // Extract type and name from route
+    const parts = routePath.replace(/^\//, '').split('/');
+    const type = parts[0]; // e.g. trending, actor, watch
+    
+    if (type === 'watch') {
+      items.push({ label: title || 'Watch', url: routePath, active: true });
+    } else if (type === 'actor') {
+      items.push({ label: 'Actors', url: '/actors' });
+      const name = new URLSearchParams(window.location.search).get('name');
+      if (name) items.push({ label: name, url: window.location.pathname + window.location.search, active: true });
+    } else if (type === 'category') {
+      items.push({ label: 'Categories', url: '/categories' });
+      const name = new URLSearchParams(window.location.search).get('name');
+      if (name) items.push({ label: name, url: window.location.pathname + window.location.search, active: true });
+    } else if (type === 'studio') {
+      items.push({ label: 'Studios', url: '/studios' });
+      const name = new URLSearchParams(window.location.search).get('name');
+      if (name) items.push({ label: name, url: window.location.pathname + window.location.search, active: true });
+    } else if (['trending', 'recent', 'actors', 'categories', 'studios', 'search', 'watch-later'].includes(type)) {
+      const typeDisplay = type.charAt(0).toUpperCase() + type.slice(1);
+      items.push({ label: typeDisplay, url: routePath, active: true });
+    }
+
+    // Build HTML
+    let html = '';
+    items.forEach((item, index) => {
+      if (index > 0) {
+        html += `<span class="breadcrumb-separator">›</span>`;
+      }
+      if (item.active) {
+        html += `<span class="breadcrumb-item active" aria-current="page">${item.label}</span>`;
+      } else {
+        html += `<a href="${item.url}" class="breadcrumb-item" data-navigate>${item.label}</a>`;
+      }
+    });
+
+    breadcrumbNav.innerHTML = html;
   }
 };
 

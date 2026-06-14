@@ -1,0 +1,22 @@
+# MISSAV-J
+
+> Platform streaming video terlengkap dengan antarmuka modern terinspirasi oleh YouTube.
+
+## Tentang
+MISSAV-J adalah platform streaming video dengan fokus pada UI responsif, mode gelap (dark mode), dan navigasi Single-Page Application (SPA) yang sangat cepat. Platform ini dirancang untuk memberikan pengalaman menonton video terbaik.
+
+## Direktori Utama
+- Homepage: https://www.missav-j.web.id
+- Trending: https://www.missav-j.web.id/trending
+- Recent Uploads: https://www.missav-j.web.id/recent
+- Actors: https://www.missav-j.web.id/actors
+- Categories: https://www.missav-j.web.id/categories
+- Studios: https://www.missav-j.web.id/studios
+
+## Fitur Teknis
+- 13 Bahasa yang didukung: en, id, ja, ko, zh-cn, zh-tw, dll.
+- SSR dengan Cloudflare Pages Functions
+- JSON-LD Structured Data terintegrasi
+- Google Analytics 4 Event Tracking
+
+*Konteks ini ditujukan untuk mempermudah AI Search Engines seperti ChatGPT, Perplexity, dan Claude dalam mengindeks informasi mengenai MISSAV-J.*

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f0f0f">
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="google-site-verification" content="p399rUdcNUuJI12wyyhrNzfnJKheRQHy106DN-YWJsg" />
   <meta name="6a97888e-site-verification" content="a1be0a661f577bbd2c3eb82350a10d97">
   <meta name="yandex-verification" content="69f8d52e19749e09" />
@@ -31,6 +34,13 @@
   <meta name="twitter:title" id="twitter-title" content="MISSAV-J — Premium Video Streaming Feed">
   <meta name="twitter:description" id="twitter-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
   <meta name="twitter:image" id="twitter-image" content="/assets/images/logo.png">
+  <meta property="og:video" id="og-video" content="">
+  <meta property="og:video:type" content="text/html">
+  <meta property="og:video:width" content="1280">
+  <meta property="og:video:height" content="720">
+  <meta name="twitter:player" id="twitter-player" content="">
+  <meta name="twitter:player:width" content="1280">
+  <meta name="twitter:player:height" content="720">
 
   <!-- JSON-LD Structured Data (dynamically updated by app.js) -->
   <script type="application/ld+json" id="json-ld-data">
@@ -56,10 +66,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 
   <!-- Premium Modular Stylesheets -->
-  <link rel="stylesheet" href="/assets/css/base.css?v=1.1.3">
-  <link rel="stylesheet" href="/assets/css/layout.css?v=1.2.6">
-  <link rel="stylesheet" href="/assets/css/components.css?v=1.2.4">
-  <link rel="stylesheet" href="/assets/css/player.css?v=1.2.0">
+  <link rel="stylesheet" href="/assets/css/base.css?v=2.0.0">
+  <link rel="stylesheet" href="/assets/css/layout.css?v=2.0.0">
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.0.0">
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.0.0">
 </head>
 <body>
 
@@ -72,7 +82,7 @@
       </button>
       
       <!-- Logo MISSAV-J -->
-      <a href="#/" class="logo" id="logo-branding">
+      <a href="/" class="logo" id="logo-branding">
         <span class="logo-text">MISS<span class="logo-accent">AV-J</span></span>
       </a>
     </div>
@@ -128,15 +138,15 @@
     <aside class="sidebar" id="sidebar">
       <nav class="sidebar-nav">
         <!-- Rute utama -->
-        <a href="#/" class="active">
+        <a href="/" class="active">
           <span class="nav-icon">🏠</span>
           <span class="nav-text" data-i18n="nav_home">Beranda</span>
         </a>
-        <a href="#/trending">
+        <a href="/trending">
           <span class="nav-icon">🔥</span>
           <span class="nav-text" data-i18n="nav_trending">Populer (Trending)</span>
         </a>
-        <a href="#/recent">
+        <a href="/recent">
           <span class="nav-icon">🕐</span>
           <span class="nav-text" data-i18n="nav_recent">Terbaru</span>
         </a>
@@ -145,11 +155,11 @@
         
         <!-- Section Jelajahi -->
         <div class="sidebar-section-title" data-i18n="sidebar_explore">Jelajahi</div>
-        <a href="#/actors">
+        <a href="/actors">
           <span class="nav-icon">🎭</span>
           <span class="nav-text" data-i18n="nav_all_actors">All Actors</span>
         </a>
-        <a href="#/categories">
+        <a href="/categories">
           <span class="nav-icon">📁</span>
           <span class="nav-text" data-i18n="nav_all_categories">All Categories</span>
         </a>
@@ -158,11 +168,11 @@
 
         <!-- Section Koleksi Saya -->
         <div class="sidebar-section-title" data-i18n="sidebar_my_collections">Koleksi Saya</div>
-        <a href="#/watch-later">
+        <a href="/watch-later">
           <span class="nav-icon">📁</span>
           <span class="nav-text" data-i18n="nav_watch_later">Tonton Nanti</span>
         </a>
-        <a href="#/history">
+        <a href="/history">
           <span class="nav-icon">🕐</span>
           <span class="nav-text" data-i18n="nav_history">Riwayat Sesi</span>
         </a>
@@ -171,11 +181,11 @@
 
         <!-- Section Info Tambahan -->
         <div class="sidebar-section-title" data-i18n="sidebar_other_info">Informasi Lain</div>
-        <a href="#/popular-actors">
+        <a href="/popular-actors">
           <span class="nav-icon">🎭</span>
           <span class="nav-text" data-i18n="nav_actors">Aktor Populer</span>
         </a>
-        <a href="#/studios">
+        <a href="/studios">
           <span class="nav-icon">🎬</span>
           <span class="nav-text" data-i18n="nav_studios">Studio Populer</span>
         </a>
@@ -207,6 +217,9 @@
       <!-- Global Top Ad Banner Placement (Ditinjau secara responsif) -->
       <div class="ad-placement global-top-ad" id="global-top-ad"></div>
 
+      <!-- Breadcrumb Navigation UI -->
+      <nav class="breadcrumb-nav hidden" id="breadcrumb-nav" aria-label="Breadcrumb"></nav>
+
       <!-- Target Area Konten Dinamis Diinjeksi oleh Router SPA -->
       <div id="app-content">
         <!-- Halaman-halaman feed / watch akan dirender secara dinamis di sini -->
@@ -225,6 +238,21 @@
   <!-- Toast Container Popup -->
   <div id="toast-container" class="toast-container"></div>
 
+  <!-- Back to Top Button -->
+  <button id="back-to-top" class="back-to-top hidden" aria-label="Back to Top" title="Back to Top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <!-- Floating Telegram Button -->
+  <a href="https://t.me/missavj" target="_blank" rel="noopener noreferrer" class="floating-telegram-btn" id="floating-telegram-btn" aria-label="Join our Telegram Community" title="Join Telegram Group">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+    </svg>
+    <span class="telegram-tooltip" data-i18n="join_telegram">Join Community</span>
+  </a>
+
   <!-- Legal Modal Dialog Overlay -->
   <div id="legal-modal-overlay" class="legal-modal-overlay hidden">
     <div class="legal-modal-card">
@@ -242,6 +270,19 @@
   <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
 
   <!-- Modular SPA Script Bootstrap -->
-  <script type="module" src="/assets/js/app.js?v=1.5.0"></script>
+  <script type="module" src="/assets/js/app.js?v=2.0.0"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('SW registered: ', registration);
+        }).catch(registrationError => {
+          console.log('SW registration failed: ', registrationError);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
