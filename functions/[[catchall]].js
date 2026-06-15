@@ -44,14 +44,25 @@ function formatDuration(durationStr) {
  */
 async function fetchPostMetadata(id, origin) {
   const apiUrl = `${TARGET_BASE}/posts/${id}`;
-  const res = await fetch(apiUrl, {
-    headers: {
-      'Accept': 'application/json',
-      'X-Client-Site': origin
-    }
-  });
-  if (!res.ok) return null;
-  return res.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+
+  try {
+    const res = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Client-Site': origin
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.error('[OG Fetch Error]', err);
+    return null;
+  }
 }
 
 /**
@@ -59,6 +70,10 @@ async function fetchPostMetadata(id, origin) {
  */
 async function getTranslatedTitle(id, lang, supabaseUrl, supabaseKey) {
   if (!lang || lang === 'en' || !supabaseUrl || !supabaseKey) return null;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+
   try {
     const res = await fetch(
       `${supabaseUrl}/rest/v1/translations?id=eq.${id}&select=translations`,
@@ -66,15 +81,18 @@ async function getTranslatedTitle(id, lang, supabaseUrl, supabaseKey) {
         headers: {
           'apikey': supabaseKey,
           'Authorization': `Bearer ${supabaseKey}`
-        }
+        },
+        signal: controller.signal
       }
     );
+    clearTimeout(timeoutId);
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data[0] && data[0].translations && data[0].translations[lang]) {
       return data[0].translations[lang];
     }
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error('[OG Supabase Error]', e);
   }
   return null;
@@ -293,8 +311,6 @@ export async function onRequest(context) {
         }
       });
     }
-  }
-
   } else {
     // 3. Programmatic SEO for Listing Pages (Actor, Category, Studio, Trending, etc)
     const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios)$/;
