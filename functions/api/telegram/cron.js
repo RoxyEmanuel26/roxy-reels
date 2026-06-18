@@ -115,17 +115,22 @@ const LOCALIZATION = {
 
 // Fetch translation record from Supabase
 async function getTranslationFromDb(supabaseUrl, supabaseKey, id) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/translations?id=eq.${id}&select=translations`, {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
-      }
+      },
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!res.ok) return null;
     const data = await res.json();
     return data && data[0] ? data[0].translations : null;
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error('Supabase get error:', e);
     return null;
   }
@@ -133,6 +138,8 @@ async function getTranslationFromDb(supabaseUrl, supabaseKey, id) {
 
 // Save translation record to Supabase
 async function saveTranslationToDb(supabaseUrl, supabaseKey, id, translations) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
     await fetch(`${supabaseUrl}/rest/v1/translations`, {
       method: 'POST',
@@ -142,9 +149,12 @@ async function saveTranslationToDb(supabaseUrl, supabaseKey, id, translations) {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates'
       },
-      body: JSON.stringify({ id, translations })
+      body: JSON.stringify({ id, translations }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error('Supabase save error:', e);
   }
 }
@@ -218,12 +228,22 @@ export async function onRequest(context) {
     if (type === 'random') {
       // Get the total number of posts first by calling api/posts for 1 post
       const preUrl = `${baseUrl}/api/posts?per_page=1&lang=${lang}`;
-      const preRes = await fetch(preUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'X-Client-Site': baseUrl
-        }
-      });
+      const preController = new AbortController();
+      const preTimeoutId = setTimeout(() => preController.abort(), 8000);
+      let preRes;
+      try {
+        preRes = await fetch(preUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Client-Site': baseUrl
+          },
+          signal: preController.signal
+        });
+        clearTimeout(preTimeoutId);
+      } catch (err) {
+        clearTimeout(preTimeoutId);
+        preRes = { ok: false };
+      }
       
       let totalPosts = 100;
       if (preRes.ok) {
@@ -235,12 +255,22 @@ export async function onRequest(context) {
       
       // Fetch the single random post
       const randomUrl = `${baseUrl}/api/posts?per_page=1&page=${randomPage}&lang=${lang}`;
-      const randomRes = await fetch(randomUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'X-Client-Site': baseUrl
-        }
-      });
+      const randController = new AbortController();
+      const randTimeoutId = setTimeout(() => randController.abort(), 8000);
+      let randomRes;
+      try {
+        randomRes = await fetch(randomUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Client-Site': baseUrl
+          },
+          signal: randController.signal
+        });
+        clearTimeout(randTimeoutId);
+      } catch (err) {
+        clearTimeout(randTimeoutId);
+        randomRes = { ok: false };
+      }
       
       if (randomRes.ok) {
         posts = await randomRes.json();
@@ -248,12 +278,22 @@ export async function onRequest(context) {
     } else {
       // Default: Fetch latest 5 posts in the requested language
       const apiUrl = `${baseUrl}/api/posts?per_page=5&lang=${lang}`;
-      const apiRes = await fetch(apiUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'X-Client-Site': baseUrl
-        }
-      });
+      const apiController = new AbortController();
+      const apiTimeoutId = setTimeout(() => apiController.abort(), 8000);
+      let apiRes;
+      try {
+        apiRes = await fetch(apiUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Client-Site': baseUrl
+          },
+          signal: apiController.signal
+        });
+        clearTimeout(apiTimeoutId);
+      } catch (err) {
+        clearTimeout(apiTimeoutId);
+        throw new Error(`Failed to fetch posts: ${err.message}`);
+      }
 
       if (apiRes.ok) {
         posts = await apiRes.json();
@@ -358,11 +398,16 @@ ${hashtags.join(' ')}`;
           }
         };
 
+        const tgController = new AbortController();
+        const tgTimeoutId = setTimeout(() => tgController.abort(), 8000);
+
         const tgRes = await fetch(telegramUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: tgController.signal
         });
+        clearTimeout(tgTimeoutId);
 
         const tgData = await tgRes.json();
         if (tgRes.ok && tgData.ok) {

@@ -39,17 +39,22 @@ function generateLocalizedSlugs(code, title, translations) {
 }
 
 async function getTranslationFromDb(id, supabaseUrl, supabaseKey) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/translations?id=eq.${id}&select=translations`, {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
-      }
+      },
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!res.ok) return null;
     const data = await res.json();
     return data && data[0] ? data[0].translations : null;
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error('Supabase get error:', e);
     return null;
   }
@@ -57,13 +62,17 @@ async function getTranslationFromDb(id, supabaseUrl, supabaseKey) {
 
 async function getBatchTranslationsFromDb(ids, supabaseUrl, supabaseKey) {
   if (!ids || ids.length === 0) return {};
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/translations?id=in.(${ids.join(',')})&select=id,translations`, {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
-      }
+      },
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!res.ok) return {};
     const data = await res.json();
     const map = {};
@@ -74,12 +83,15 @@ async function getBatchTranslationsFromDb(ids, supabaseUrl, supabaseKey) {
     }
     return map;
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error('Supabase batch get error:', e);
     return {};
   }
 }
 
 async function saveTranslationToDb(id, translations, supabaseUrl, supabaseKey) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     await fetch(`${supabaseUrl}/rest/v1/translations`, {
       method: 'POST',
@@ -89,9 +101,12 @@ async function saveTranslationToDb(id, translations, supabaseUrl, supabaseKey) {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates'
       },
-      body: JSON.stringify({ id, translations })
+      body: JSON.stringify({ id, translations }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error('Supabase save error:', e);
   }
 }
@@ -105,8 +120,11 @@ async function translateTitle(title, lang) {
   ];
   for (const domain of domains) {
     const url = `https://${domain}/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(title)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (data && data[0]) {
@@ -114,6 +132,7 @@ async function translateTitle(title, lang) {
         }
       }
     } catch (e) {
+      clearTimeout(timeoutId);
       console.error(`Google Translate error via ${domain}:`, e);
     }
   }
@@ -156,6 +175,20 @@ export async function onRequest(context) {
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const isGet = request.method === 'GET';
+  let cache = null;
+  if (isGet) {
+    try {
+      cache = caches.default;
+      const cachedResponse = await cache.match(request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+    } catch (e) {
+      console.error('[Cache Posts Match Error]', e);
+    }
   }
 
   try {
@@ -204,17 +237,23 @@ export async function onRequest(context) {
         pageUrl.searchParams.set('per_page', String(perPageNum));
         pageUrl.searchParams.set('page', String(pageNum));
         
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
         try {
           const response = await fetch(pageUrl.toString(), {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
               'X-Client-Site': clientSite
-            }
+            },
+            signal: controller.signal
           });
+          clearTimeout(timeoutId);
           if (!response.ok) return [];
           return await response.json();
         } catch (err) {
+          clearTimeout(timeoutId);
           console.error(`Failed to fetch page ${pageNum} for Other Studio:`, err);
           return [];
         }
@@ -227,13 +266,33 @@ export async function onRequest(context) {
       total = '120';
       totalPages = '10';
     } else {
-      const response = await fetch(targetUrl.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-Client-Site': clientSite
-        }
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      let response;
+      try {
+        response = await fetch(targetUrl.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Client-Site': clientSite
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        return new Response(JSON.stringify({
+          error: 'Gateway Timeout',
+          message: 'Upstream API server did not respond in time.'
+        }), {
+          status: 504,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json; charset=utf-8'
+          }
+        });
+      }
 
       if (!response.ok) {
         return new Response(JSON.stringify({
@@ -288,10 +347,16 @@ export async function onRequest(context) {
     if (total) responseHeaders['X-WP-Total'] = total;
     if (totalPages) responseHeaders['X-WP-TotalPages'] = totalPages;
 
-    return new Response(JSON.stringify(data), {
+    const responseToReturn = new Response(JSON.stringify(data), {
       status: 200,
       headers: responseHeaders
     });
+
+    if (cache && isGet) {
+      context.waitUntil(cache.put(request, responseToReturn.clone()));
+    }
+
+    return responseToReturn;
 
   } catch (error) {
     console.error('[Cloudflare Worker posts Error]', error);

@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // API Requests: Network First, fallback to Cache
-  if (url.origin === 'https://server.apijav.com') {
+  if (url.origin === 'https://server.apijav.com' || url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {

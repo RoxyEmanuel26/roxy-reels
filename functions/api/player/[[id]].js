@@ -18,6 +18,20 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const isGet = request.method === 'GET';
+  let cache = null;
+  if (isGet) {
+    try {
+      cache = caches.default;
+      const cachedResponse = await cache.match(request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+    } catch (e) {
+      console.error('[Cache Player Match Error]', e);
+    }
+  }
+
   try {
     const url = new URL(request.url);
     
@@ -44,13 +58,33 @@ export async function onRequest(context) {
     const targetUrl = `${TARGET_BASE}/player/${id}`;
     const clientSite = request.headers.get('x-client-site') || 'https://missav-j.vercel.app';
 
-    const response = await fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-Client-Site': clientSite
-      }
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    let response;
+    try {
+      response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Client-Site': clientSite
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      return new Response(JSON.stringify({
+        error: 'Gateway Timeout',
+        message: 'Player API upstream server did not respond in time.'
+      }), {
+        status: 504,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json; charset=utf-8'
+        }
+      });
+    }
 
     if (!response.ok) {
       return new Response(JSON.stringify({
@@ -73,10 +107,16 @@ export async function onRequest(context) {
       'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=1800'
     };
 
-    return new Response(JSON.stringify(data), {
+    const responseToReturn = new Response(JSON.stringify(data), {
       status: 200,
       headers: responseHeaders
     });
+
+    if (cache && isGet) {
+      context.waitUntil(cache.put(request, responseToReturn.clone()));
+    }
+
+    return responseToReturn;
 
   } catch (error) {
     console.error('[Cloudflare Worker player Error]', error);

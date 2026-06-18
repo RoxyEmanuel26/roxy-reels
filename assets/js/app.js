@@ -313,7 +313,7 @@ function updateSEOTags(routePath, targetId) {
   document.head.appendChild(xDefaultLink);
 
   // 3. Update dynamic Meta Description, OG Tags, Twitter Cards, and JSON-LD
-  updateDynamicMetaTags(routePath, canonicalUrl);
+  updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath);
 }
 
 /**
@@ -328,7 +328,7 @@ function setMetaContent(id, content) {
  * Dynamically updates Meta Description, Open Graph, Twitter Card, and JSON-LD
  * based on the currently active route and video data.
  */
-function updateDynamicMetaTags(routePath, canonicalUrl) {
+function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
   const baseDomain = window.location.origin;
   const currentLang = i18n.getLang();
   const isWatchPage = routePath === '/watch' && window.missavJState.activeVideo;

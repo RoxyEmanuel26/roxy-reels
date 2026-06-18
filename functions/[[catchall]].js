@@ -118,10 +118,29 @@ export async function onRequest(context) {
     const newRequest = new Request(new URL('/sitemaps/sitemap_index.xml', request.url), request);
     return env.ASSETS.fetch(newRequest);
   }
-
-  // 2. Check if this is a Watch page that needs Open Graph tag injection
+  // Check cache for GET requests on Watch and Listing Pages only
+  const isGet = request.method === 'GET';
   const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?$/;
-  const watchMatch = pathname.match(watchRegex);
+  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios)$/;
+  
+  const isWatch = pathname.match(watchRegex);
+  const isList = pathname.match(listRegex);
+  const isCacheableRoute = isGet && (isWatch || isList);
+
+  let cache = null;
+  if (isCacheableRoute) {
+    try {
+      cache = caches.default;
+      const cachedResponse = await cache.match(request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+    } catch (e) {
+      console.error('[Cache SSR Match Error]', e);
+    }
+  }
+  // 2. Check if this is a Watch page that needs Open Graph tag injection
+  const watchMatch = isWatch;
 
   if (watchMatch) {
     const lang = watchMatch[1] || 'en';
@@ -303,18 +322,23 @@ export async function onRequest(context) {
         }
       }
 
-      return new Response(htmlContent, {
+      const watchResponse = new Response(htmlContent, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
           'CDN-Cache-Control': 'public, max-age=300'
         }
       });
+
+      if (cache && isCacheableRoute) {
+        context.waitUntil(cache.put(request, watchResponse.clone()));
+      }
+
+      return watchResponse;
     }
   } else {
     // 3. Programmatic SEO for Listing Pages (Actor, Category, Studio, Trending, etc)
-    const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios)$/;
-    const listMatch = pathname.match(listRegex);
+    const listMatch = isList;
 
     if (listMatch) {
       const lang = listMatch[1] || 'en';
@@ -456,13 +480,19 @@ export async function onRequest(context) {
         `;
         htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, seoFallbackContent);
 
-        return new Response(htmlContent, {
+        const listResponse = new Response(htmlContent, {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
             'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
             'CDN-Cache-Control': 'public, max-age=300'
           }
         });
+
+        if (cache && isCacheableRoute) {
+          context.waitUntil(cache.put(request, listResponse.clone()));
+        }
+
+        return listResponse;
       }
     }
   }

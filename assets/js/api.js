@@ -18,6 +18,22 @@ function getActiveLang() {
 // In-memory cache to prevent redundant API network requests
 const apiCache = new Map();
 
+async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    if (error.name === 'AbortError') {
+      throw new Error('Koneksi terputus: Server memakan waktu terlalu lama (Timeout)');
+    }
+    throw error;
+  }
+}
+
 const api = {
   /**
    * Mengambil daftar video (feed & listing) dengan query parameters.
@@ -43,7 +59,7 @@ const api = {
         return apiCache.get(url);
       }
       
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url);
       
       if (!res.ok) {
         throw new Error(`API Error ${res.status}: ${res.statusText}`);
@@ -84,7 +100,7 @@ const api = {
         return apiCache.get(cacheKey);
       }
       
-      const res = await fetch(`${BASE}/posts/${id}?lang=${lang}`);
+      const res = await fetchWithTimeout(`${BASE}/posts/${id}?lang=${lang}`);
       
       if (!res.ok) {
         throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
@@ -114,7 +130,7 @@ const api = {
         return apiCache.get(cacheKey);
       }
       
-      const res = await fetch(`${BASE}/player/${id}?lang=${lang}`);
+      const res = await fetchWithTimeout(`${BASE}/player/${id}?lang=${lang}`);
       
       if (!res.ok) {
         throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);
