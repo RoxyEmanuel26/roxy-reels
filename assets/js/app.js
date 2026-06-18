@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js';
-import { renderVideoCard, bindHoverPreviews } from './feed.js';
-import i18n from './i18n.js';
-import { Analytics } from './analytics.js';
-import ReferralSystem from './referral.js';
-import './ads.js?v=1.2.7';
+import ui from './ui.js?v=2.0.1';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.0.1';
+import i18n from './i18n.js?v=2.0.1';
+import { Analytics } from './analytics.js?v=2.0.1';
+import ReferralSystem from './referral.js?v=2.0.1';
+import './ads.js?v=2.0.1';
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {

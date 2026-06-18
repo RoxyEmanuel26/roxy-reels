@@ -4,8 +4,8 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js';
-import i18n from './i18n.js';
+import ui from './ui.js?v=2.0.1';
+import i18n from './i18n.js?v=2.0.1';
 import { ALL_CATEGORIES } from './categories_data.js?v=1.0.6';
 
 /**
