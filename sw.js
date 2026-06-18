@@ -1,4 +1,4 @@
-const CACHE_NAME = 'missavj-cache-v1';
+const CACHE_NAME = 'missavj-cache-v2.0.1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
