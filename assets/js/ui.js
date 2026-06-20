@@ -38,7 +38,12 @@ const ui = {
     if (isLocal) {
       return url;
     }
-    return `/api/image?url=${encodeURIComponent(url)}`;
+    try {
+      // Base64 encode the URL to bypass AdBlocker keyword blocks on "apijav"
+      return `/api/image?url=${btoa(url)}`;
+    } catch (e) {
+      return `/api/image?url=${encodeURIComponent(url)}`;
+    }
   },
 
   /**

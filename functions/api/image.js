@@ -7,10 +7,19 @@
 export async function onRequest(context) {
   const { request } = context;
   const urlParams = new URL(request.url).searchParams;
-  const targetUrl = urlParams.get('url');
+  let targetUrl = urlParams.get('url');
 
   if (!targetUrl) {
     return new Response('Missing url parameter', { status: 400 });
+  }
+
+  // Check if targetUrl is base64 encoded (does not start with http:// or https://)
+  if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    try {
+      targetUrl = atob(targetUrl);
+    } catch (e) {
+      return new Response('Invalid base64 encoding', { status: 400 });
+    }
   }
 
   // Daftar domain yang diizinkan untuk menghindari penyalahgunaan open proxy

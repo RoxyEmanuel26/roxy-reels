@@ -24,8 +24,10 @@
   Cache-Control: public, s-maxage=300, stale-while-revalidate=600
   CDN-Cache-Control: public, max-age=300
 
-# === Robots.txt & Ads.txt ===
+# === Robots.txt, Ads.txt & Service Worker ===
 /robots.txt
   Cache-Control: no-cache, no-store, must-revalidate
 /ads.txt
+  Cache-Control: no-cache, no-store, must-revalidate
+/sw.js
   Cache-Control: no-cache, no-store, must-revalidate

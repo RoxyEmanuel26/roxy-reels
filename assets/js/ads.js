@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.0.9';
+import ui from './ui.js?v=2.1.0';
 
 // ==========================================
 // HIJACK CLICK LISTENERS FOR POPUNDER BOUNDS
