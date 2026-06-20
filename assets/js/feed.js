@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.0.6';
-import ui from './ui.js?v=2.0.6';
-import filter from './filter.js?v=2.0.6';
-import i18n from './i18n.js?v=2.0.6';
+import api from './api.js?v=2.0.7';
+import ui from './ui.js?v=2.0.7';
+import filter from './filter.js?v=2.0.7';
+import i18n from './i18n.js?v=2.0.7';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -68,7 +68,7 @@ export function renderVideoCard(post, index = 0) {
   const safeTitle = ui.escapeHTML(translatedTitle);
   const safeStudio = ui.escapeHTML(post.studio || '');
   const safeCode = ui.escapeHTML(post.code || '');
-  const safeThumbnail = ui.escapeHTML(post.thumbnail || '');
+  const safeThumbnail = ui.escapeHTML(ui.getProxiedThumbnail(post.thumbnail) || '');
   
   // Resolve duration fallback if missing or invalid
   let duration = post.duration || '';

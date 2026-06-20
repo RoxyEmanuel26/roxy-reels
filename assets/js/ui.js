@@ -25,6 +25,23 @@ const ui = {
   },
 
   /**
+   * Mengubah URL thumbnail eksternal agar dimuat melalui Cloudflare Worker Proxy
+   * jika diakses dari situs produksi (menghindari blokir ISP/Internet Positif & AdBlocker)
+   * @param {string} url - URL thumbnail asli
+   * @returns {string} URL proxy atau URL asli
+   */
+  getProxiedThumbnail(url) {
+    if (!url) return '';
+    const isLocal = window.location.protocol === 'file:' || 
+                    window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1';
+    if (isLocal) {
+      return url;
+    }
+    return `/api/image?url=${encodeURIComponent(url)}`;
+  },
+
+  /**
    * Menampilkan skeleton loader dengan efek shimmer di area konten utama
    * @param {number} count - Jumlah kartu skeleton yang ingin dirender
    */

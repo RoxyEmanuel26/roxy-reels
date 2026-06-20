@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.0.6';
-import ui from './ui.js?v=2.0.6';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.0.6';
-import i18n from './i18n.js?v=2.0.6';
-import ReferralSystem from './referral.js?v=2.0.6';
-import { Analytics } from './analytics.js?v=2.0.6';
+import api from './api.js?v=2.0.7';
+import ui from './ui.js?v=2.0.7';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.0.7';
+import i18n from './i18n.js?v=2.0.7';
+import ReferralSystem from './referral.js?v=2.0.7';
+import { Analytics } from './analytics.js?v=2.0.7';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -272,7 +272,7 @@ export async function init(id) {
           const adConfig = window.missavJAdConfig;
           const hasVastAd = adConfig && adConfig.vastZoneId && !adConfig.vastZoneId.startsWith('placeholder_');
           
-          const secureThumb = ui.escapeHTML(post.thumbnail || SVG_FALLBACK_THUMB);
+          const secureThumb = ui.escapeHTML(ui.getProxiedThumbnail(post.thumbnail) || SVG_FALLBACK_THUMB);
           const secureTitle = ui.escapeHTML(post.title || '');
           const secureCode = ui.escapeHTML(post.code || '');
           
@@ -853,7 +853,7 @@ function renderRelatedRowCard(post, index) {
   const safeId = ui.escapeHTML(post.id);
   const safeTitle = ui.escapeHTML(translatedTitle);
   const safeStudio = ui.escapeHTML(post.studio || 'Unknown');
-  const safeThumbnail = ui.escapeHTML(post.thumbnail || '');
+  const safeThumbnail = ui.escapeHTML(ui.getProxiedThumbnail(post.thumbnail) || '');
   
   // Ambil durasi, jika kosong atau 00:00:00, gunakan deterministic generator
   let duration = post.duration || '';
