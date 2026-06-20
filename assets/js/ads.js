@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.1.1';
+import ui from './ui.js?v=2.1.2';
 
 // ==========================================
 // HIJACK CLICK LISTENERS FOR POPUNDER BOUNDS
@@ -61,12 +61,14 @@ import ui from './ui.js?v=2.1.1';
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
   popunderEnabled: true,
+  socialBarEnabled: true,
   // Tentukan provider banner: 'exoclick' atau 'adsterra'
-  bannerProvider: 'exoclick',
-  // Ganti placeholder dengan Key asli (Adsterra) atau Zone ID asli (ExoClick) dari dashboard Anda
-  topBannerKey: '5933300',
-  belowPlayerBannerKey: '5933316',
-  sidebarBannerKey: '5933316'
+  bannerProvider: 'adsterra',
+  // Ganti dengan Key asli Adsterra dari dashboard Anda
+  topBannerKey: '3ffacf2fa64041c5c9cf5fdbb09a2cec',         // Banner 728x90
+  topMobileBannerKey: '3bec5597bbe0bc1b715e1c1197a084ff',   // Banner 320x50
+  belowPlayerBannerKey: 'c3573598c3b8bb55b44741d83fa693dd', // Banner 300x250
+  sidebarBannerKey: 'c3573598c3b8bb55b44741d83fa693dd'     // Banner 300x250
 };
 
 /**
@@ -243,7 +245,7 @@ export function loadAdsterraBanner(containerId, key, width, height) {
   // Load Script Invocation Adsterra secara dinamis
   const invokeScript = document.createElement('script');
   invokeScript.type = 'text/javascript';
-  invokeScript.src = `//www.highperformanceformat.com/${key}/invoke.js`;
+  invokeScript.src = `https://glamournakedemployee.com/${key}/invoke.js`;
   
   // Tangani kegagalan load (misal karena adblocker aktif)
   invokeScript.onerror = () => {
@@ -370,6 +372,24 @@ export function initAdsterraPopunder() {
 }
 
 /**
+ * Menginisialisasi pemuatan script Social Bar Adsterra secara dinamis
+ */
+export function initAdsterraSocialBar() {
+  const cfg = window.missavJAdConfig;
+  if (!cfg.socialBarEnabled) return;
+
+  // Hindari memuat ulang jika script sudah ada di DOM
+  if (document.getElementById('adsterra-socialbar-script')) return;
+
+  console.log('[Ads] Loading Adsterra Social Bar script dynamically...');
+  const script = document.createElement('script');
+  script.id = 'adsterra-socialbar-script';
+  script.src = 'https://glamournakedemployee.com/fa/d8/67/fad8679b76d34bcb5e3c025f78784401.js';
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+/**
  * Memuat seluruh iklan halaman tontonan video secara paralel
  */
 export function loadWatchPageAds() {
@@ -379,7 +399,7 @@ export function loadWatchPageAds() {
   const isMobile = window.innerWidth < 768;
   const belowPlayerWidth = isMobile ? 300 : 728;
   const belowPlayerHeight = isMobile ? 250 : 90;
-  const belowPlayerKey = isMobile ? cfg.belowPlayerBannerKey : (cfg.topBannerKey || cfg.belowPlayerBannerKey);
+  const belowPlayerKey = isMobile ? cfg.belowPlayerBannerKey : cfg.topBannerKey;
 
   loadAdBanner('below-player-ad', belowPlayerKey, belowPlayerWidth, belowPlayerHeight);
   loadAdBanner('sidebar-ad', cfg.sidebarBannerKey, 300, 250);
@@ -397,8 +417,9 @@ export function loadGlobalTopAd() {
   const isMobile = window.innerWidth < 768;
   const width = isMobile ? 320 : 728;
   const height = isMobile ? 50 : 90;
+  const key = isMobile ? cfg.topMobileBannerKey : cfg.topBannerKey;
   
-  loadAdBanner('global-top-ad', cfg.topBannerKey, width, height);
+  loadAdBanner('global-top-ad', key, width, height);
 }
 
 // Ekspos secara global di namespace window untuk kemudahan integrasi dengan routing SPA
@@ -410,5 +431,6 @@ window.missavJAds = {
   loadWatchPageAds,
   loadGlobalTopAd,
   initAdsterraPopunder,
+  initAdsterraSocialBar,
   adjustScaledBanners
 };
