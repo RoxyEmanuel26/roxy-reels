@@ -248,7 +248,6 @@ export async function onRequest(context) {
                 "thumbnailUrl": imageUrl,
                 "uploadDate": post.date ? new Date(post.date).toISOString() : new Date().toISOString(),
                 "embedUrl": cleanEmbedUrl,
-                "contentUrl": cleanEmbedUrl,
                 "publisher": {
                   "@type": "Organization",
                   "name": "MISSAV-J",
