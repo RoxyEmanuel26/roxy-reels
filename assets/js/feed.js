@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.1.5';
-import ui from './ui.js?v=2.1.5';
-import filter from './filter.js?v=2.1.5';
-import i18n from './i18n.js?v=2.1.5';
+import api from './api.js?v=2.1.6';
+import ui from './ui.js?v=2.1.6';
+import filter from './filter.js?v=2.1.6';
+import i18n from './i18n.js?v=2.1.6';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -19,6 +19,7 @@ let currentFilters = {};
 let intersectionObserver = null;
 let seenCodes = new Set();
 let seenTitles = new Set();
+let totalRenderedVideos = 0;
 
 // Random Mode State — used on the homepage to show a fresh mix of videos each visit
 let randomMode = false;
@@ -183,6 +184,7 @@ export async function init(filters = {}) {
   usedPages = new Set();
   seenCodes = new Set();
   seenTitles = new Set();
+  totalRenderedVideos = 0;
   currentFilters = {
     per_page: 24,
     orderby: 'date',
@@ -397,9 +399,14 @@ async function fetchAndRenderFeed(isInitial = false) {
             // Build cards list markup applying cascade staggered delays
             let cardsHtml = '';
             uniqueRetryPosts.forEach((post, idx) => {
+              totalRenderedVideos++;
               cardsHtml += renderVideoCard(post, idx);
+              if (totalRenderedVideos % 12 === 0) {
+                cardsHtml += renderInlineAdCard(totalRenderedVideos);
+              }
             });
             grid.innerHTML = cardsHtml;
+            loadInlineGridAds();
             return;
           }
         }
@@ -425,7 +432,11 @@ async function fetchAndRenderFeed(isInitial = false) {
     // Build cards list markup applying cascade staggered delays
     let cardsHtml = '';
     uniquePosts.forEach((post, idx) => {
+      totalRenderedVideos++;
       cardsHtml += renderVideoCard(post, idx);
+      if (totalRenderedVideos % 12 === 0) {
+        cardsHtml += renderInlineAdCard(totalRenderedVideos);
+      }
     });
 
     if (isInitial) {
@@ -433,6 +444,8 @@ async function fetchAndRenderFeed(isInitial = false) {
     } else {
       grid.insertAdjacentHTML('beforeend', cardsHtml);
     }
+
+    loadInlineGridAds();
 
   } catch (error) {
     console.error('Fetch Feed Error:', error);
@@ -498,6 +511,7 @@ async function updateFeedFilters(updatedFilters) {
   usedPages = new Set();
   seenCodes = new Set();
   seenTitles = new Set();
+  totalRenderedVideos = 0;
 
   const grid = document.getElementById('video-grid');
   if (grid) {
@@ -605,6 +619,38 @@ function startLivePreview(card, embedUrl) {
 export function bindHoverPreviews(grid) {
   // Disabled as per user request to remove live video playback preview on hover
   return;
+}
+
+/**
+ * Renders HTML markup placeholder for inline grid ad slot
+ */
+function renderInlineAdCard(adIndex) {
+  return `
+    <div class="grid-ad-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%;">
+      <div class="ad-placement" id="grid-ad-slot-${adIndex}"></div>
+    </div>
+  `;
+}
+
+/**
+ * Loads dynamic Adsterra/Exoclick banners into any empty inline grid ad slots currently in the DOM
+ */
+function loadInlineGridAds() {
+  const slots = document.querySelectorAll('.grid-ad-container .ad-placement');
+  slots.forEach(slot => {
+    // Only load if the ad slot is empty
+    if (slot.children.length === 0) {
+      if (window.missavJAds && typeof window.missavJAds.loadAdBanner === 'function') {
+        const cfg = window.missavJAdConfig;
+        const isMobile = window.innerWidth < 768;
+        const width = isMobile ? 320 : 728;
+        const height = isMobile ? 50 : 90;
+        const key = isMobile ? cfg.topMobileBannerKey : cfg.topBannerKey;
+        
+        window.missavJAds.loadAdBanner(slot.id, key, width, height);
+      }
+    }
+  });
 }
 
 export default { init, renderVideoCard, bindHoverPreviews, clearActivePreview };
