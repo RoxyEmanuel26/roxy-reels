@@ -1713,30 +1713,6 @@
 
 .legal-modal-body li {
   margin-bottom: var(--space-1);
-}
-
-.legal-modal-body strong.highlight {
-  color: var(--color-accent, #ff003c);
-  font-weight: 700;
-}
-
-/* Outstream Video Ad Container (Grid placement & Styling) */
-.ad-outstream-container {
-  grid-column: 1 / -1; /* Mengisi penuh kolom grid */
-  width: 100%;
-  max-width: 640px;
-  min-height: 260px;
-  margin: var(--space-6) auto;
-  display: block;
-  box-sizing: border-box;
-  position: relative;
-}
-
-
-
- / *   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
-       2 0 .   B R E A D C R U M B   N A V I G A T I O N 
-       = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =   * / 
  . b r e a d c r u m b - n a v   { 
      d i s p l a y :   f l e x ; 
      a l i g n - i t e m s :   c e n t e r ; 

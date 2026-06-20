@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.1.0';
-import ui from './ui.js?v=2.1.0';
-import filter from './filter.js?v=2.1.0';
-import i18n from './i18n.js?v=2.1.0';
+import api from './api.js?v=2.1.1';
+import ui from './ui.js?v=2.1.1';
+import filter from './filter.js?v=2.1.1';
+import i18n from './i18n.js?v=2.1.1';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -394,22 +394,12 @@ async function fetchAndRenderFeed(isInitial = false) {
               return true;
             });
 
-            // Build cards list markup applying cascade staggered delays and inject outstream video ad
+            // Build cards list markup applying cascade staggered delays
             let cardsHtml = '';
             uniqueRetryPosts.forEach((post, idx) => {
               cardsHtml += renderVideoCard(post, idx);
-              if (idx === 7) {
-                cardsHtml += `
-                  <div class="ad-outstream-container" id="outstream-ad-home-${currentPage}"></div>
-                `;
-              }
             });
             grid.innerHTML = cardsHtml;
-
-            // Load Outstream Video Ad if the container was rendered
-            if (uniqueRetryPosts.length > 7 && window.missavJAds && typeof window.missavJAds.loadExoClickOutstream === 'function') {
-              window.missavJAds.loadExoClickOutstream(`outstream-ad-home-${currentPage}`, window.missavJAdConfig.outstreamBannerKey);
-            }
             return;
           }
         }
@@ -432,26 +422,16 @@ async function fetchAndRenderFeed(isInitial = false) {
       return true;
     });
 
-    // Build cards list markup applying cascade staggered delays and inject outstream video ad
+    // Build cards list markup applying cascade staggered delays
     let cardsHtml = '';
     uniquePosts.forEach((post, idx) => {
       cardsHtml += renderVideoCard(post, idx);
-      if (idx === 7) {
-        cardsHtml += `
-          <div class="ad-outstream-container" id="outstream-ad-home-${currentPage}"></div>
-        `;
-      }
     });
 
     if (isInitial) {
       grid.innerHTML = cardsHtml;
     } else {
       grid.insertAdjacentHTML('beforeend', cardsHtml);
-    }
-
-    // Load Outstream Video Ad if the container was rendered
-    if (uniquePosts.length > 7 && window.missavJAds && typeof window.missavJAds.loadExoClickOutstream === 'function') {
-      window.missavJAds.loadExoClickOutstream(`outstream-ad-home-${currentPage}`, window.missavJAdConfig.outstreamBannerKey);
     }
 
   } catch (error) {

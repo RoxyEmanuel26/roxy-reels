@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.1.0';
-import ui from './ui.js?v=2.1.0';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.1.0';
-import i18n from './i18n.js?v=2.1.0';
-import ReferralSystem from './referral.js?v=2.1.0';
-import { Analytics } from './analytics.js?v=2.1.0';
+import api from './api.js?v=2.1.1';
+import ui from './ui.js?v=2.1.1';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.1.1';
+import i18n from './i18n.js?v=2.1.1';
+import ReferralSystem from './referral.js?v=2.1.1';
+import { Analytics } from './analytics.js?v=2.1.1';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -269,9 +269,6 @@ export async function init(id) {
           console.log('[SEO] Bot detected, loading player iframe immediately...');
           loadRealVideo();
         } else {
-          const adConfig = window.missavJAdConfig;
-          const hasVastAd = adConfig && adConfig.vastZoneId && !adConfig.vastZoneId.startsWith('placeholder_');
-          
           const secureThumb = ui.escapeHTML(ui.getProxiedThumbnail(post.thumbnail) || SVG_FALLBACK_THUMB);
           const secureTitle = ui.escapeHTML(post.title || '');
           const secureCode = ui.escapeHTML(post.code || '');
@@ -303,11 +300,7 @@ export async function init(id) {
           if (playBtn) {
             playBtn.addEventListener('click', (e) => {
               e.stopPropagation();
-              if (hasVastAd && window.missavJAds && typeof window.missavJAds.loadVastAd === 'function') {
-                window.missavJAds.loadVastAd('player-container', adConfig.vastZoneId, loadRealVideo);
-              } else {
-                loadRealVideo();
-              }
+              loadRealVideo();
             });
           }
         }
