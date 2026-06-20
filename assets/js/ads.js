@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.1.4';
+import ui from './ui.js?v=2.1.5';
 
 // ==========================================
 // HIJACK CLICK LISTENERS FOR POPUNDER BOUNDS
@@ -203,6 +203,21 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 
 
 
+// Global callback for handling blocked ad scripts inside iframes
+window.missavJAdError = function(containerId, width, height) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = `
+    <div class="premium-ad-placeholder ad-blocked" style="max-width: ${width}px; height: ${height}px; margin: 0 auto; width: 100%;">
+      <div class="ad-placeholder-content">
+        <span class="ad-badge error">BLOCKED</span>
+        <span class="ad-size">AD BLOCKER ACTIVE</span>
+        <span class="ad-hint">Harap matikan adblocker Anda untuk mendukung kami</span>
+      </div>
+    </div>
+  `;
+};
+
 /**
  * Memuat banner Adsterra secara dinamis di container tertentu
  */
@@ -228,39 +243,68 @@ export function loadAdsterraBanner(containerId, key, width, height) {
     return;
   }
 
-  // Load Script Konfigurasi Adsterra secara dinamis
-  const configScript = document.createElement('script');
-  configScript.type = 'text/javascript';
-  configScript.text = `
-    atOptions = {
-      'key' : '${key}',
-      'format' : 'iframe',
-      'height' : ${height},
-      'width' : ${width},
-      'params' : {}
-    };
-  `;
-  container.appendChild(configScript);
+  // Create an iframe to sandbox the Adsterra banner for SPA compatibility and refresh isolation
+  const iframe = document.createElement('iframe');
+  iframe.width = width;
+  iframe.height = height;
+  iframe.scrolling = 'no';
+  iframe.frameBorder = '0';
+  iframe.style.border = 'none';
+  iframe.style.overflow = 'hidden';
+  iframe.style.display = 'block';
+  iframe.style.margin = '0 auto';
 
-  // Load Script Invocation Adsterra secara dinamis
-  const invokeScript = document.createElement('script');
-  invokeScript.type = 'text/javascript';
-  invokeScript.src = `https://glamournakedemployee.com/${key}/invoke.js`;
-  
-  // Tangani kegagalan load (misal karena adblocker aktif)
-  invokeScript.onerror = () => {
-    container.innerHTML = `
-      <div class="premium-ad-placeholder ad-blocked" style="max-width: ${width}px; height: ${height}px; margin: 0 auto; width: 100%;">
-        <div class="ad-placeholder-content">
-          <span class="ad-badge error">BLOCKED</span>
-          <span class="ad-size">AD BLOCKER ACTIVE</span>
-          <span class="ad-hint">Harap matikan adblocker Anda untuk mendukung kami</span>
-        </div>
-      </div>
-    `;
-  };
+  container.appendChild(iframe);
 
-  container.appendChild(invokeScript);
+  try {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background: transparent;
+            }
+          </style>
+        </head>
+        <body>
+          <script type="text/javascript">
+            var atOptions = {
+              'key' : '${key}',
+              'format' : 'iframe',
+              'height' : ${height},
+              'width' : ${width},
+              'params' : {}
+            };
+          </script>
+          <script type="text/javascript" src="https://glamournakedemployee.com/${key}/invoke.js" onerror="window.parent.missavJAdError('${containerId}', ${width}, ${height})"></script>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+    }
+  } catch (err) {
+    console.error('[Ads] Error writing to iframe:', err);
+  }
+
+  // Tandai kontainer sebagai scalable jika width >= 728
+  if (width >= 728) {
+    container.setAttribute('data-scalable', 'true');
+    container.setAttribute('data-native-width', width);
+    container.setAttribute('data-native-height', height);
+    adjustScaledBanners();
+  }
 }
 
 /**
