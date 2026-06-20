@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.1.6';
+import ui from './ui.js?v=2.1.7';
 
 // ==========================================
 // HIJACK CLICK LISTENERS FOR POPUNDER BOUNDS
@@ -207,12 +207,16 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 window.missavJAdError = function(containerId, width, height) {
   const container = document.getElementById(containerId);
   if (!container) return;
+
+  const activeText = window.i18n ? window.i18n.t('ad_blocker_active') : 'AD BLOCKER ACTIVE';
+  const hintText = window.i18n ? window.i18n.t('ad_blocker_hint') : 'Harap matikan adblocker Anda untuk mendukung kami';
+
   container.innerHTML = `
     <div class="premium-ad-placeholder ad-blocked" style="max-width: ${width}px; height: ${height}px; margin: 0 auto; width: 100%;">
       <div class="ad-placeholder-content">
         <span class="ad-badge error">BLOCKED</span>
-        <span class="ad-size">AD BLOCKER ACTIVE</span>
-        <span class="ad-hint">Harap matikan adblocker Anda untuk mendukung kami</span>
+        <span class="ad-size">${activeText}</span>
+        <span class="ad-hint">${hintText}</span>
       </div>
     </div>
   `;

@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.1.6';
+import ui from './ui.js?v=2.1.7';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -350,6 +350,36 @@ const DICTIONARY = {
   },
   playing_floating_player: {
     en: 'Playing in floating player 📱', id: 'Memutar dalam pemutar melayang 📱', 'zh-TW': '正在浮動播放器中播放 📱', 'zh-CN': '正在浮动播放器中播放 📱', ja: 'フローティングプレイヤーで再生中 📱', ko: '플로팅 플레이어에서 재생 중 📱', ms: 'Memutar dalam pemain terapung 📱', th: 'กำลังเล่นในเครื่องเล่นลอย 📱', de: 'Abspielen im schwebenden Player 📱', fr: 'Lecture dans le lecteur flottant 📱', vi: 'Đang phát trong trình phát nổi 📱', fil: 'Nagpe-play sa floating player 📱', pt: 'Reproduzindo no player flutuante 📱'
+  },
+  ad_blocker_active: {
+    en: 'AD BLOCKER ACTIVE',
+    id: 'AD BLOCKER AKTIF',
+    'zh-TW': '偵測到廣告攔截器',
+    'zh-CN': '检测到广告拦截器',
+    ja: '広告ブロッカー有効',
+    ko: '광고 차단기 활성화됨',
+    ms: 'PENGHADANG IKLAN AKTIF',
+    th: 'ตรวจพบตัวบล็อกโฆษณา',
+    de: 'ADBLOCKER AKTIV',
+    fr: 'ADBLOCKER ACTIF',
+    vi: 'TRÌNH CHẶN QUẢNG CÁO HOẠT ĐỘNG',
+    fil: 'AKTIBO ANG AD BLOCKER',
+    pt: 'BLOQUEADOR DE ANÚNCIOS ATIVO'
+  },
+  ad_blocker_hint: {
+    en: 'Please disable your ad blocker to support us',
+    id: 'Harap matikan adblocker Anda untuk mendukung kami',
+    'zh-TW': '請關閉您的廣告攔截器以支持我們',
+    'zh-CN': '请关闭您的广告拦截器以支持我们',
+    ja: '活動を支援するため、広告ブロッカーを無効にしてください',
+    ko: '저희를 지원하기 위해 광고 차단기를 비활성화해 주세요',
+    ms: 'Sila matikan penghadang iklan anda untuk menyokong kami',
+    th: 'โปรดปิดเครื่องมือบล็อกโฆษณาของคุณเพื่อสนับสนุนเรา',
+    de: 'Bitte deaktivieren Sie Ihren Adblocker, um uns zu unterstützen',
+    fr: 'Veuillez désactiver votre bloqueur de publicités pour nous soutenir',
+    vi: 'Vui lòng tắt trình chặn quảng cáo để hỗ trợ chúng tôi',
+    fil: 'Mangyaring i-disable ang iyong ad blocker upang suportahan kami',
+    pt: 'Por favor, desative o seu bloqueador de anúncios para nos apoiar'
   },
   no_related_videos: {
     en: 'No related videos', id: 'Tidak ada video terkait', 'zh-TW': '沒有推薦影片', 'zh-CN': '没有推荐视频', ja: '関連動画はありません', ko: '관련 비디오가 없습니다', ms: 'Tiada video berkaitan', th: 'ไม่มีวิดีโอที่เกี่ยวข้อง', de: 'Keine ähnlichen Videos', fr: 'Aucune vidéo connexe', vi: 'Không có video liên quan', fil: 'Walang kaugnay na video', pt: 'Nenhum vídeo relacionado'
