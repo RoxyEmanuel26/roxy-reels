@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.1.9';
+import ui from './ui.js?v=2.2.0';
 
 
 // Konfigurasi Kunci Iklan
@@ -152,27 +152,8 @@ export function loadExoClickBanner(containerId, zoneId, width, height) {
 
 
 
-// Global callback for handling blocked ad scripts inside iframes
-window.missavJAdError = function(containerId, width, height) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const activeText = window.i18n ? window.i18n.t('ad_blocker_active') : 'AD BLOCKER ACTIVE';
-  const hintText = window.i18n ? window.i18n.t('ad_blocker_hint') : 'Harap matikan adblocker Anda untuk mendukung kami';
-
-  container.innerHTML = `
-    <div class="premium-ad-placeholder ad-blocked" style="max-width: ${width}px; height: ${height}px; margin: 0 auto; width: 100%;">
-      <div class="ad-placeholder-content">
-        <span class="ad-badge error">BLOCKED</span>
-        <span class="ad-size">${activeText}</span>
-        <span class="ad-hint">${hintText}</span>
-      </div>
-    </div>
-  `;
-};
-
 /**
- * Memuat banner Adsterra secara dinamis di container tertentu
+ * Memuat banner Adsterra secara dinamis di container tertentu di jendela utama
  */
 export function loadAdsterraBanner(containerId, key, width, height) {
   const container = document.getElementById(containerId);
@@ -196,60 +177,47 @@ export function loadAdsterraBanner(containerId, key, width, height) {
     return;
   }
 
-  // Create an iframe to sandbox the Adsterra banner for SPA compatibility and refresh isolation
-  const iframe = document.createElement('iframe');
-  iframe.width = width;
-  iframe.height = height;
-  iframe.scrolling = 'no';
-  iframe.frameBorder = '0';
-  iframe.style.border = 'none';
-  iframe.style.overflow = 'hidden';
-  iframe.style.display = 'block';
-  iframe.style.margin = '0 auto';
+  // Bersihkan atOptions global terlebih dahulu untuk mencegah tabrakan state SPA
+  window.atOptions = null;
 
-  container.appendChild(iframe);
+  // Ambil terjemahan secara dinamis untuk placeholder error
+  const activeText = window.i18n ? window.i18n.t('ad_blocker_active') : 'AD BLOCKER ACTIVE';
+  const hintText = window.i18n ? window.i18n.t('ad_blocker_hint') : 'Harap matikan adblocker Anda untuk mendukung kami';
 
-  try {
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              height: 100%;
-              overflow: hidden;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              background: transparent;
-            }
-          </style>
-        </head>
-        <body>
-          <script type="text/javascript">
-            var atOptions = {
-              'key' : '${key}',
-              'format' : 'iframe',
-              'height' : ${height},
-              'width' : ${width},
-              'params' : {}
-            };
-          </script>
-          <script type="text/javascript" src="https://glamournakedemployee.com/${key}/invoke.js" onerror="window.parent.missavJAdError('${containerId}', ${width}, ${height})"></script>
-        </body>
-        </html>
-      `);
-      iframeDoc.close();
-    }
-  } catch (err) {
-    console.error('[Ads] Error writing to iframe:', err);
-  }
+  // Load Script Konfigurasi Adsterra secara dinamis
+  const configScript = document.createElement('script');
+  configScript.type = 'text/javascript';
+  configScript.text = `
+    atOptions = {
+      'key' : '${key}',
+      'format' : 'iframe',
+      'height' : ${height},
+      'width' : ${width},
+      'params' : {}
+    };
+  `;
+  container.appendChild(configScript);
+
+  // Load Script Invocation Adsterra secara dinamis dengan Cache-Buster (?cb=timestamp)
+  // Ini memaksa browser mengeksekusi ulang script di jendela utama (menjamin kepatuhan domain pengiklan)
+  const invokeScript = document.createElement('script');
+  invokeScript.type = 'text/javascript';
+  invokeScript.src = `https://glamournakedemployee.com/${key}/invoke.js?cb=${Date.now()}`;
+  
+  // Tangani kegagalan load (misal karena adblocker aktif)
+  invokeScript.onerror = () => {
+    container.innerHTML = `
+      <div class="premium-ad-placeholder ad-blocked" style="max-width: ${width}px; height: ${height}px; margin: 0 auto; width: 100%;">
+        <div class="ad-placeholder-content">
+          <span class="ad-badge error">BLOCKED</span>
+          <span class="ad-size">${activeText}</span>
+          <span class="ad-hint">${hintText}</span>
+        </div>
+      </div>
+    `;
+  };
+
+  container.appendChild(invokeScript);
 
   // Tandai kontainer sebagai scalable jika width >= 728
   if (width >= 728) {
