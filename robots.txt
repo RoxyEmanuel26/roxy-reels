@@ -4,8 +4,6 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /assets/js/
-Disallow: /assets/css/
 Disallow: /functions/
 
 # AI Search Bots — allow citation & indexing
