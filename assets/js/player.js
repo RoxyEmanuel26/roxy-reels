@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.1.8';
-import ui from './ui.js?v=2.1.8';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.1.8';
-import i18n from './i18n.js?v=2.1.8';
-import ReferralSystem from './referral.js?v=2.1.8';
-import { Analytics } from './analytics.js?v=2.1.8';
+import api from './api.js?v=2.1.9';
+import ui from './ui.js?v=2.1.9';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.1.9';
+import i18n from './i18n.js?v=2.1.9';
+import ReferralSystem from './referral.js?v=2.1.9';
+import { Analytics } from './analytics.js?v=2.1.9';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -395,19 +395,10 @@ export function renderPostMeta(post, id) {
     }
   }
 
-  // Setup Download Button with random redirect link
+  // Setup Download Button with redirect link
   if (downloadBtn) {
     const downloadLinks = [
-      "https://glamournakedemployee.com/dktyyvhhvs?key=2135b8086ad561259d59a35e74d4dae3",
-      "https://glamournakedemployee.com/bxj9v8xs?key=bbcc03541721fe595f6d0a199086c628",
-      "https://glamournakedemployee.com/d1ydygn4?key=ae04db9758f66d571a2d122b08635af3",
-      "https://glamournakedemployee.com/c5xf7679?key=80dc863578016519ca9167abc7090944",
-      "https://glamournakedemployee.com/npkvzf46m?key=8060ea72a291acdeae897405426a6013",
-      "https://glamournakedemployee.com/xdn13p8ti?key=d9dbf00859cec6d1da89b3855b9f40df",
-      "https://glamournakedemployee.com/r0ue7gdeb8?key=0f351b4656e9db04d06bdd25deb60f05",
-      "https://glamournakedemployee.com/vfag6svjx?key=ba78cf78789f91aa7ace1942fce8a322",
-      "https://glamournakedemployee.com/jpnevpwu8?key=53b3ae6972e09ad30eb53ce3f99890a5",
-      "https://glamournakedemployee.com/xdi7pkz9wh?key=46862d356a0f361ac92be23fe00a265a"
+      "https://glamournakedemployee.com/db15f33m?key=fa5b3c864a796b1dbbce19ed8d7e4806"
     ];
     const randomUrl = downloadLinks[Math.floor(Math.random() * downloadLinks.length)];
     downloadBtn.href = randomUrl;
