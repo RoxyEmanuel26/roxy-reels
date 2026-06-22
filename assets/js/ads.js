@@ -4,59 +4,8 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.1.7';
+import ui from './ui.js?v=2.1.8';
 
-// ==========================================
-// HIJACK CLICK LISTENERS FOR POPUNDER BOUNDS
-// ==========================================
-// Membungkus seluruh event listener klik tingkat dokumen/window yang didaftarkan 
-// oleh script eksternal (Adsterra) agar HANYA berfungsi di halaman watch page.
-(function hijackExternalClickListeners() {
-  const originalAddDoc = document.addEventListener;
-  document.addEventListener = function(type, listener, options) {
-    if (type === 'click') {
-      const stack = new Error().stack || '';
-      // Saring ads.js dari stack trace untuk mencari pemanggil asli
-      const filteredStack = stack.split('\n').filter(line => !line.includes('ads.js')).join('\n');
-      const isLocalCaller = filteredStack.includes('/assets/js/');
-      
-      // Jika dipanggil oleh script luar (tidak mengandung path file JS lokal kita)
-      if (stack && !isLocalCaller) {
-        const wrappedListener = function(event) {
-          // Hanya izinkan eksekusi popunder jika sedang berada di watch page (/watch)
-          if (window.missavJState && window.missavJState.currentPath === '/watch') {
-            return listener.call(this, event);
-          }
-          console.log('[Ads] Popunder click blocked because current path is not watch page:', window.missavJState?.currentPath);
-        };
-        wrappedListener._original = listener;
-        return originalAddDoc.call(this, type, wrappedListener, options);
-      }
-    }
-    return originalAddDoc.call(this, type, listener, options);
-  };
-
-  const originalAddWin = window.addEventListener;
-  window.addEventListener = function(type, listener, options) {
-    if (type === 'click') {
-      const stack = new Error().stack || '';
-      const filteredStack = stack.split('\n').filter(line => !line.includes('ads.js')).join('\n');
-      const isLocalCaller = filteredStack.includes('/assets/js/');
-      
-      if (stack && !isLocalCaller) {
-        const wrappedListener = function(event) {
-          if (window.missavJState && window.missavJState.currentPath === '/watch') {
-            return listener.call(this, event);
-          }
-          console.log('[Ads] Popunder click blocked because current path is not watch page:', window.missavJState?.currentPath);
-        };
-        wrappedListener._original = listener;
-        return originalAddWin.call(this, type, wrappedListener, options);
-      }
-    }
-    return originalAddWin.call(this, type, listener, options);
-  };
-})();
 
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
