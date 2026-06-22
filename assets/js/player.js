@@ -462,7 +462,7 @@ export function renderPostMeta(post, id) {
       const shareUrl = ReferralSystem.generateShareLink(window.location.href, 'video_share');
       const titleElement = document.getElementById('player-title');
       const translatedTitle = titleElement ? titleElement.textContent : (post.title ? i18n.translateVideoTitle(post.title) : i18n.t('btn_share'));
-      const thumbnailUrl = post.thumbnail ? (post.thumbnail.startsWith('http') ? post.thumbnail : window.location.origin + post.thumbnail) : '';
+      const thumbnailUrl = post.thumbnail ? (post.thumbnail.startsWith('http') ? post.thumbnail : window.location.origin + post.thumbnail) : (window.location.origin + '/assets/images/logo.png');
       showShareModal(translatedTitle, shareUrl, thumbnailUrl);
       Analytics.trackShare(id, 'modal');
     });

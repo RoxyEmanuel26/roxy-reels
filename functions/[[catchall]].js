@@ -187,7 +187,7 @@ export async function onRequest(context) {
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
             const description = descFn(code, title);
 
-            let imageUrl = post.thumbnail || '';
+            let imageUrl = post.thumbnail || '/assets/images/logo.png';
             if (imageUrl && !imageUrl.startsWith('http')) {
               imageUrl = `${url.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
             }
