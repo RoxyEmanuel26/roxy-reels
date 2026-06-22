@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ad Slot</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+  <script type="text/javascript">
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const key = urlParams.get('key');
+      const width = urlParams.get('width');
+      const height = urlParams.get('height');
+      
+      if (key && width && height) {
+        window.atOptions = {
+          'key' : key,
+          'format' : 'iframe',
+          'height' : parseInt(height, 10),
+          'width' : parseInt(width, 10),
+          'params' : {}
+        };
+        
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://glamournakedemployee.com/' + key + '/invoke.js';
+        
+        // Handle blocked script error
+        script.onerror = function() {
+          if (window.parent && typeof window.parent.missavJAdError === 'function') {
+            const containerId = urlParams.get('containerId');
+            window.parent.missavJAdError(containerId, parseInt(width, 10), parseInt(height, 10));
+          }
+        };
+        
+        document.body.appendChild(script);
+      }
+    })();
+  </script>
+</body>
+</html>
