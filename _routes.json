@@ -2,6 +2,7 @@
   "version": 1,
   "description": "Cloudflare Pages route exclusion — file statis tidak melewati Worker",
   "include": [
+    "/api/*",
     "/watch/*",
     "/*/watch/*",
     "/actor/*",
