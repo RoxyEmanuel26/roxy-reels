@@ -180,7 +180,15 @@ async function fetchAndRenderSearch(isInitial = false) {
   isLoading = true;
   
   try {
-    const data = await api.getPosts({ page: currentPage, ...currentFilters });
+    const requestedQuery = currentQuery;
+    const requestedPage = currentPage;
+    const data = await api.getPosts({ page: requestedPage, ...currentFilters });
+    
+    // Race condition protection: if query or page changed while fetching, abort render
+    if (currentQuery !== requestedQuery || currentPage !== requestedPage) {
+      console.warn('[Search] Stale request aborted (Query or Page changed)');
+      return;
+    }
     
     const grid = document.getElementById('search-video-grid');
     if (!grid) return;

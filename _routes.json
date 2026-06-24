@@ -2,7 +2,25 @@
   "version": 1,
   "description": "Cloudflare Pages route exclusion — file statis tidak melewati Worker",
   "include": [
-    "/*"
+    "/watch/*",
+    "/*/watch/*",
+    "/actor/*",
+    "/*/actor/*",
+    "/category/*",
+    "/*/category/*",
+    "/studio/*",
+    "/*/studio/*",
+    "/trending",
+    "/*/trending",
+    "/recent",
+    "/*/recent",
+    "/actors",
+    "/*/actors",
+    "/categories",
+    "/*/categories",
+    "/studios",
+    "/*/studios",
+    "/sitemap.xml"
   ],
   "exclude": [
     "/assets/*",

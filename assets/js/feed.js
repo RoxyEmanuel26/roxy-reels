@@ -332,7 +332,16 @@ async function fetchAndRenderFeed(isInitial = false) {
     }
     usedPages.add(fetchPage);
 
+    const requestedFilters = { ...currentFilters };
+    const requestedPage = fetchPage;
+    
     const data = await api.getPosts({ page: fetchPage, ...currentFilters });
+    
+    // Race condition protection: if filters or page changed while fetching, abort render
+    if (JSON.stringify(requestedFilters) !== JSON.stringify(currentFilters) || currentPage !== requestedPage) {
+      console.warn('[Feed] Stale request aborted (Filters or Page changed)');
+      return;
+    }
 
     // Shuffle results client-side in random mode for a fresh feel
     if (randomMode && data.posts.length > 1) {

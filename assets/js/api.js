@@ -17,6 +17,8 @@ function getActiveLang() {
 
 // In-memory cache to prevent redundant API network requests
 const apiCache = new Map();
+// In-flight request deduplication map
+const fetchPromises = new Map();
 
 async function fetchWithTimeout(url, options = {}, timeout = 10000) {
   const controller = new AbortController();
@@ -58,27 +60,36 @@ const api = {
       if (apiCache.has(url)) {
         return apiCache.get(url);
       }
-      
-      const res = await fetchWithTimeout(url);
-      
-      if (!res.ok) {
-        throw new Error(`API Error ${res.status}: ${res.statusText}`);
+      if (fetchPromises.has(url)) {
+        return fetchPromises.get(url);
       }
       
-      const posts = await res.json();
+      const fetchPromise = (async () => {
+        const res = await fetchWithTimeout(url);
+        
+        if (!res.ok) {
+          throw new Error(`API Error ${res.status}: ${res.statusText}`);
+        }
+        
+        const posts = await res.json();
+        
+        // Baca dan parse response headers untuk keperluan pagination di UI
+        const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
+        const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+        
+        const result = {
+          posts: Array.isArray(posts) ? posts : [],
+          total,
+          totalPages
+        };
+        
+        apiCache.set(url, result);
+        fetchPromises.delete(url);
+        return result;
+      })();
       
-      // Baca dan parse response headers untuk keperluan pagination di UI
-      const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
-      const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
-      
-      const result = {
-        posts: Array.isArray(posts) ? posts : [],
-        total,
-        totalPages
-      };
-      
-      apiCache.set(url, result);
-      return result;
+      fetchPromises.set(url, fetchPromise);
+      return fetchPromise;
     } catch (error) {
       console.error('[API getPosts Error]', error);
       throw error;
@@ -96,19 +107,37 @@ const api = {
       const lang = getActiveLang();
       const cacheKey = `post:${id}:${lang}`;
       
+      // 1. Cek apakah ada SSR state yang diinjeksi oleh Cloudflare
+      if (window.__SSR_POST__ && String(window.__SSR_POST__.id) === String(id)) {
+        apiCache.set(cacheKey, window.__SSR_POST__);
+        delete window.__SSR_POST__; // Hapus dari global agar tidak menumpuk
+      }
+
+      // 2. Cek in-memory cache
       if (apiCache.has(cacheKey)) {
         return apiCache.get(cacheKey);
       }
-      
-      const res = await fetchWithTimeout(`${BASE}/posts/${id}?lang=${lang}`);
-      
-      if (!res.ok) {
-        throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
+
+      // 3. Cek in-flight request deduplication
+      if (fetchPromises.has(cacheKey)) {
+        return fetchPromises.get(cacheKey);
       }
       
-      const post = await res.json();
-      apiCache.set(cacheKey, post);
-      return post;
+      const fetchPromise = (async () => {
+        const res = await fetchWithTimeout(`${BASE}/posts/${id}?lang=${lang}`);
+        
+        if (!res.ok) {
+          throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
+        }
+        
+        const post = await res.json();
+        apiCache.set(cacheKey, post);
+        fetchPromises.delete(cacheKey);
+        return post;
+      })();
+      
+      fetchPromises.set(cacheKey, fetchPromise);
+      return fetchPromise;
     } catch (error) {
       console.error(`[API getPost ${id} Error]`, error);
       throw error;
@@ -129,16 +158,25 @@ const api = {
       if (apiCache.has(cacheKey)) {
         return apiCache.get(cacheKey);
       }
-      
-      const res = await fetchWithTimeout(`${BASE}/player/${id}?lang=${lang}`);
-      
-      if (!res.ok) {
-        throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);
+      if (fetchPromises.has(cacheKey)) {
+        return fetchPromises.get(cacheKey);
       }
       
-      const player = await res.json();
-      apiCache.set(cacheKey, player);
-      return player;
+      const fetchPromise = (async () => {
+        const res = await fetchWithTimeout(`${BASE}/player/${id}?lang=${lang}`);
+        
+        if (!res.ok) {
+          throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);
+        }
+        
+        const player = await res.json();
+        apiCache.set(cacheKey, player);
+        fetchPromises.delete(cacheKey);
+        return player;
+      })();
+      
+      fetchPromises.set(cacheKey, fetchPromise);
+      return fetchPromise;
     } catch (error) {
       console.error(`[API getPlayer ${id} Error]`, error);
       throw error;

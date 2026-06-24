@@ -479,6 +479,10 @@ export async function onRequest(context) {
         `;
         htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, seoFallbackContent);
 
+        // Inject SSR State to prevent frontend double fetch
+        const ssrScript = `<script id="ssr-state">window.__SSR_POST__ = ${JSON.stringify(post)};</script>\n</head>`;
+        htmlContent = htmlContent.replace(/<\/head>/i, ssrScript);
+
         const listResponse = new Response(htmlContent, {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
