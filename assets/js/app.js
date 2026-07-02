@@ -724,18 +724,18 @@ function setupFloatingTelegramButton() {
   if (document.getElementById('floating-tg-wrapper')) return;
 
   const TG_LINKS = {
-    id: 'https://t.me/missav_jav_subindo',
+    id: 'https://t.me/missav_jav_english',
     en: 'https://t.me/missav_jav_english',
-    'zh-TW': 'https://t.me/missav_jav_tw',
-    'zh-CN': 'https://t.me/missav_jav_cn',
-    ja: 'https://t.me/missav_jav_japan',
-    ko: 'https://t.me/missav_jav_korea',
-    ms: 'https://t.me/missav_jav_malaysia',
-    th: 'https://t.me/missav_jav_thai',
+    'zh-TW': 'https://t.me/missav_jav_english',
+    'zh-CN': 'https://t.me/missav_jav_english',
+    ja: 'https://t.me/missav_jav_english',
+    ko: 'https://t.me/missav_jav_english',
+    ms: 'https://t.me/missav_jav_english',
+    th: 'https://t.me/missav_jav_english',
     de: 'https://t.me/missav_jav_english',
     fr: 'https://t.me/missav_jav_english',
-    vi: 'https://t.me/missav_jav_vietnam',
-    fil: 'https://t.me/missav_jav_philippines',
+    vi: 'https://t.me/missav_jav_english',
+    fil: 'https://t.me/missav_jav_english',
     pt: 'https://t.me/missav_jav_english'
   };
 

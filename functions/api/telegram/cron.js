@@ -5,6 +5,8 @@
  * Designed to be triggered externally by cron-job.org or similar services.
  */
 
+const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+
 // 13-language localized caption content and buttons
 const LOCALIZATION = {
   id: {
@@ -226,8 +228,8 @@ export async function onRequest(context) {
     let posts = [];
     
     if (type === 'random') {
-      // Get the total number of posts first by calling api/posts for 1 post
-      const preUrl = `${baseUrl}/api/posts?per_page=1&lang=${lang}`;
+      // Fetch directly from upstream API (apijav.com) to save worker invocations
+      const preUrl = `${TARGET_BASE}/posts?per_page=1`;
       const preController = new AbortController();
       const preTimeoutId = setTimeout(() => preController.abort(), 8000);
       let preRes;
@@ -253,8 +255,8 @@ export async function onRequest(context) {
       // Select a random page index
       const randomPage = Math.floor(Math.random() * totalPosts) + 1;
       
-      // Fetch the single random post
-      const randomUrl = `${baseUrl}/api/posts?per_page=1&page=${randomPage}&lang=${lang}`;
+      // Fetch the single random post directly
+      const randomUrl = `${TARGET_BASE}/posts?per_page=1&page=${randomPage}`;
       const randController = new AbortController();
       const randTimeoutId = setTimeout(() => randController.abort(), 8000);
       let randomRes;
@@ -276,8 +278,8 @@ export async function onRequest(context) {
         posts = await randomRes.json();
       }
     } else {
-      // Default: Fetch latest 5 posts in the requested language
-      const apiUrl = `${baseUrl}/api/posts?per_page=5&lang=${lang}`;
+      // Default: Fetch latest 5 posts directly
+      const apiUrl = `${TARGET_BASE}/posts?per_page=5`;
       const apiController = new AbortController();
       const apiTimeoutId = setTimeout(() => apiController.abort(), 8000);
       let apiRes;
@@ -323,6 +325,11 @@ export async function onRequest(context) {
       
       if (!translations) {
         translations = {};
+      }
+
+      // Translate title dynamically from Supabase translation record if non-English
+      if (lang && lang !== 'en' && translations[lang]) {
+        post.title = translations[lang];
       }
 
       // Check duplicate posting ONLY for 'new' video postings (not for random recommendations)

@@ -5,6 +5,8 @@
  * Designed to be triggered externally by cron-job.org or similar services.
  */
 
+const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -206,8 +208,8 @@ module.exports = async (req, res) => {
     let posts = [];
     
     if (type === 'random') {
-      // Get the total number of posts first by calling api/posts for 1 post
-      const preUrl = `${protocol}://${host}/api/posts?per_page=1&lang=${lang}`;
+      // Fetch directly from upstream API (apijav.com) to save server invocations
+      const preUrl = `${TARGET_BASE}/posts?per_page=1`;
       const preRes = await fetch(preUrl, {
         headers: {
           'Accept': 'application/json',
@@ -223,8 +225,8 @@ module.exports = async (req, res) => {
       // Select a random page index
       const randomPage = Math.floor(Math.random() * totalPosts) + 1;
       
-      // Fetch the single random post
-      const randomUrl = `${protocol}://${host}/api/posts?per_page=1&page=${randomPage}&lang=${lang}`;
+      // Fetch the single random post directly
+      const randomUrl = `${TARGET_BASE}/posts?per_page=1&page=${randomPage}`;
       const randomRes = await fetch(randomUrl, {
         headers: {
           'Accept': 'application/json',
@@ -236,8 +238,8 @@ module.exports = async (req, res) => {
         posts = await randomRes.json();
       }
     } else {
-      // Default: Fetch latest 5 posts in the requested language
-      const apiUrl = `${protocol}://${host}/api/posts?per_page=5&lang=${lang}`;
+      // Default: Fetch latest 5 posts directly
+      const apiUrl = `${TARGET_BASE}/posts?per_page=5`;
       const apiRes = await fetch(apiUrl, {
         headers: {
           'Accept': 'application/json',
@@ -270,6 +272,11 @@ module.exports = async (req, res) => {
       
       if (!translations) {
         translations = {};
+      }
+
+      // Translate title dynamically from Supabase translation record if non-English
+      if (lang && lang !== 'en' && translations[lang]) {
+        post.title = translations[lang];
       }
 
       // Check duplicate posting ONLY for 'new' video postings (not for random recommendations)
