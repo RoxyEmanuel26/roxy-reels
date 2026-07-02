@@ -67,7 +67,9 @@ export async function onRequest(context) {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'X-Client-Site': clientSite
+          'X-Client-Site': clientSite,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': clientSite
         },
         signal: controller.signal
       });

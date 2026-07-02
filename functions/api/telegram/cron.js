@@ -237,7 +237,9 @@ export async function onRequest(context) {
         preRes = await fetch(preUrl, {
           headers: {
             'Accept': 'application/json',
-            'X-Client-Site': baseUrl
+            'X-Client-Site': baseUrl,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': baseUrl
           },
           signal: preController.signal
         });
@@ -264,7 +266,9 @@ export async function onRequest(context) {
         randomRes = await fetch(randomUrl, {
           headers: {
             'Accept': 'application/json',
-            'X-Client-Site': baseUrl
+            'X-Client-Site': baseUrl,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': baseUrl
           },
           signal: randController.signal
         });
@@ -287,7 +291,9 @@ export async function onRequest(context) {
         apiRes = await fetch(apiUrl, {
           headers: {
             'Accept': 'application/json',
-            'X-Client-Site': baseUrl
+            'X-Client-Site': baseUrl,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': baseUrl
           },
           signal: apiController.signal
         });
