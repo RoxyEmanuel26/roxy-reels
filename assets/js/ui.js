@@ -32,18 +32,7 @@ const ui = {
    */
   getProxiedThumbnail(url) {
     if (!url) return '';
-    const isLocal = window.location.protocol === 'file:' || 
-                    window.location.hostname === 'localhost' || 
-                    window.location.hostname === '127.0.0.1';
-    if (isLocal) {
-      return url;
-    }
-    try {
-      // Base64 encode the URL to bypass AdBlocker keyword blocks on "apijav"
-      return `/api/image?url=${btoa(url)}`;
-    } catch (e) {
-      return `/api/image?url=${encodeURIComponent(url)}`;
-    }
+    return url;
   },
 
   /**
