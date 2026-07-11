@@ -665,6 +665,10 @@ body[data-route="/watch"] #global-top-ad {
   .floating-tg-wrapper {
     bottom: 16px;
     left: 50%;
+    transition: bottom 0.3s ease;
+  }
+  body:has(#sticky-bottom-ad-container:not(.hidden)) .floating-tg-wrapper {
+    bottom: 76px;
   }
   .floating-tg-btn {
     width: 46px;
