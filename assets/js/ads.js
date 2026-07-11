@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.2.4';
+import ui from './ui.js?v=2.2.5';
 
 
 // Konfigurasi Kunci Iklan
@@ -267,16 +267,6 @@ function clearAdsterraSession() {
   }
 }
 
-// Global click interceptor to dynamically clear Adsterra session 500ms after any click
-if (typeof document !== 'undefined') {
-  document.addEventListener('click', () => {
-    // Check if we are on watch page before clearing session
-    if (window.missavJState && window.missavJState.currentPath === '/watch') {
-      setTimeout(clearAdsterraSession, 500);
-    }
-  }, { capture: true, passive: true });
-}
-
 /**
  * Menginisialisasi klik pelindung transparan di atas player untuk pemicu popunder
  */
@@ -295,9 +285,6 @@ export function initPlayerAdOverlay() {
 
   newOverlay.addEventListener('click', (e) => {
     console.log('[Ads] Popunder triggered on player click.');
-
-    // Hapus sesi pembatasan frekuensi Adsterra agar iklan berikutnya bisa muncul
-    clearAdsterraSession();
 
     // Sembunyikan pelindung transparan dengan efek transisi cepat
     newOverlay.classList.add('hidden');
@@ -381,6 +368,44 @@ export function loadGlobalTopAd() {
   loadAdBanner('global-top-ad', key, width, height);
 }
 
+/**
+ * Memuat iklan sticky bottom mobile secara dinamis
+ */
+export function loadStickyBottomAd() {
+  const cfg = window.missavJAdConfig;
+  const isMobile = window.innerWidth < 768;
+  
+  // Sticky bottom banner hanya untuk mobile (lebar < 768)
+  if (!isMobile) {
+    const container = document.getElementById('sticky-bottom-ad-container');
+    if (container) container.classList.add('hidden');
+    return;
+  }
+
+  // Jika user sudah pernah menutup iklan di sesi ini, jangan tampilkan lagi
+  if (sessionStorage.getItem('sticky_ad_closed') === 'true') {
+    return;
+  }
+
+  const container = document.getElementById('sticky-bottom-ad-container');
+  if (!container) return;
+
+  // Tampilkan container
+  container.classList.remove('hidden');
+
+  // Inisialisasi tombol close
+  const closeBtn = document.getElementById('close-sticky-bottom-ad');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      container.classList.add('hidden');
+      sessionStorage.setItem('sticky_ad_closed', 'true');
+    };
+  }
+
+  // Muat banner 320x50 di dalam sticky-bottom-ad
+  loadAdBanner('sticky-bottom-ad', cfg.topMobileBannerKey, 320, 50);
+}
+
 // Ekspos secara global di namespace window untuk kemudahan integrasi dengan routing SPA
 window.missavJAds = {
   loadAdBanner,
@@ -389,6 +414,7 @@ window.missavJAds = {
   initPlayerAdOverlay,
   loadWatchPageAds,
   loadGlobalTopAd,
+  loadStickyBottomAd,
   initAdsterraPopunder,
   initAdsterraSocialBar,
   adjustScaledBanners
