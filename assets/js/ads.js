@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.4.4';
+import ui from './ui.js?v=2.4.5';
 
 
 // Konfigurasi Kunci Iklan

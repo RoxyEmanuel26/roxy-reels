@@ -682,3 +682,12 @@ body[data-route="/watch"] #global-top-ad {
     font-size: 0.62rem;
   }
 }
+
+/* Global Sponsor/Ad Box Styling (Adblock Evasion & Centering) */
+.sponsor-media-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+}
