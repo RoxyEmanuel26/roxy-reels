@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.3.2';
+import ui from './ui.js?v=2.3.3';
 
 
 // Konfigurasi Kunci Iklan
@@ -407,8 +407,15 @@ export function loadNativeBannerAd(containerId) {
   
   adLoaderPromise = adLoaderPromise.then(() => {
     return new Promise((resolve) => {
-      // Masukkan div target native
-      container.innerHTML = '<div id="container-21b7c6791db50dfb4cce684222b4187e"></div>';
+      // 1. Ganti ID container native yang lama agar tidak terjadi duplikasi ID (ID Collision)
+      // Karena script Adsterra mencari berdasarkan ID spesifik ini.
+      const existingContainers = document.querySelectorAll('#container-21b7c6791db50dfb4cce684222b4187e');
+      existingContainers.forEach(el => {
+        el.id = 'container-21b7c6791db50dfb4cce684222b4187e-filled';
+      });
+
+      // 2. Masukkan div target native yang baru
+      container.innerHTML = '<div id="container-21b7c6791db50dfb4cce684222b4187e" style="width: 100%; display: flex; justify-content: center; align-items: center; min-height: 250px;"></div>';
 
       const script = document.createElement('script');
       script.async = true;
