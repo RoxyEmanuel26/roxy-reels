@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.3.4';
-import ui from './ui.js?v=2.3.4';
-import filter from './filter.js?v=2.3.4';
-import i18n from './i18n.js?v=2.3.4';
+import api from './api.js?v=2.4.0';
+import ui from './ui.js?v=2.4.0';
+import filter from './filter.js?v=2.4.0';
+import i18n from './i18n.js?v=2.4.0';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -635,24 +635,42 @@ export function bindHoverPreviews(grid) {
  */
 function renderInlineAdCard(adIndex) {
   return `
-    <div class="grid-ad-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%;">
-      <div class="ad-placement" id="grid-ad-slot-${adIndex}" style="width: 100%; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
+    <div class="grid-sponsor-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%;">
+      <div class="sponsor-media-box" id="grid-sponsor-slot-${adIndex}" style="width: 100%; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
     </div>
   `;
 }
 
+// Global IntersectionObserver for Ad Viewability
+let adViewabilityObserver = null;
+
 /**
- * Loads dynamic Native Banners into any empty inline grid ad slots currently in the DOM
+ * Loads dynamic Native Banners using IntersectionObserver (Lazy Loading for max CPM Viewability)
  */
 function loadInlineGridAds() {
-  const slots = document.querySelectorAll('.grid-ad-container .ad-placement');
+  if (!adViewabilityObserver) {
+    adViewabilityObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const slot = entry.target;
+          if (slot.children.length === 0) {
+            if (window.missavJAds && typeof window.missavJAds.loadNativeBannerAd === 'function') {
+              window.missavJAds.loadNativeBannerAd(slot.id);
+            }
+          }
+          // Stop observing once loaded
+          observer.unobserve(slot);
+        }
+      });
+    }, {
+      rootMargin: '500px 0px' // Load 500px before it enters the viewport
+    });
+  }
+
+  const slots = document.querySelectorAll('.grid-sponsor-container .sponsor-media-box:not(.observed)');
   slots.forEach(slot => {
-    // Only load if the ad slot is empty
-    if (slot.children.length === 0) {
-      if (window.missavJAds && typeof window.missavJAds.loadNativeBannerAd === 'function') {
-        window.missavJAds.loadNativeBannerAd(slot.id);
-      }
-    }
+    adViewabilityObserver.observe(slot);
+    slot.classList.add('observed');
   });
 }
 

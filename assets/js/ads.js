@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.3.4';
+import ui from './ui.js?v=2.4.0';
 
 
 // Konfigurasi Kunci Iklan
@@ -387,9 +387,9 @@ export function loadWatchPageAds() {
   const belowPlayerHeight = isMobile ? 250 : 90;
   const belowPlayerKey = isMobile ? cfg.belowPlayerBannerKey : cfg.topBannerKey;
 
-  loadAdBanner('below-player-ad', belowPlayerKey, belowPlayerWidth, belowPlayerHeight);
-  loadNativeBannerAd('native-banner-ad');
-  loadAdBanner('sidebar-ad', cfg.sidebarBannerKey, 300, 250);
+  loadAdBanner('sponsor-below-player', belowPlayerKey, belowPlayerWidth, belowPlayerHeight);
+  loadNativeBannerAd('sponsor-native-banner');
+  loadAdBanner('sponsor-sidebar', cfg.sidebarBannerKey, 300, 250);
   initPlayerAdOverlay();
   
   // Muat script popunder Adsterra secara dinamis
@@ -433,14 +433,14 @@ export function loadNativeBannerAd(containerId) {
 /**
  * Memuat iklan global top banner di list feed
  */
-export function loadGlobalTopAd() {
+export function loadGlobalTopAd(containerId = 'top-global-ad') {
   const cfg = window.missavJAdConfig;
   const isMobile = window.innerWidth < 768;
   const width = isMobile ? 320 : 728;
   const height = isMobile ? 50 : 90;
   const key = isMobile ? cfg.topMobileBannerKey : cfg.topBannerKey;
   
-  loadAdBanner('global-top-ad', key, width, height);
+  loadAdBanner(containerId, key, width, height);
 }
 
 /**

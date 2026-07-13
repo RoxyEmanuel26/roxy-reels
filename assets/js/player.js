@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.3.4';
-import ui from './ui.js?v=2.3.4';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.3.4';
-import i18n from './i18n.js?v=2.3.4';
-import ReferralSystem from './referral.js?v=2.3.4';
-import { Analytics } from './analytics.js?v=2.3.4';
+import api from './api.js?v=2.4.0';
+import ui from './ui.js?v=2.4.0';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.4.0';
+import i18n from './i18n.js?v=2.4.0';
+import ReferralSystem from './referral.js?v=2.4.0';
+import { Analytics } from './analytics.js?v=2.4.0';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -91,8 +91,8 @@ export async function init(id) {
           </div>
         </div>
 
-        <!-- Banner Ad di bawah Video Player (Mendukung 728x90 / 300x250) -->
-        <div class="ad-placement below-player-ad" id="below-player-ad"></div>
+        <!-- Banner Iklan Di Bawah Player (Mendukung 728x90) -->
+        <div class="sponsor-media-box" id="sponsor-below-player"></div>
         
         <!-- Metadata Video -->
         <div class="player-metadata-container">
@@ -164,13 +164,13 @@ export async function init(id) {
         </div>
         
         <!-- Native Banner Ad (4:1 Ratio) -->
-        <div class="ad-placement native-banner-ad" id="native-banner-ad" style="width: 100%; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
+        <div class="sponsor-media-box" id="sponsor-native-banner" style="width: 100%; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
       </div>
       
       <!-- Kolom Kanan: Rekomendasi Video Terkait & Iklan Sidebar -->
       <div class="player-sidebar-column">
         <!-- Banner Iklan Sidebar (Mendukung 300x250) -->
-        <div class="ad-placement sidebar-ad" id="sidebar-ad"></div>
+        <div class="sponsor-media-box" id="sponsor-sidebar"></div>
 
         <h3>${i18n.t('related_videos')}</h3>
         <div class="related-videos-list" id="related-videos-list">
