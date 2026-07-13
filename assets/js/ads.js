@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.4.6';
+import ui from './ui.js?v=2.5.0';
 
 
 // Konfigurasi Kunci Iklan
@@ -441,62 +441,58 @@ export function loadNativeBannerAd(containerId) {
   // kita mengisolasinya ke dalam iframe kita sendiri.
   const iframe = document.createElement('iframe');
   iframe.width = '100%';
-  // Beri tinggi awal yang cukup besar agar tidak memotong CSS saat render pertama
   iframe.height = window.innerWidth < 768 ? '350px' : '250px'; 
   iframe.style.border = 'none';
   iframe.style.overflow = 'hidden';
   iframe.style.display = 'block';
   iframe.scrolling = 'no';
-  iframe.style.transition = 'height 0.3s ease'; // Animasi mulus saat menyesuaikan tinggi
+  iframe.style.transition = 'height 0.3s ease';
+  
+  // Menggunakan file HTML fisik agar Adsterra membaca domain referrer dengan benar
+  iframe.src = '/ad-native.html';
   
   container.appendChild(iframe);
 
-  const iframeDoc = iframe.contentWindow.document;
-  
-  // Tulis struktur HTML dasar ke dalam iframe
-  // Hilangkan flex dan overflow hidden di body agar konten bisa mengembang secara alami
-  iframeDoc.open();
-  iframeDoc.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { margin: 0; padding: 0; background: transparent; }
-          #container-21b7c6791db50dfb4cce684222b4187e { width: 100%; display: flex; justify-content: center; }
-        </style>
-      </head>
-      <body>
-        <div id="container-21b7c6791db50dfb4cce684222b4187e"></div>
-        <script async="async" data-cfasync="false" src="https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js"></script>
-      </body>
-    </html>
-  `);
-  iframeDoc.close();
-
-  // Polling pintar untuk menyesuaikan tinggi iframe dengan tinggi asli iklan
-  let pollCount = 0;
-  const checkHeight = setInterval(() => {
-    pollCount++;
-    if (pollCount > 20 || !iframe.contentWindow) { // Berhenti setelah 10 detik (500ms * 20)
-      clearInterval(checkHeight);
-      return;
-    }
-    try {
-      const doc = iframe.contentWindow.document;
-      const adWrapper = doc.getElementById('container-21b7c6791db50dfb4cce684222b4187e');
-      if (adWrapper && adWrapper.scrollHeight > 50) {
-        // Tambahkan padding kecil (10px) agar teks paling bawah tidak mepet
-        const newHeight = adWrapper.scrollHeight + 10;
-        iframe.height = newHeight + 'px';
-        iframe.style.height = newHeight + 'px';
-        // Setelah berhasil mendeteksi ukuran akhir, kita bisa berhenti polling lebih cepat
-        if (pollCount > 5) clearInterval(checkHeight);
+  // Mendengarkan postMessage dari ad-native.html untuk auto-resize tinggi iframe
+  if (!window.nativeIframeListenerAdded) {
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'resizeAdIframe') {
+        const frames = document.querySelectorAll('iframe[src="/ad-native.html"]');
+        // Karena bisa ada beberapa iframe native, kita ambil yang ukurannya belum diset sebesar ini
+        frames.forEach(f => {
+          if (f.contentWindow === e.source) {
+            f.height = e.data.height + 'px';
+            f.style.height = e.data.height + 'px';
+          }
+        });
       }
-    } catch(e) {
-      clearInterval(checkHeight); // Berhenti jika kena error CORS (seharusnya tidak terjadi karena same-origin)
-    }
-  }, 500);
+    });
+    window.nativeIframeListenerAdded = true;
+  }
+
+  // Algoritma Smart Auto-Refresh: Me-refresh iklan setiap 45 detik HANYA JIKA terlihat di layar
+  let isVisible = false;
+  let refreshTimer = null;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      isVisible = entry.isIntersecting;
+      if (isVisible && !refreshTimer) {
+        // Mulai timer refresh
+        refreshTimer = setInterval(() => {
+          if (isVisible) {
+            iframe.src = '/ad-native.html?cb=' + Date.now();
+          }
+        }, 45000); // 45 detik
+      } else if (!isVisible && refreshTimer) {
+        // Hentikan timer jika iklan tidak terlihat (menghemat resource dan menjaga CPM)
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+    });
+  }, { threshold: 0.5 }); // Minimal 50% iklan harus terlihat untuk memicu timer
+
+  observer.observe(iframe);
 }
 
 /**

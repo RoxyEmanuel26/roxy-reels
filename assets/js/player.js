@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.4.6';
-import ui from './ui.js?v=2.4.6';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.4.6';
-import i18n from './i18n.js?v=2.4.6';
-import ReferralSystem from './referral.js?v=2.4.6';
-import { Analytics } from './analytics.js?v=2.4.6';
+import api from './api.js?v=2.5.0';
+import ui from './ui.js?v=2.5.0';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.5.0';
+import i18n from './i18n.js?v=2.5.0';
+import ReferralSystem from './referral.js?v=2.5.0';
+import { Analytics } from './analytics.js?v=2.5.0';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
