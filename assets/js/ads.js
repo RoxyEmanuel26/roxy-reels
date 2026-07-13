@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.4.5';
+import ui from './ui.js?v=2.4.6';
 
 
 // Konfigurasi Kunci Iklan
@@ -441,18 +441,20 @@ export function loadNativeBannerAd(containerId) {
   // kita mengisolasinya ke dalam iframe kita sendiri.
   const iframe = document.createElement('iframe');
   iframe.width = '100%';
-  // Beri tinggi default yang memadai untuk rasio 4:1 (misal 150px-250px tergantung layar)
-  iframe.height = window.innerWidth < 768 ? '250px' : '150px'; 
+  // Beri tinggi awal yang cukup besar agar tidak memotong CSS saat render pertama
+  iframe.height = window.innerWidth < 768 ? '350px' : '250px'; 
   iframe.style.border = 'none';
   iframe.style.overflow = 'hidden';
   iframe.style.display = 'block';
   iframe.scrolling = 'no';
+  iframe.style.transition = 'height 0.3s ease'; // Animasi mulus saat menyesuaikan tinggi
   
   container.appendChild(iframe);
 
   const iframeDoc = iframe.contentWindow.document;
   
   // Tulis struktur HTML dasar ke dalam iframe
+  // Hilangkan flex dan overflow hidden di body agar konten bisa mengembang secara alami
   iframeDoc.open();
   iframeDoc.write(`
     <!DOCTYPE html>
@@ -460,7 +462,8 @@ export function loadNativeBannerAd(containerId) {
       <head>
         <meta charset="utf-8">
         <style>
-          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: transparent; overflow: hidden; }
+          body { margin: 0; padding: 0; background: transparent; }
+          #container-21b7c6791db50dfb4cce684222b4187e { width: 100%; display: flex; justify-content: center; }
         </style>
       </head>
       <body>
@@ -470,6 +473,30 @@ export function loadNativeBannerAd(containerId) {
     </html>
   `);
   iframeDoc.close();
+
+  // Polling pintar untuk menyesuaikan tinggi iframe dengan tinggi asli iklan
+  let pollCount = 0;
+  const checkHeight = setInterval(() => {
+    pollCount++;
+    if (pollCount > 20 || !iframe.contentWindow) { // Berhenti setelah 10 detik (500ms * 20)
+      clearInterval(checkHeight);
+      return;
+    }
+    try {
+      const doc = iframe.contentWindow.document;
+      const adWrapper = doc.getElementById('container-21b7c6791db50dfb4cce684222b4187e');
+      if (adWrapper && adWrapper.scrollHeight > 50) {
+        // Tambahkan padding kecil (10px) agar teks paling bawah tidak mepet
+        const newHeight = adWrapper.scrollHeight + 10;
+        iframe.height = newHeight + 'px';
+        iframe.style.height = newHeight + 'px';
+        // Setelah berhasil mendeteksi ukuran akhir, kita bisa berhenti polling lebih cepat
+        if (pollCount > 5) clearInterval(checkHeight);
+      }
+    } catch(e) {
+      clearInterval(checkHeight); // Berhenti jika kena error CORS (seharusnya tidak terjadi karena same-origin)
+    }
+  }, 500);
 }
 
 /**
