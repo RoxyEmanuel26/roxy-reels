@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.2.7';
+import ui from './ui.js?v=2.2.8';
 
 
 // Konfigurasi Kunci Iklan
@@ -355,11 +355,50 @@ export function loadWatchPageAds() {
   const belowPlayerKey = isMobile ? cfg.belowPlayerBannerKey : cfg.topBannerKey;
 
   loadAdBanner('below-player-ad', belowPlayerKey, belowPlayerWidth, belowPlayerHeight);
+  loadNativeBannerAd('native-banner-ad');
   loadAdBanner('sidebar-ad', cfg.sidebarBannerKey, 300, 250);
   initPlayerAdOverlay();
   
   // Muat script popunder Adsterra secara dinamis
   initAdsterraPopunder();
+}
+
+/**
+ * Memuat iklan Native Banner secara dinamis menggunakan iframe sandboxing
+ */
+export function loadNativeBannerAd(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = ''; // bersihkan container
+
+  const iframe = document.createElement('iframe');
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.border = 'none';
+  iframe.style.overflow = 'hidden';
+  iframe.style.display = 'block';
+  iframe.style.margin = '0 auto';
+  iframe.scrolling = 'no';
+  iframe.frameBorder = '0';
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; display: flex; justify-content: center; align-items: center; }
+    #container-21b7c6791db50dfb4cce684222b4187e { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="container-21b7c6791db50dfb4cce684222b4187e"></div>
+  <script async="async" data-cfasync="false" src="https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js"></scr` + `ipt>
+</body>
+</html>`;
+
+  iframe.srcdoc = html;
+  container.appendChild(iframe);
 }
 
 /**
