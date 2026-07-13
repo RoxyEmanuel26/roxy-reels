@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.2.8';
+import ui from './ui.js?v=2.2.9';
 
 
 // Konfigurasi Kunci Iklan
@@ -19,6 +19,9 @@ window.missavJAdConfig = {
   belowPlayerBannerKey: '42bf4702a7a9795846258d2f444784f4', // Banner 300x250
   sidebarBannerKey: '42bf4702a7a9795846258d2f444784f4'     // Banner 300x250
 };
+
+// Queue untuk memuat iklan berurutan (mencegah konflik atOptions)
+let adLoaderPromise = Promise.resolve();
 
 /**
  * Menyesuaikan skala banner yang ditandai scalable agar pas dengan lebar kontainernya
@@ -172,7 +175,8 @@ window.missavJAdError = function(containerId, width, height) {
 };
 
 /**
- * Memuat banner Adsterra secara dinamis di container tertentu lewat same-origin sandboxed iframe
+ * Memuat banner Adsterra secara dinamis di container tertentu lewat DOM langsung (bukan iframe)
+ * untuk memaksimalkan CPM karena Adsterra dapat membaca cookies dan referer utama.
  */
 export function loadAdsterraBanner(containerId, key, width, height) {
   const container = document.getElementById(containerId);
@@ -196,30 +200,59 @@ export function loadAdsterraBanner(containerId, key, width, height) {
     return;
   }
 
-  // Create an iframe to sandbox the Adsterra banner under our same-origin domain
-  const iframe = document.createElement('iframe');
-  iframe.width = width;
-  iframe.height = height;
-  iframe.scrolling = 'no';
-  iframe.frameBorder = '0';
-  iframe.style.border = 'none';
-  iframe.style.overflow = 'hidden';
-  iframe.style.display = 'block';
-  iframe.style.margin = '0 auto';
-  
-  // Set the src to our static ad-slot page with config parameters.
-  // This passes the correct verified referrer domain to Adsterra and runs fresh on every navigation.
-  iframe.src = `/assets/ad-slot.html?key=${key}&width=${width}&height=${height}&containerId=${containerId}`;
+  // Antrean Promise untuk menghindari bentrok pada window.atOptions saat SPA routing
+  adLoaderPromise = adLoaderPromise.then(() => {
+    return new Promise((resolve) => {
+      window.atOptions = {
+        'key' : key,
+        'format' : 'iframe',
+        'height' : height,
+        'width' : width,
+        'params' : {}
+      };
 
-  container.appendChild(iframe);
+      // Buat elemen script Adsterra
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = `https://glamournakedemployee.com/${key}/invoke.js`;
+      
+      // Amankan document.write agar tidak membuat blank page di SPA
+      const originalWrite = document.write;
+      const originalWriteln = document.writeln;
+      let capturedHtml = '';
+      
+      document.write = function(html) { capturedHtml += html; };
+      document.writeln = function(html) { capturedHtml += html + '\n'; };
 
-  // Tandai kontainer sebagai scalable jika width >= 728
-  if (width >= 728) {
-    container.setAttribute('data-scalable', 'true');
-    container.setAttribute('data-native-width', width);
-    container.setAttribute('data-native-height', height);
-    adjustScaledBanners();
-  }
+      script.onload = () => {
+        // Kembalikan document.write
+        document.write = originalWrite;
+        document.writeln = originalWriteln;
+        
+        // Suntikkan kode iframe Adsterra asli yang ditangkap
+        if (capturedHtml) {
+          container.innerHTML = capturedHtml;
+        }
+        
+        // Atur skala jika lebih dari 728
+        if (width >= 728) {
+          container.setAttribute('data-scalable', 'true');
+          container.setAttribute('data-native-width', width);
+          container.setAttribute('data-native-height', height);
+          adjustScaledBanners();
+        }
+        resolve();
+      };
+      
+      script.onerror = () => {
+        document.write = originalWrite;
+        document.writeln = originalWriteln;
+        resolve();
+      };
+
+      container.appendChild(script);
+    });
+  });
 }
 
 /**
@@ -364,41 +397,30 @@ export function loadWatchPageAds() {
 }
 
 /**
- * Memuat iklan Native Banner secara dinamis menggunakan iframe sandboxing
+ * Memuat iklan Native Banner secara dinamis langsung ke DOM (bukan iframe sandboxing)
  */
 export function loadNativeBannerAd(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
   container.innerHTML = ''; // bersihkan container
+  
+  adLoaderPromise = adLoaderPromise.then(() => {
+    return new Promise((resolve) => {
+      // Masukkan div target native
+      container.innerHTML = '<div id="container-21b7c6791db50dfb4cce684222b4187e"></div>';
 
-  const iframe = document.createElement('iframe');
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
-  iframe.style.border = 'none';
-  iframe.style.overflow = 'hidden';
-  iframe.style.display = 'block';
-  iframe.style.margin = '0 auto';
-  iframe.scrolling = 'no';
-  iframe.frameBorder = '0';
+      const script = document.createElement('script');
+      script.async = true;
+      script.dataset.cfasync = 'false';
+      script.src = 'https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js';
+      
+      script.onload = () => resolve();
+      script.onerror = () => resolve();
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; display: flex; justify-content: center; align-items: center; }
-    #container-21b7c6791db50dfb4cce684222b4187e { width: 100%; height: 100%; }
-  </style>
-</head>
-<body>
-  <div id="container-21b7c6791db50dfb4cce684222b4187e"></div>
-  <script async="async" data-cfasync="false" src="https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js"></scr` + `ipt>
-</body>
-</html>`;
-
-  iframe.srcdoc = html;
-  container.appendChild(iframe);
+      container.appendChild(script);
+    });
+  });
 }
 
 /**
