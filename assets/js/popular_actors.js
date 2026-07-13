@@ -4,8 +4,8 @@
  * dan perutean dinamis ke feed video berbasis API.
  */
 
-import ui from './ui.js?v=2.4.3';
-import i18n from './i18n.js?v=2.4.3';
+import ui from './ui.js?v=2.4.4';
+import i18n from './i18n.js?v=2.4.4';
 
 // Daftar Aktris JAV populer terkurasi dengan nama kanji & inisial premium
 const POPULAR_ACTORS = [

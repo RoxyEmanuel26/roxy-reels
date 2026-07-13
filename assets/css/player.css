@@ -548,14 +548,14 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
   }
   
   .player-container-wrapper,
-  #below-player-ad,
+  #sponsor-below-player,
   .player-metadata-container,
-  #native-banner-ad {
+  #sponsor-native-banner {
     width: 100%;
   }
 
   .player-container-wrapper { order: 1; }
-  #below-player-ad { order: 2; }
+  #sponsor-below-player { order: 2; }
   .player-metadata-container { order: 3; }
   
   .player-sidebar-column {
@@ -563,7 +563,7 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
     order: 4;
   }
   
-  #native-banner-ad { 
+  #sponsor-native-banner { 
     order: 5; 
   }
 }
@@ -622,6 +622,29 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
 /* ==========================================
    5. ADSTERRA BANNER & OVERLAY AD SYSTEM
    ========================================== */
+
+/* Style untuk kotak iklan stealth mode di Watch Page */
+.sponsor-media-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: var(--space-4);
+  min-height: 90px;
+}
+
+#sponsor-below-player {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-4);
+}
+
+#sponsor-sidebar {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  min-height: 250px;
+}
+
 .ad-placement {
   display: flex;
   justify-content: center;
