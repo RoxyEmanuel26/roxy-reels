@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.2.9';
+import ui from './ui.js?v=2.3.0';
 
 
 // Konfigurasi Kunci Iklan
@@ -477,6 +477,7 @@ export function loadStickyBottomAd() {
 // Ekspos secara global di namespace window untuk kemudahan integrasi dengan routing SPA
 window.missavJAds = {
   loadAdBanner,
+  loadNativeBannerAd,
   loadExoClickBanner,
   loadAdsterraBanner,
   initPlayerAdOverlay,

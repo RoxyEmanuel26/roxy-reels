@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.2.9';
-import ui from './ui.js?v=2.2.9';
-import filter from './filter.js?v=2.2.9';
-import i18n from './i18n.js?v=2.2.9';
+import api from './api.js?v=2.3.0';
+import ui from './ui.js?v=2.3.0';
+import filter from './filter.js?v=2.3.0';
+import i18n from './i18n.js?v=2.3.0';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -636,27 +636,21 @@ export function bindHoverPreviews(grid) {
 function renderInlineAdCard(adIndex) {
   return `
     <div class="grid-ad-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%;">
-      <div class="ad-placement" id="grid-ad-slot-${adIndex}"></div>
+      <div class="ad-placement" id="grid-ad-slot-${adIndex}" style="width: 100%; max-width: 960px; aspect-ratio: 4/1; margin: 15px auto; overflow: hidden; border-radius: 8px; background: rgba(0,0,0,0.2);"></div>
     </div>
   `;
 }
 
 /**
- * Loads dynamic Adsterra/Exoclick banners into any empty inline grid ad slots currently in the DOM
+ * Loads dynamic Native Banners into any empty inline grid ad slots currently in the DOM
  */
 function loadInlineGridAds() {
   const slots = document.querySelectorAll('.grid-ad-container .ad-placement');
   slots.forEach(slot => {
     // Only load if the ad slot is empty
     if (slot.children.length === 0) {
-      if (window.missavJAds && typeof window.missavJAds.loadAdBanner === 'function') {
-        const cfg = window.missavJAdConfig;
-        const isMobile = window.innerWidth < 768;
-        const width = isMobile ? 320 : 728;
-        const height = isMobile ? 50 : 90;
-        const key = isMobile ? cfg.topMobileBannerKey : cfg.topBannerKey;
-        
-        window.missavJAds.loadAdBanner(slot.id, key, width, height);
+      if (window.missavJAds && typeof window.missavJAds.loadNativeBannerAd === 'function') {
+        window.missavJAds.loadNativeBannerAd(slot.id);
       }
     }
   });
