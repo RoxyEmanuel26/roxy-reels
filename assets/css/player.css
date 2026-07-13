@@ -543,8 +543,28 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
     gap: var(--space-6);
   }
   
+  .player-main-column {
+    display: contents;
+  }
+  
+  .player-container-wrapper,
+  #below-player-ad,
+  .player-metadata-container,
+  #native-banner-ad {
+    width: 100%;
+  }
+
+  .player-container-wrapper { order: 1; }
+  #below-player-ad { order: 2; }
+  .player-metadata-container { order: 3; }
+  
   .player-sidebar-column {
     width: 100%;
+    order: 4;
+  }
+  
+  #native-banner-ad { 
+    order: 5; 
   }
 }
 
