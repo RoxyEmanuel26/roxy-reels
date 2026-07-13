@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.3.3';
+import ui from './ui.js?v=2.3.4';
 
 
 // Konfigurasi Kunci Iklan
@@ -415,12 +415,12 @@ export function loadNativeBannerAd(containerId) {
       });
 
       // 2. Masukkan div target native yang baru
-      container.innerHTML = '<div id="container-21b7c6791db50dfb4cce684222b4187e" style="width: 100%; display: flex; justify-content: center; align-items: center; min-height: 250px;"></div>';
+      container.innerHTML = '<div id="container-21b7c6791db50dfb4cce684222b4187e" style="width: 100%; display: flex; justify-content: center; align-items: center;"></div>';
 
       const script = document.createElement('script');
       script.async = true;
       script.dataset.cfasync = 'false';
-      script.src = 'https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js';
+      script.src = 'https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js?cb=' + Date.now();
       
       script.onload = () => resolve();
       script.onerror = () => resolve();
