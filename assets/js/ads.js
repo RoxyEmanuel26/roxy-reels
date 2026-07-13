@@ -4,12 +4,12 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.2.6';
+import ui from './ui.js?v=2.2.7';
 
 
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
-  popunderEnabled: true,
+  popunderEnabled: false, // JANGAN DIHAPUS: Setel ke true untuk mengaktifkan kembali popunder
   socialBarEnabled: true,
   // Tentukan provider banner: 'exoclick' atau 'adsterra'
   bannerProvider: 'adsterra',
@@ -271,8 +271,15 @@ function clearAdsterraSession() {
  * Menginisialisasi klik pelindung transparan di atas player untuk pemicu popunder
  */
 export function initPlayerAdOverlay() {
+  const cfg = window.missavJAdConfig;
   const adOverlay = document.getElementById('player-ad-overlay');
   if (!adOverlay) return;
+
+  // Jika popunder tidak aktif, pastikan overlay disembunyikan dan abaikan inisialisasi click handler
+  if (!cfg || !cfg.popunderEnabled) {
+    adOverlay.classList.add('hidden');
+    return;
+  }
 
   // Tampilkan kembali overlay transparan setiap memuat video baru
   adOverlay.classList.remove('hidden');
