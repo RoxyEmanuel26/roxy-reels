@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.4.0';
+import ui from './ui.js?v=2.4.1';
 
 
 // Konfigurasi Kunci Iklan
@@ -376,7 +376,26 @@ export function initAdsterraSocialBar() {
 }
 
 /**
- * Memuat seluruh iklan halaman tontonan video secara paralel
+ * Helper untuk Lazy Loading ad container agar Viewability Score maksimal
+ */
+function lazyLoadAd(containerId, loadCallback) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        obs.unobserve(entry.target);
+        loadCallback();
+      }
+    });
+  }, { rootMargin: '500px 0px' });
+
+  observer.observe(container);
+}
+
+/**
+ * Memuat seluruh iklan halaman tontonan video secara paralel (dengan Lazy Load)
  */
 export function loadWatchPageAds() {
   const cfg = window.missavJAdConfig;
@@ -387,9 +406,18 @@ export function loadWatchPageAds() {
   const belowPlayerHeight = isMobile ? 250 : 90;
   const belowPlayerKey = isMobile ? cfg.belowPlayerBannerKey : cfg.topBannerKey;
 
-  loadAdBanner('sponsor-below-player', belowPlayerKey, belowPlayerWidth, belowPlayerHeight);
-  loadNativeBannerAd('sponsor-native-banner');
-  loadAdBanner('sponsor-sidebar', cfg.sidebarBannerKey, 300, 250);
+  lazyLoadAd('sponsor-below-player', () => {
+    loadAdBanner('sponsor-below-player', belowPlayerKey, belowPlayerWidth, belowPlayerHeight);
+  });
+  
+  lazyLoadAd('sponsor-native-banner', () => {
+    loadNativeBannerAd('sponsor-native-banner');
+  });
+  
+  lazyLoadAd('sponsor-sidebar', () => {
+    loadAdBanner('sponsor-sidebar', cfg.sidebarBannerKey, 300, 250);
+  });
+
   initPlayerAdOverlay();
   
   // Muat script popunder Adsterra secara dinamis
