@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.3.1';
-import ui from './ui.js?v=2.3.1';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.3.1';
-import i18n from './i18n.js?v=2.3.1';
-import ReferralSystem from './referral.js?v=2.3.1';
-import { Analytics } from './analytics.js?v=2.3.1';
+import api from './api.js?v=2.3.2';
+import ui from './ui.js?v=2.3.2';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.3.2';
+import i18n from './i18n.js?v=2.3.2';
+import ReferralSystem from './referral.js?v=2.3.2';
+import { Analytics } from './analytics.js?v=2.3.2';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -164,7 +164,7 @@ export async function init(id) {
         </div>
         
         <!-- Native Banner Ad (4:1 Ratio) -->
-        <div class="ad-placement native-banner-ad" id="native-banner-ad" style="width: 100%; aspect-ratio: 4/1; margin: 15px auto; overflow: hidden; border-radius: 8px; background: rgba(0,0,0,0.2);"></div>
+        <div class="ad-placement native-banner-ad" id="native-banner-ad" style="width: 100%; min-height: 250px; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
       </div>
       
       <!-- Kolom Kanan: Rekomendasi Video Terkait & Iklan Sidebar -->

@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.3.1';
-import ui from './ui.js?v=2.3.1';
-import filter from './filter.js?v=2.3.1';
-import i18n from './i18n.js?v=2.3.1';
+import api from './api.js?v=2.3.2';
+import ui from './ui.js?v=2.3.2';
+import filter from './filter.js?v=2.3.2';
+import i18n from './i18n.js?v=2.3.2';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -636,7 +636,7 @@ export function bindHoverPreviews(grid) {
 function renderInlineAdCard(adIndex) {
   return `
     <div class="grid-ad-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%;">
-      <div class="ad-placement" id="grid-ad-slot-${adIndex}" style="width: 100%; max-width: 960px; aspect-ratio: 4/1; margin: 15px auto; overflow: hidden; border-radius: 8px; background: rgba(0,0,0,0.2);"></div>
+      <div class="ad-placement" id="grid-ad-slot-${adIndex}" style="width: 100%; min-height: 250px; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
     </div>
   `;
 }
