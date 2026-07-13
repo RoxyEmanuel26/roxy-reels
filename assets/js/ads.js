@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.5.0';
+import ui from './ui.js?v=2.5.1';
 
 
 // Konfigurasi Kunci Iklan
@@ -448,27 +448,59 @@ export function loadNativeBannerAd(containerId) {
   iframe.scrolling = 'no';
   iframe.style.transition = 'height 0.3s ease';
   
-  // Menggunakan file HTML fisik agar Adsterra membaca domain referrer dengan benar
-  iframe.src = '/ad-native.html';
-  
   container.appendChild(iframe);
 
-  // Mendengarkan postMessage dari ad-native.html untuk auto-resize tinggi iframe
-  if (!window.nativeIframeListenerAdded) {
-    window.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'resizeAdIframe') {
-        const frames = document.querySelectorAll('iframe[src="/ad-native.html"]');
-        // Karena bisa ada beberapa iframe native, kita ambil yang ukurannya belum diset sebesar ini
-        frames.forEach(f => {
-          if (f.contentWindow === e.source) {
-            f.height = e.data.height + 'px';
-            f.style.height = e.data.height + 'px';
-          }
-        });
+  function writeIframeContent() {
+    const iframeDoc = iframe.contentWindow.document;
+    const currentDomain = window.location.origin;
+    iframeDoc.open();
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <base href="${currentDomain}/">
+          <link rel="canonical" href="${window.location.href}">
+          <style>
+            body { margin: 0; padding: 0; background: transparent; }
+            #container-21b7c6791db50dfb4cce684222b4187e { width: 100%; display: flex; justify-content: center; }
+          </style>
+        </head>
+        <body>
+          <div id="container-21b7c6791db50dfb4cce684222b4187e"></div>
+          <script async="async" data-cfasync="false" src="https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js?cb=${Date.now()}"></script>
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    // Auto-resize logic dari parent
+    let pollCount = 0;
+    const checkHeight = setInterval(() => {
+      pollCount++;
+      if (pollCount > 20 || !iframe.contentWindow) {
+        clearInterval(checkHeight);
+        return;
       }
-    });
-    window.nativeIframeListenerAdded = true;
+      try {
+        const doc = iframe.contentWindow.document;
+        const adWrapper = doc.getElementById('container-21b7c6791db50dfb4cce684222b4187e');
+        if (adWrapper && adWrapper.scrollHeight > 50) {
+          const newHeight = adWrapper.scrollHeight + 10;
+          if (newHeight > parseInt(iframe.style.height || iframe.height)) {
+            iframe.height = newHeight + 'px';
+            iframe.style.height = newHeight + 'px';
+          }
+          if (pollCount > 5) clearInterval(checkHeight);
+        }
+      } catch(e) {
+        clearInterval(checkHeight);
+      }
+    }, 500);
   }
+
+  // Tulis konten pertama kali
+  writeIframeContent();
 
   // Algoritma Smart Auto-Refresh: Me-refresh iklan setiap 45 detik HANYA JIKA terlihat di layar
   let isVisible = false;
@@ -478,19 +510,17 @@ export function loadNativeBannerAd(containerId) {
     entries.forEach(entry => {
       isVisible = entry.isIntersecting;
       if (isVisible && !refreshTimer) {
-        // Mulai timer refresh
         refreshTimer = setInterval(() => {
           if (isVisible) {
-            iframe.src = '/ad-native.html?cb=' + Date.now();
+            writeIframeContent(); // Refresh isi iframe secara diam-diam
           }
         }, 45000); // 45 detik
       } else if (!isVisible && refreshTimer) {
-        // Hentikan timer jika iklan tidak terlihat (menghemat resource dan menjaga CPM)
         clearInterval(refreshTimer);
         refreshTimer = null;
       }
     });
-  }, { threshold: 0.5 }); // Minimal 50% iklan harus terlihat untuk memicu timer
+  }, { threshold: 0.5 });
 
   observer.observe(iframe);
 }
