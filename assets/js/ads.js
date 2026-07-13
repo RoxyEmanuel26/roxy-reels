@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.4.1';
+import ui from './ui.js?v=2.4.2';
 
 
 // Konfigurasi Kunci Iklan
@@ -267,8 +267,11 @@ export function loadAdBanner(containerId, key, width, height) {
   }
 }
 
-// Helper to clear Adsterra frequency cap cookies & storage
-function clearAdsterraSession() {
+/**
+ * Menghapus frequency cap cookies Adsterra agar tayangan iklan bisa dimuat ulang
+ * Dipanggil setiap kali router SPA berpindah halaman.
+ */
+export function clearAdsterraSession() {
   try {
     // Clear cookies
     const cookies = document.cookie.split(";");
@@ -276,7 +279,6 @@ function clearAdsterraSession() {
       const cookie = cookies[i];
       const eqPos = cookie.indexOf("=");
       const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-      // Adsterra cookies typically have random names/hashes or start with _
       if (name.includes('adsterra') || name.startsWith('__') || name.length > 10) {
         document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
         document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
@@ -289,14 +291,14 @@ function clearAdsterraSession() {
         localStorage.removeItem(key);
       }
     }
-    // Clear sessionStorage
+    // Clear sessionStorage (kecuali sticky_ad_closed agar tidak reset)
     for (let key in sessionStorage) {
-      if (key.includes('adsterra') || key.includes('pop') || key.length > 10) {
+      if (key.includes('adsterra') || key.includes('pop')) {
         sessionStorage.removeItem(key);
       }
     }
   } catch (e) {
-    console.error('[Ads] Error clearing ad session:', e);
+    console.warn('[Ads] Error clearing ad session:', e);
   }
 }
 
@@ -459,7 +461,7 @@ export function loadNativeBannerAd(containerId) {
 }
 
 /**
- * Memuat iklan global top banner di list feed
+ * Memuat iklan global top banner di list feed dengan Lazy Loading
  */
 export function loadGlobalTopAd(containerId = 'top-global-ad') {
   const cfg = window.missavJAdConfig;
@@ -468,11 +470,15 @@ export function loadGlobalTopAd(containerId = 'top-global-ad') {
   const height = isMobile ? 50 : 90;
   const key = isMobile ? cfg.topMobileBannerKey : cfg.topBannerKey;
   
-  loadAdBanner(containerId, key, width, height);
+  // Lazy load agar hanya dimuat saat container masuk viewport (Viewability 100%)
+  lazyLoadAd(containerId, () => {
+    loadAdBanner(containerId, key, width, height);
+  });
 }
 
 /**
  * Memuat iklan sticky bottom mobile secara dinamis
+ * Sticky tampil lagi otomatis setiap 5 menit setelah user menutup
  */
 export function loadStickyBottomAd() {
   const cfg = window.missavJAdConfig;
@@ -485,8 +491,10 @@ export function loadStickyBottomAd() {
     return;
   }
 
-  // Jika user sudah pernah menutup iklan di sesi ini, jangan tampilkan lagi
-  if (sessionStorage.getItem('sticky_ad_closed') === 'true') {
+  // Cek apakah masih dalam cooldown (5 menit setelah ditutup)
+  const closedAt = parseInt(localStorage.getItem('sticky_ad_closed_at') || '0', 10);
+  const COOLDOWN_MS = 5 * 60 * 1000; // 5 menit
+  if (closedAt && (Date.now() - closedAt) < COOLDOWN_MS) {
     return;
   }
 
@@ -496,12 +504,14 @@ export function loadStickyBottomAd() {
   // Tampilkan container
   container.classList.remove('hidden');
 
-  // Inisialisasi tombol close
+  // Inisialisasi tombol close — simpan timestamp, bukan boolean permanen
   const closeBtn = document.getElementById('close-sticky-bottom-ad');
   if (closeBtn) {
-    closeBtn.onclick = () => {
+    const newBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newBtn, closeBtn);
+    newBtn.onclick = () => {
       container.classList.add('hidden');
-      sessionStorage.setItem('sticky_ad_closed', 'true');
+      localStorage.setItem('sticky_ad_closed_at', String(Date.now()));
     };
   }
 
@@ -521,5 +531,6 @@ window.missavJAds = {
   loadStickyBottomAd,
   initAdsterraPopunder,
   initAdsterraSocialBar,
+  clearAdsterraSession,
   adjustScaledBanners
 };
