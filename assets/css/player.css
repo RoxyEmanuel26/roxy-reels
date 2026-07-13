@@ -560,12 +560,29 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
   
   .player-sidebar-column {
     width: 100%;
-    order: 4;
+    order: 5;
   }
   
   #sponsor-native-banner { 
-    order: 5; 
+    order: 4; 
   }
+}
+
+/* Animasi Breathing Glow untuk Native Banner agar menarik perhatian (Meningkatkan CTR & CPM) */
+@keyframes attention-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.4); }
+  70% { box-shadow: 0 0 15px 10px rgba(229, 9, 20, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(229, 9, 20, 0); }
+}
+
+#sponsor-native-banner {
+  animation: attention-pulse 3s infinite;
+  transition: all 0.3s ease;
+}
+
+#sponsor-native-banner:hover {
+  animation: none;
+  box-shadow: 0 0 20px 5px rgba(229, 9, 20, 0.6);
 }
 
 @media (max-width: 767px) {
