@@ -4,12 +4,12 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.5.2';
+import ui from './ui.js?v=2.5.3';
 
 
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
-  popunderEnabled: false, // JANGAN DIHAPUS: Setel ke true untuk mengaktifkan kembali popunder
+  popunderEnabled: true, // JANGAN DIHAPUS: Setel ke true untuk mengaktifkan kembali popunder
   socialBarEnabled: true,
   // Tentukan provider banner: 'exoclick' atau 'adsterra'
   bannerProvider: 'adsterra',
