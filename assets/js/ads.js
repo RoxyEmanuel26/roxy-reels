@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.5.3';
+import ui from './ui.js?v=2.5.4';
 
 
 // Konfigurasi Kunci Iklan
@@ -345,36 +345,14 @@ export function initPlayerAdOverlay() {
  * Menginisialisasi pemuatan script popunder Adsterra secara dinamis di watch page
  */
 export function initAdsterraPopunder() {
-  const cfg = window.missavJAdConfig;
-  if (!cfg.popunderEnabled) return;
-
-  // Hindari memuat ulang jika script sudah ada di DOM
-  if (document.getElementById('adsterra-popunder-script')) return;
-
-  console.log('[Ads] Loading Adsterra popunder script dynamically on watch page...');
-  const script = document.createElement('script');
-  script.id = 'adsterra-popunder-script';
-  script.src = 'https://glamournakedemployee.com/b2/9e/1b/b29e1b8f1f4574a57f5873d55a1a1a29.js';
-  script.async = true;
-  document.head.appendChild(script);
+  // Script kini dimuat secara native melalui index.html agar lebih reliable di SPA
 }
 
 /**
  * Menginisialisasi pemuatan script Social Bar Adsterra secara dinamis
  */
 export function initAdsterraSocialBar() {
-  const cfg = window.missavJAdConfig;
-  if (!cfg.socialBarEnabled) return;
-
-  // Hindari memuat ulang jika script sudah ada di DOM
-  if (document.getElementById('adsterra-socialbar-script')) return;
-
-  console.log('[Ads] Loading Adsterra Social Bar script dynamically...');
-  const script = document.createElement('script');
-  script.id = 'adsterra-socialbar-script';
-  script.src = 'https://glamournakedemployee.com/c9/97/1d/c9971d54c2e1ed33b58dee3c4a998b66.js';
-  script.async = true;
-  document.head.appendChild(script);
+  // Script kini dimuat secara native melalui index.html agar lebih reliable di SPA
 }
 
 /**
