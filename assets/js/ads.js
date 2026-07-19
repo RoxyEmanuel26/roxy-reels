@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.5.4';
+import ui from './ui.js?v=2.5.5';
 
 
 // Konfigurasi Kunci Iklan
@@ -345,7 +345,18 @@ export function initPlayerAdOverlay() {
  * Menginisialisasi pemuatan script popunder Adsterra secara dinamis di watch page
  */
 export function initAdsterraPopunder() {
-  // Script kini dimuat secara native melalui index.html agar lebih reliable di SPA
+  const cfg = window.missavJAdConfig;
+  if (!cfg.popunderEnabled) return;
+
+  if (document.getElementById('adsterra-popunder-script')) return;
+
+  console.log('[Ads] Memuat Adsterra Popunder khusus untuk halaman Watch...');
+  const script = document.createElement('script');
+  script.id = 'adsterra-popunder-script';
+  script.type = 'text/javascript';
+  script.src = '//glamournakedemployee.com/b2/9e/1b/b29e1b8f1f4574a57f5873d55a1a1a29.js';
+  script.async = true;
+  document.head.appendChild(script);
 }
 
 /**
