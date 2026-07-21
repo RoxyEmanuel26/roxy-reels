@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.5.5';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.5.5';
-import i18n from './i18n.js?v=2.5.5';
-import { Analytics } from './analytics.js?v=2.5.5';
-import ReferralSystem from './referral.js?v=2.5.5';
-import './ads.js?v=2.5.5';
+import ui from './ui.js?v=2.5.6';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.5.6';
+import i18n from './i18n.js?v=2.5.6';
+import { Analytics } from './analytics.js?v=2.5.6';
+import ReferralSystem from './referral.js?v=2.5.6';
+import './ads.js?v=2.5.6';
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {
@@ -214,21 +214,21 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.5.5').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.5.5').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.5.5').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.5.5').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.5.5').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.5.5').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.5.5').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.5.5').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.5.5').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.5.6').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.5.6').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.5.6').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.5.6').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.5.6').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.5.6').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.5.6').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.5.6').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.5.6').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.5.5').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.5.5').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.5.5').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.5.5').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.5.6').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.5.6').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.5.6').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.5.6').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -568,7 +568,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.5.5').then(m => {
+    import('./player.js?v=2.5.6').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -579,7 +579,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.5.5').then(m => {
+    import('./player.js?v=2.5.6').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -661,7 +661,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.5.5').then(m => {
+  import('./player.js?v=2.5.6').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -855,7 +855,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.5.5').then(m => {
+      import('./player.js?v=2.5.6').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
@@ -995,7 +995,7 @@ function setupLegalModals() {
         li3: 'Specific URL links on our site containing the link you wish to have removed.',
         li4: 'Your contact details including Name, Email, and Phone.',
         li5: 'A statement that you have a good faith belief that use of the material is unauthorized.',
-        emailText: 'Please send your complaint directly to our workable compliance email address: compliance@missav-j.web.id',
+        emailText: 'Please send your complaint directly to our workable compliance email address: compliance@missav-j.com',
         footer: 'We will process your request and remove the infringing links within 24 to 48 business hours.'
       },
       'id': {
@@ -1008,7 +1008,7 @@ function setupLegalModals() {
         li3: 'URL spesifik di situs kami yang ingin dihapus.',
         li4: 'Informasi kontak Anda termasuk Nama, Email, dan Telepon.',
         li5: 'Pernyataan iktikad baik bahwa penggunaan materi tersebut tidak sah.',
-        emailText: 'Silakan kirimkan pengaduan Anda langsung ke email kepatuhan kami yang aktif: compliance@missav-j.web.id',
+        emailText: 'Silakan kirimkan pengaduan Anda langsung ke email kepatuhan kami yang aktif: compliance@missav-j.com',
         footer: 'Kami akan memproses permintaan Anda dan menghapus tautan yang melanggar dalam waktu 24 hingga 48 jam kerja.'
       },
       'zh-TW': {
@@ -1021,7 +1021,7 @@ function setupLegalModals() {
         li3: '我們網站上包含您希望刪除的連結的具體 URL 連結。',
         li4: '您的聯絡方式，包括姓名、電子郵件和電話。',
         li5: '聲明您誠實地相信該材料的使用未經授權。',
-        emailText: '請將您的投訴直接發送至我們的合規電子郵件地址：compliance@missav-j.web.id',
+        emailText: '請將您的投訴直接發送至我們的合規電子郵件地址：compliance@missav-j.com',
         footer: '我們將在 24 至 48 個工作小時內處理您的請求並刪除侵權連結。'
       },
       'zh-CN': {
@@ -1034,7 +1034,7 @@ function setupLegalModals() {
         li3: '我们网站上包含您希望删除的链接的具体 URL 链接。',
         li4: '您的联络方式，包括姓名、电子邮件和电话。',
         li5: '声明您诚实地相信该材料的使用未经授权。',
-        emailText: '请将您的投诉直接发送至我们的合规电子邮件地址：compliance@missav-j.web.id',
+        emailText: '请将您的投诉直接发送至我们的合规电子邮件地址：compliance@missav-j.com',
         footer: '我们将在 24 至 48 个工作小时内处理您的请求并删除侵权链接。'
       },
       'ja': {
@@ -1047,7 +1047,7 @@ function setupLegalModals() {
         li3: '削除を希望するリンクが含まれている、当サイト上の特定のURLリンク。',
         li4: '氏名、メールアドレス、電話番号を含む連絡先詳細。',
         li5: '素材の使用が許可されていないと善意で信じる旨の声明。',
-        emailText: '苦情は、弊社のアクティブなコンプライアンス電子メールアドレスに直接送信してください：compliance@missav-j.web.id',
+        emailText: '苦情は、弊社のアクティブなコンプライアンス電子メールアドレスに直接送信してください：compliance@missav-j.com',
         footer: '弊社はリクエストを処理し、24〜48営業時間内に対象リンクを削除いたします。'
       },
       'ko': {
@@ -1060,7 +1060,7 @@ function setupLegalModals() {
         li3: '삭제를 원하는 링크가 포함된 본 사이트의 특정 URL 주소.',
         li4: '성명, 이메일, 전화번호를 포함한 귀하의 연락처 정보.',
         li5: '해당 자료의 사용이 허가되지 않았다는 신념을 표명하는 진술서.',
-        emailText: '침해 신고는 당사의 활성 컴플라이언스 이메일 주소로 직접 보내주시기 바랍니다: compliance@missav-j.web.id',
+        emailText: '침해 신고는 당사의 활성 컴플라이언스 이메일 주소로 직접 보내주시기 바랍니다: compliance@missav-j.com',
         footer: '당사는 귀하의 요청을 처리하고 영업일 기준 24~48시간 이내에 침해 링크를 제거합니다.'
       },
       'ms': {
@@ -1073,7 +1073,7 @@ function setupLegalModals() {
         li3: 'Pautan URL khusus di laman web kami yang mengandungi pautan yang anda mahu dialih keluar.',
         li4: 'Butiran hubungan anda termasuk Nama, E-mel dan Telefon.',
         li5: 'Pernyataan bahawa anda mempunyai kepercayaan dengan niat baik bahawa penggunaan bahan tersebut tidak dibenarkan.',
-        emailText: 'Sila hantar aduan anda terus ke alamat e-mel pematuhan kami yang aktif: compliance@missav-j.web.id',
+        emailText: 'Sila hantar aduan anda terus ke alamat e-mel pematuhan kami yang aktif: compliance@missav-j.com',
         footer: 'Kami akan memproses permintaan anda dan mengalih keluar pautan yang melanggar dalam tempoh 24 hingga 48 jam perniagaan.'
       },
       'th': {
@@ -1086,7 +1086,7 @@ function setupLegalModals() {
         li3: 'ลิงก์ URL เฉพาะบนไซต์ของเราที่มีลิงก์ที่คุณต้องการให้นำออก',
         li4: 'รายละเอียดการติดต่อของคุณ รวมถึงชื่อ อีเมล และโทรศัพท์',
         li5: 'คำแถลงว่าคุณเชื่อโดยสุจริตว่าการใช้เนื้อหานั้นไม่ได้รับอนุญาต',
-        emailText: 'โปรดส่งข้อร้องเรียนของคุณไปยังที่อยู่อีเมลการปฏิบัติตามข้อกำหนดของเราโดยตรงที่: compliance@missav-j.web.id',
+        emailText: 'โปรดส่งข้อร้องเรียนของคุณไปยังที่อยู่อีเมลการปฏิบัติตามข้อกำหนดของเราโดยตรงที่: compliance@missav-j.com',
         footer: 'เราจะดำเนินการตามคำขอของคุณและนำลิงก์ที่ละเมิดออกภายใน 24 ถึง 48 ชั่วโมงทำการ'
       },
       'de': {
@@ -1099,7 +1099,7 @@ function setupLegalModals() {
         li3: 'Spezifische URL-Links auf unserer Website, die den zu entfernenden Link enthalten.',
         li4: 'Ihre Kontaktdaten einschließlich Name, E-Mail-Adresse und Telefonnummer.',
         li5: 'Eine Erklärung, dass Sie in gutem Glauben davon ausgehen, dass die Nutzung des Materials nicht genehmigt ist.',
-        emailText: 'Bitte senden Sie Ihre Beschwerde direkt an unsere aktive Compliance-E-Mail-Adresse: compliance@missav-j.web.id',
+        emailText: 'Bitte senden Sie Ihre Beschwerde direkt an unsere aktive Compliance-E-Mail-Adresse: compliance@missav-j.com',
         footer: 'Wir werden Ihre Anfrage bearbeiten und die verletzenden Links innerhalb von 24 bis 48 Geschäftsstunden entfernen.'
       },
       'fr': {
@@ -1112,7 +1112,7 @@ function setupLegalModals() {
         li3: 'Liens URL spécifiques sur notre site contenant le lien que vous souhaitez faire supprimer.',
         li4: 'Vos coordonnées y compris votre nom, adresse e-mail et numéro de téléphone.',
         li5: 'Une déclaration selon laquelle vous croyez de bonne foi que l\'utilisation du matériel n\'est pas autorisée.',
-        emailText: 'Veuillez envoyer votre plainte directement à notre adresse e-mail de conformité active : compliance@missav-j.web.id',
+        emailText: 'Veuillez envoyer votre plainte directement à notre adresse e-mail de conformité active : compliance@missav-j.com',
         footer: 'Nous traiterons votre demande et supprimerons les liens contrefaits dans un délai de 24 à 48 heures ouvrables.'
       },
       'vi': {
@@ -1125,7 +1125,7 @@ function setupLegalModals() {
         li3: 'Các liên kết URL cụ thể trên trang web của chúng tôi chứa liên kết bạn muốn xóa.',
         li4: 'Thông tin liên hệ của bạn bao gồm Tên, Email và Điện thoại.',
         li5: 'Một tuyên bố rằng bạn tin tưởng một cách thiện chí rằng việc sử dụng tài liệu đó là không được phép.',
-        emailText: 'Vui lòng gửi khiếu nại của bạn trực tiếp đến địa chỉ email tuân thủ đang hoạt động của chúng tôi: compliance@missav-j.web.id',
+        emailText: 'Vui lòng gửi khiếu nại của bạn trực tiếp đến địa chỉ email tuân thủ đang hoạt động của chúng tôi: compliance@missav-j.com',
         footer: 'Chúng tôi sẽ xử lý yêu cầu của bạn và xóa các liên kết vi phạm trong vòng 24 đến 48 giờ làm việc.'
       },
       'fil': {
@@ -1138,7 +1138,7 @@ function setupLegalModals() {
         li3: 'Tiyak na mga URL link sa aming site na naglalaman ng link na nais mong alisin.',
         li4: 'Iyong mga detalye sa pakikipag-ugnayan kabilang ang Pangalan, Email, at Telepono.',
         li5: 'Isang pahayag na naniniwala ka nang may mabuting katapatan na ang paggamit ng materyal ay walang pahintulot.',
-        emailText: 'Mangyaring ipadala ang iyong reklamo nang direkta sa aming aktibong email address ng pagsunod: compliance@missav-j.web.id',
+        emailText: 'Mangyaring ipadala ang iyong reklamo nang direkta sa aming aktibong email address ng pagsunod: compliance@missav-j.com',
         footer: 'Ipoproseso namin ang iyong kahilingan at aalisin ang mga lumalabag na link sa loob ng 24 hanggang 48 oras ng negosyo.'
       },
       'pt': {
@@ -1151,7 +1151,7 @@ function setupLegalModals() {
         li3: 'Links de URL específicos em nosso site contendo o link que você deseja remover.',
         li4: 'Seus detalhes de contato, incluindo Nome, E-mail e Telefone.',
         li5: 'Uma declaração de que você acredita de boa-fé que o uso do material não é autorizado.',
-        emailText: 'Envie sua reclamação diretamente para nosso endereço de e-mail de conformidade ativo: compliance@missav-j.web.id',
+        emailText: 'Envie sua reclamação diretamente para nosso endereço de e-mail de conformidade ativo: compliance@missav-j.com',
         footer: 'Processaremos sua solicitação e removeremos os links infratores em até 24 a 48 horas úteis.'
       }
     },
@@ -1161,7 +1161,7 @@ function setupLegalModals() {
         adsText: 'For advertising placements, banner sponsorships, partnerships, or business proposals, please contact our advertising team.',
         supportHeader: 'General Support',
         supportText: 'For website feedback, technical issues, content inquiries, or general support requests, feel free to reach out.',
-        emailText: 'Send your inquiries directly to our contact email: compliance@missav-j.web.id',
+        emailText: 'Send your inquiries directly to our contact email: compliance@missav-j.com',
         footer: 'We typically respond to all legitimate inquiries within 24 to 48 business hours.'
       },
       'id': {
@@ -1169,7 +1169,7 @@ function setupLegalModals() {
         adsText: 'Untuk penawaran iklan, penempatan banner, kemitraan, atau proposal bisnis, silakan hubungi tim periklanan kami.',
         supportHeader: 'Dukungan Umum',
         supportText: 'Untuk pertanyaan umum, kendala teknis, masukan situs web, atau bantuan lainnya, jangan ragu untuk menghubungi kami.',
-        emailText: 'Kirim pertanyaan Anda langsung ke email kontak kami: compliance@missav-j.web.id',
+        emailText: 'Kirim pertanyaan Anda langsung ke email kontak kami: compliance@missav-j.com',
         footer: 'Kami biasanya menanggapi semua pertanyaan resmi dalam waktu 24 hingga 48 jam hari kerja.'
       },
       'zh-TW': {
@@ -1177,7 +1177,7 @@ function setupLegalModals() {
         adsText: '如需廣告投放、橫幅贊助、合作夥伴關係或商業提案，請與我們的廣告團隊聯絡。',
         supportHeader: '一般支援',
         supportText: '對於網站反饋、技術問題、內容諮詢或一般支援請求，請隨時與我們聯絡。',
-        emailText: '請將您的諮詢直接發送至我們的聯絡電子郵件：compliance@missav-j.web.id',
+        emailText: '請將您的諮詢直接發送至我們的聯絡電子郵件：compliance@missav-j.com',
         footer: '我們通常會在 24 至 48 個工作小時內回覆所有合法諮詢。'
       },
       'zh-CN': {
@@ -1185,7 +1185,7 @@ function setupLegalModals() {
         adsText: '如需广告投放、横幅赞助、合作伙伴关系 or 商业提案，请与我们的广告团队联络。',
         supportHeader: '一般支援',
         supportText: '对于网站反馈、技术问题、内容咨询 or 一般支援请求，请随时与我们联络。',
-        emailText: '请将您的咨询直接发送至我们的联络电子邮件：compliance@missav-j.web.id',
+        emailText: '请将您的咨询直接发送至我们的联络电子邮件：compliance@missav-j.com',
         footer: '我们通常会在 24 至 48 个工作小时内回复所有合法咨询。'
       },
       'ja': {
@@ -1193,7 +1193,7 @@ function setupLegalModals() {
         adsText: '広告掲載、バナースポンサーシップ、提携、またはビジネス提案については、広告チームまでお問い合わせください。',
         supportHeader: '一般的なサポート',
         supportText: 'ウェブサイトのフィードバック、技術的な問題、コンテンツに関するお問い合わせ、または一般的なサポートリクエストについては、お気軽にお問い合わせください。',
-        emailText: 'お問い合わせは、連絡先メールアドレスまで直接送信してください：compliance@missav-j.web.id',
+        emailText: 'お問い合わせは、連絡先メールアドレスまで直接送信してください：compliance@missav-j.com',
         footer: '通常、営業日24〜48時間以内にすべての正当なお問い合わせに対応いたします。'
       },
       'ko': {
@@ -1201,7 +1201,7 @@ function setupLegalModals() {
         adsText: '광고 게재, 배너 후원, 제휴 또는 비즈니스 제안은 광고 팀에 문의하십시오.',
         supportHeader: '일반 지원',
         supportText: '웹사이트 피드백, 기술적 문제, 콘텐츠 문의 또는 일반적인 지원 요청은 언제든지 문의해 주십시오.',
-        emailText: '문의 사항은 공식 연락처 이메일로 직접 보내주십시오: compliance@missav-j.web.id',
+        emailText: '문의 사항은 공식 연락처 이메일로 직접 보내주십시오: compliance@missav-j.com',
         footer: '당사는 영업일 기준 24~48시간 이내에 모든 합법적인 문의에 답변해 드립니다.'
       },
       'ms': {
@@ -1209,7 +1209,7 @@ function setupLegalModals() {
         adsText: 'Untuk penempatan iklan, penajaan banner, perkongsian, atau cadangan perniagaan, sila hubungi pasukan pengiklanan kami.',
         supportHeader: 'Sokongan Umum',
         supportText: 'Untuk maklum balas laman web, isu teknikal, pertanyaan kandungan, atau permintaan sokongan umum, sila hubungi kami.',
-        emailText: 'Hantar pertanyaan anda terus ke e-mel hubungan kami: compliance@missav-j.web.id',
+        emailText: 'Hantar pertanyaan anda terus ke e-mel hubungan kami: compliance@missav-j.com',
         footer: 'Kami biasanya maklum balas kepada semua pertanyaan rasmi dalam masa 24 hingga 48 jam waktu bekerja.'
       },
       'th': {
@@ -1217,7 +1217,7 @@ function setupLegalModals() {
         adsText: 'สำหรับการลงโฆษณา สปอนเซอร์แบนเนอร์ พันธมิตร หรือข้อเสนอทางธุรกิจ โปรดติดต่อทีมโฆษณาของเรา',
         supportHeader: 'การสนับสนุนทั่วไป',
         supportText: 'สำหรับข้อเสนอแนะเกี่ยวกับเว็บไซต์ ปัญหาทางเทคนิค การสอบถามข้อมูลเนื้อหา หรือคำขอรับความช่วยเหลือทั่วไป โปรดติดต่อเรา',
-        emailText: 'ส่งคำถามของคุณโดยตรงไปที่อีเมลติดต่อของเรา: compliance@missav-j.web.id',
+        emailText: 'ส่งคำถามของคุณโดยตรงไปที่อีเมลติดต่อของเรา: compliance@missav-j.com',
         footer: 'ปกติเราจะตอบกลับคำถามที่เป็นทางการทั้งหมดภายใน 24 ถึง 48 ชั่วโมงทำการ'
       },
       'de': {
@@ -1225,7 +1225,7 @@ function setupLegalModals() {
         adsText: 'Für Werbeplatzierungen, Bannersponsorings, Partnerships oder Geschäftsvorschläge wenden Sie sich bitte an unser Werbeteam.',
         supportHeader: 'Allgemeiner Support',
         supportText: 'Bei Feedback zur Website, technischen Problemen, Inhaltsanfragen oder allgemeinen Supportanfragen können Sie sich gerne an uns wenden.',
-        emailText: 'Senden Sie Ihre Anfragen direkt an unsere Kontakt-E-Mail: compliance@missav-j.web.id',
+        emailText: 'Senden Sie Ihre Anfragen direkt an unsere Kontakt-E-Mail: compliance@missav-j.com',
         footer: 'Wir antworten in der Regel auf alle legitimen Anfragen innerhalb von 24 bis 48 Geschäftsstunden.'
       },
       'fr': {
@@ -1233,7 +1233,7 @@ function setupLegalModals() {
         adsText: 'Pour les placements publicitaires, les parrainages de bannières, les partenariats ou les propositions commerciales, veuillez contacter notre équipe publicitaire.',
         supportHeader: 'Support Général',
         supportText: 'Pour les retours sur le site web, les problèmes techniques, les demandes de contenu ou les demandes de support général, n\'hésitez pas à nous contacter.',
-        emailText: 'Envoyez vos demandes directement à notre adresse e-mail de contact : compliance@missav-j.web.id',
+        emailText: 'Envoyez vos demandes directement à notre adresse e-mail de contact : compliance@missav-j.com',
         footer: 'Nous répondons généralement à toutes les demandes légitimes dans les 24 à 48 heures ouvrables.'
       },
       'vi': {
@@ -1241,7 +1241,7 @@ function setupLegalModals() {
         adsText: 'Đối với các vị trí đặt quảng cáo, tài trợ biểu ngữ, quan hệ đối tác hoặc đề xuất kinh doanh, vui lòng liên hệ với nhóm quảng cáo của chúng tôi.',
         supportHeader: 'Hỗ trợ chung',
         supportText: 'Đối với phản hồi về trang web, sự cố kỹ thuật, câu hỏi về nội dung hoặc yêu cầu hỗ trợ chung, vui lòng liên hệ với chúng tôi.',
-        emailText: 'Gửi yêu cầu của bạn trực tiếp đến email liên hệ của chúng tôi: compliance@missav-j.web.id',
+        emailText: 'Gửi yêu cầu của bạn trực tiếp đến email liên hệ của chúng tôi: compliance@missav-j.com',
         footer: 'Chúng tôi thường phản hồi tất cả các yêu cầu hợp lệ trong vòng 24 đến 48 giờ làm việc.'
       },
       'fil': {
@@ -1249,7 +1249,7 @@ function setupLegalModals() {
         adsText: 'Para sa mga pagkakalagay ng patalastas, mga sponsorship ng banner, pakikipagtulungan, o mga panukalang negosyo, mangyaring makipag-ugnayan sa aming koponan sa patalastas.',
         supportHeader: 'Pangkalahatang Suporta',
         supportText: 'Para sa feedback sa website, mga teknikal na isyu, mga pagtatanong sa nilalaman, o mga pangkalahatang kahilingan sa suporta, huwag mag-atubiling makipag-ugnayan.',
-        emailText: 'Ipadala ang iyong mga katanungan nang direkta sa aming contact email: compliance@missav-j.web.id',
+        emailText: 'Ipadala ang iyong mga katanungan nang direkta sa aming contact email: compliance@missav-j.com',
         footer: 'Karaniwan kaming tumutugon sa lahat ng lehitimong katanungan sa loob ng 24 hanggang 48 oras ng negosyo.'
       },
       'pt': {
@@ -1257,7 +1257,7 @@ function setupLegalModals() {
         adsText: 'Para veiculação de anúncios, patrocínio de banners, parcerias ou propostas comerciais, entre em contato com nossa equipe de publicidade.',
         supportHeader: 'Suporte Geral',
         supportText: 'Para feedback do site, problemas técnicos, consultas de conteúdo ou solicitações de suporte geral, sinta-se à vontade para entrar em contato.',
-        emailText: 'Envie suas dúvidas diretamente para o nosso e-mail de contato: compliance@missav-j.web.id',
+        emailText: 'Envie suas dúvidas diretamente para o nosso e-mail de contato: compliance@missav-j.com',
         footer: 'Geralmente respondemos a todas as consultas legítimas dentro de 24 a 48 horas úteis.'
       }
     }
@@ -1316,7 +1316,7 @@ function setupLegalModals() {
             <li>${contentLang.li5}</li>
           </ul>
           <p style="margin-bottom: 12px; line-height: 1.5;">
-            ${contentLang.emailText.replace('compliance@missav-j.web.id', '<strong style="color: var(--color-accent, #ff003c); font-weight: 700;">compliance@missav-j.web.id</strong>')}
+            ${contentLang.emailText.replace('compliance@missav-j.com', '<strong style="color: var(--color-accent, #ff003c); font-weight: 700;">compliance@missav-j.com</strong>')}
           </p>
           <p style="margin-bottom: 12px; line-height: 1.5;">${contentLang.footer}</p>
         </div>
@@ -1338,7 +1338,7 @@ function setupLegalModals() {
               <li>${contentEn.li5}</li>
             </ul>
             <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">
-              ${contentEn.emailText.replace('compliance@missav-j.web.id', '<strong style="font-weight: 700;">compliance@missav-j.web.id</strong>')}
+              ${contentEn.emailText.replace('compliance@missav-j.com', '<strong style="font-weight: 700;">compliance@missav-j.com</strong>')}
             </p>
             <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.footer}</p>
           </div>
@@ -1360,7 +1360,7 @@ function setupLegalModals() {
           <p style="margin-bottom: 16px; line-height: 1.5;">${contentLang.supportText}</p>
           
           <p style="margin-bottom: 12px; line-height: 1.5;">
-            ${contentLang.emailText.replace('compliance@missav-j.web.id', '<strong style="color: var(--color-accent, #ff003c); font-weight: 700;">compliance@missav-j.web.id</strong>')}
+            ${contentLang.emailText.replace('compliance@missav-j.com', '<strong style="color: var(--color-accent, #ff003c); font-weight: 700;">compliance@missav-j.com</strong>')}
           </p>
           <p style="margin-bottom: 12px; line-height: 1.5; color: var(--color-text-muted, #aaa);">${contentLang.footer}</p>
         </div>
@@ -1377,7 +1377,7 @@ function setupLegalModals() {
             <p style="margin-bottom: 16px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.supportText}</p>
             
             <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">
-              ${contentEn.emailText.replace('compliance@missav-j.web.id', '<strong style="font-weight: 700;">compliance@missav-j.web.id</strong>')}
+              ${contentEn.emailText.replace('compliance@missav-j.com', '<strong style="font-weight: 700;">compliance@missav-j.com</strong>')}
             </p>
             <p style="margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted, #888);">${contentEn.footer}</p>
           </div>

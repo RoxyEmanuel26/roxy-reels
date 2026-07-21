@@ -19,7 +19,7 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
 
 // Domain constant
-const DOMAIN = 'https://www.missav-j.web.id';
+const DOMAIN = 'https://www.missav-j.com';
 
 // Static page routes with SEO metadata
 const STATIC_ROUTES = [
@@ -260,7 +260,7 @@ async function generateSitemapIndex(domain) {
   let totalPosts = 113191; // Default fallback
   try {
     const headRes = await fetch(`${TARGET_BASE}?per_page=1`, {
-      headers: { 'X-Client-Site': 'https://www.missav-j.web.id' }
+      headers: { 'X-Client-Site': 'https://www.missav-j.com' }
     });
     if (headRes.ok) {
       const totalHeader = headRes.headers.get('X-WP-Total');
@@ -321,7 +321,7 @@ async function generateSitemapIndex(domain) {
 async function generateVideoSitemap(lang, page, domain) {
   // Fetch posts for this page
   const postsRes = await fetch(`${TARGET_BASE}?per_page=1000&page=${page}`, {
-    headers: { 'X-Client-Site': 'https://www.missav-j.web.id' }
+    headers: { 'X-Client-Site': 'https://www.missav-j.com' }
   });
 
   if (!postsRes.ok) {
@@ -398,7 +398,7 @@ module.exports = async (req, res) => {
 
     // Determine domain from request headers
     const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const host = req.headers.host || 'www.missav-j.web.id';
+    const host = req.headers.host || 'www.missav-j.com';
     const domain = `${protocol}://${host}`;
 
     // Standard response headers for all XML responses

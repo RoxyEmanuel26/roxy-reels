@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 # ═══════════════════════════════════════════════════════════════════════════════
 # KONFIGURASI
 # ═══════════════════════════════════════════════════════════════════════════════
-$baseUrl       = 'https://www.missav-j.web.id'
+$baseUrl       = 'https://www.missav-j.com'
 $apiBaseUrl    = 'https://server.apijav.com/wp-json/myvideo/v1/posts'
 $dateStr       = Get-Date -Format "yyyy-MM-ddTHH:mm:ss+07:00"
 $todayStr      = Get-Date -Format "yyyy-MM-dd"
@@ -483,7 +483,7 @@ $totalPages = 114
 try {
     $apiUrlHead = $apiBaseUrl + "?per_page=1"
     $headResponse = Invoke-WebRequest -Uri $apiUrlHead -Method Get -Headers @{
-        'X-Client-Site' = 'https://www.missav-j.web.id'
+        'X-Client-Site' = 'https://www.missav-j.com'
     } -TimeoutSec 15 -UseBasicParsing
 
     $totalHeader = $headResponse.Headers['X-WP-Total']
@@ -527,7 +527,7 @@ for ($page = 1; $page -le $totalPages; $page++) {
     try {
         $apiUrlPage = $apiBaseUrl + "?per_page=$perPage" + "&page=$page"
         $posts = Invoke-RestMethod -Uri $apiUrlPage -Method Get -Headers @{
-            'X-Client-Site' = 'https://www.missav-j.web.id'
+            'X-Client-Site' = 'https://www.missav-j.com'
         } -TimeoutSec 120
         $state.grandTotalRequests++
     } catch {

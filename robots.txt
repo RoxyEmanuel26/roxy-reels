@@ -35,4 +35,4 @@ Disallow: /assets/js/
 Disallow: /assets/css/
 
 # Sitemaps
-Sitemap: https://www.missav-j.web.id/sitemaps/sitemap_index.xml
+Sitemap: https://www.missav-j.com/sitemaps/sitemap_index.xml

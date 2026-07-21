@@ -51,4 +51,4 @@ async function testAsGooglebot(url) {
 }
 
 // Test with one of the failed URLs
-testAsGooglebot('https://www.missav-j.web.id/en/watch/gajk-029-gajk-029-a-schoolgirl-is-tied-up-and-trained-in-the-storehouse-her-stepfather-disciplines-her-96475');
+testAsGooglebot('https://www.missav-j.com/en/watch/gajk-029-gajk-029-a-schoolgirl-is-tied-up-and-trained-in-the-storehouse-her-stepfather-disciplines-her-96475');

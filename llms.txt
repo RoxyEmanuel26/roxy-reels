@@ -6,12 +6,12 @@
 MISSAV-J adalah platform streaming video dengan fokus pada UI responsif, mode gelap (dark mode), dan navigasi Single-Page Application (SPA) yang sangat cepat. Platform ini dirancang untuk memberikan pengalaman menonton video terbaik.
 
 ## Direktori Utama
-- Homepage: https://www.missav-j.web.id
-- Trending: https://www.missav-j.web.id/trending
-- Recent Uploads: https://www.missav-j.web.id/recent
-- Actors: https://www.missav-j.web.id/actors
-- Categories: https://www.missav-j.web.id/categories
-- Studios: https://www.missav-j.web.id/studios
+- Homepage: https://www.missav-j.com
+- Trending: https://www.missav-j.com/trending
+- Recent Uploads: https://www.missav-j.com/recent
+- Actors: https://www.missav-j.com/actors
+- Categories: https://www.missav-j.com/categories
+- Studios: https://www.missav-j.com/studios
 
 ## Fitur Teknis
 - 13 Bahasa yang didukung: en, id, ja, ko, zh-cn, zh-tw, dll.

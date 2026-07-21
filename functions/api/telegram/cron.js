@@ -399,7 +399,7 @@ ${hashtags.join(' ')}`;
       try {
         const payload = {
           chat_id: chatId,
-          photo: post.thumbnail || 'https://www.missav-j.web.id/assets/images/logo.png',
+          photo: post.thumbnail || 'https://www.missav-j.com/assets/images/logo.png',
           caption: captionText,
           parse_mode: 'Markdown',
           reply_markup: {

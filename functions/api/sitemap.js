@@ -8,7 +8,7 @@ import CATEGORIES from '../../api/categories.json';
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1/posts';
 
 const LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
-const DOMAIN = 'https://www.missav-j.web.id';
+const DOMAIN = 'https://www.missav-j.com';
 
 const STATIC_ROUTES = [
   { path: '',               priority: '1.0', changefreq: 'daily' },
@@ -218,7 +218,7 @@ async function generateSitemapIndex(domain) {
   let totalPosts = 113191;
   try {
     const headRes = await fetch(`${TARGET_BASE}?per_page=1`, {
-      headers: { 'X-Client-Site': 'https://www.missav-j.web.id' }
+      headers: { 'X-Client-Site': 'https://www.missav-j.com' }
     });
     if (headRes.ok) {
       const totalHeader = headRes.headers.get('X-WP-Total');
@@ -271,7 +271,7 @@ async function generateSitemapIndex(domain) {
 
 async function generateVideoSitemap(lang, page, domain, supabaseUrl, supabaseKey) {
   const postsRes = await fetch(`${TARGET_BASE}?per_page=1000&page=${page}`, {
-    headers: { 'X-Client-Site': 'https://www.missav-j.web.id' }
+    headers: { 'X-Client-Site': 'https://www.missav-j.com' }
   });
 
   if (!postsRes.ok) {
@@ -350,7 +350,7 @@ export async function onRequest(context) {
     const SUPABASE_URL = env.SUPABASE_URL;
     const SUPABASE_KEY = env.SUPABASE_KEY;
 
-    const host = request.headers.get('host') || 'www.missav-j.web.id';
+    const host = request.headers.get('host') || 'www.missav-j.com';
     const domain = `https://${host}`;
 
     const sendXml = (xml, statusCode = 200) => {
