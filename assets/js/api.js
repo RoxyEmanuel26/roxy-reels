@@ -1,10 +1,9 @@
 /**
  * MISSAV-J — API Client Wrapper
- * Mengintegrasikan front-end dengan apiJAV REST API.
- * Menyediakan fungsi-fungsi fetch terbungkus dengan penanganan error.
+ * Mengintegrasikan front-end dengan apiJAV REST API melalui Cloudflare Pages Proxy (/api).
  */
 
-const BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const BASE = '/api';
 
 function getActiveLang() {
   const segments = window.location.pathname.replace(/^\//, '').split('/');
@@ -34,23 +33,10 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
   }
 }
 
-async function fetchWithFallback(directUrl, fallbackPath, options = {}, timeout = 10000) {
-  try {
-    const res = await fetchWithTimeout(directUrl, options, timeout);
-    if (res.ok) return res;
-    // Jika direct API mengembalikan error HTTP (selain 200 OK), coba fallback ke proxy internal
-    console.warn(`[API] Direct request failed (${res.status}), trying proxy fallback: ${fallbackPath}`);
-    return await fetchWithTimeout(fallbackPath, options, timeout);
-  } catch (err) {
-    console.warn(`[API] Direct request network error (${err.message}), trying proxy fallback: ${fallbackPath}`);
-    return await fetchWithTimeout(fallbackPath, options, timeout);
-  }
-}
-
 const api = {
   /**
    * Mengambil daftar video (feed & listing) dengan query parameters.
-   * @param {Object} params - Query parameters (per_page, page, search, category, tag, actor, studio, orderby, order, after)
+   * @param {Object} params - Query parameters
    * @returns {Promise<{posts: Array, total: number, totalPages: number}>}
    */
   async getPosts(params = {}) {
@@ -58,7 +44,6 @@ const api = {
       const lang = getActiveLang();
       const cleanParams = { lang };
       
-      // Bersihkan parameter dari nilai kosong/null/undefined agar tidak mengotori query string
       Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
           cleanParams[key] = params[key];
@@ -66,18 +51,17 @@ const api = {
       });
 
       const qs = new URLSearchParams(cleanParams).toString();
-      const directUrl = `${BASE}/posts?${qs}`;
-      const fallbackUrl = `/api/posts?${qs}`;
+      const url = `${BASE}/posts?${qs}`;
       
-      if (apiCache.has(directUrl)) {
-        return apiCache.get(directUrl);
+      if (apiCache.has(url)) {
+        return apiCache.get(url);
       }
-      if (fetchPromises.has(directUrl)) {
-        return fetchPromises.get(directUrl);
+      if (fetchPromises.has(url)) {
+        return fetchPromises.get(url);
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithFallback(directUrl, fallbackUrl);
+        const res = await fetchWithTimeout(url);
         
         if (!res.ok) {
           throw new Error(`API Error ${res.status}: ${res.statusText}`);
@@ -85,7 +69,6 @@ const api = {
         
         const posts = await res.json();
         
-        // Baca dan parse response headers untuk keperluan pagination di UI
         const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
         const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
         
@@ -95,12 +78,12 @@ const api = {
           totalPages: totalPages || (posts.totalPages ? parseInt(posts.totalPages, 10) : 1)
         };
         
-        apiCache.set(directUrl, result);
-        fetchPromises.delete(directUrl);
+        apiCache.set(url, result);
+        fetchPromises.delete(url);
         return result;
       })();
       
-      fetchPromises.set(directUrl, fetchPromise);
+      fetchPromises.set(url, fetchPromise);
       return fetchPromise;
     } catch (error) {
       console.error('[API getPosts Error]', error);
@@ -118,27 +101,23 @@ const api = {
       if (!id) throw new Error('Post ID wajib disertakan');
       const lang = getActiveLang();
       const cacheKey = `post:${id}:${lang}`;
-      const directUrl = `${BASE}/posts/${id}?lang=${lang}`;
-      const fallbackUrl = `/api/posts/${id}?lang=${lang}`;
+      const url = `${BASE}/posts/${id}?lang=${lang}`;
       
-      // 1. Cek apakah ada SSR state yang diinjeksi oleh Cloudflare
       if (window.__SSR_POST__ && String(window.__SSR_POST__.id) === String(id)) {
         apiCache.set(cacheKey, window.__SSR_POST__);
-        delete window.__SSR_POST__; // Hapus dari global agar tidak menumpuk
+        delete window.__SSR_POST__;
       }
 
-      // 2. Cek in-memory cache
       if (apiCache.has(cacheKey)) {
         return apiCache.get(cacheKey);
       }
 
-      // 3. Cek in-flight request deduplication
       if (fetchPromises.has(cacheKey)) {
         return fetchPromises.get(cacheKey);
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithFallback(directUrl, fallbackUrl);
+        const res = await fetchWithTimeout(url);
         
         if (!res.ok) {
           throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
@@ -168,8 +147,7 @@ const api = {
       if (!id) throw new Error('Player ID wajib disertakan');
       const lang = getActiveLang();
       const cacheKey = `player:${id}:${lang}`;
-      const directUrl = `${BASE}/player/${id}?lang=${lang}`;
-      const fallbackUrl = `/api/player/${id}?lang=${lang}`;
+      const url = `${BASE}/player/${id}?lang=${lang}`;
       
       if (apiCache.has(cacheKey)) {
         return apiCache.get(cacheKey);
@@ -179,7 +157,7 @@ const api = {
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithFallback(directUrl, fallbackUrl);
+        const res = await fetchWithTimeout(url);
         
         if (!res.ok) {
           throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);

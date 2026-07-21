@@ -244,9 +244,10 @@ export async function onRequest(context) {
           const response = await fetch(pageUrl.toString(), {
             method: 'GET',
             headers: {
-              'Accept': 'application/json, text/plain, */*',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-              'Accept-Language': 'en-US,en;q=0.9'
+              'Accept': 'application/json',
+              'X-Client-Site': 'https://www.missav-j.web.id',
+              'Referer': 'https://www.missav-j.web.id/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
             },
             signal: controller.signal
           });
@@ -275,9 +276,10 @@ export async function onRequest(context) {
         response = await fetch(targetUrl.toString(), {
           method: 'GET',
           headers: {
-            'Accept': 'application/json, text/plain, */*',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9'
+            'Accept': 'application/json',
+            'X-Client-Site': 'https://www.missav-j.web.id',
+            'Referer': 'https://www.missav-j.web.id/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
           },
           signal: controller.signal
         });
