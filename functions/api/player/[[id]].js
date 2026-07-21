@@ -56,7 +56,7 @@ export async function onRequest(context) {
     }
 
     const targetUrl = `${TARGET_BASE}/player/${id}`;
-    const clientSite = request.headers.get('x-client-site') || 'https://missav-j.vercel.app';
+    const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);

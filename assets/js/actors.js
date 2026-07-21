@@ -4,9 +4,9 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js?v=2.5.7';
-import i18n from './i18n.js?v=2.5.7';
-import { ALL_ACTORS } from './actors_data.js?v=2.5.7';
+import ui from './ui.js?v=2.5.8';
+import i18n from './i18n.js?v=2.5.8';
+import { ALL_ACTORS } from './actors_data.js?v=2.5.8';
 
 /**
  * Render actor grid cards based on filtered data

@@ -34,6 +34,19 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
   }
 }
 
+async function fetchWithFallback(directUrl, fallbackPath, options = {}, timeout = 10000) {
+  try {
+    const res = await fetchWithTimeout(directUrl, options, timeout);
+    if (res.ok) return res;
+    // Jika direct API mengembalikan error HTTP (selain 200 OK), coba fallback ke proxy internal
+    console.warn(`[API] Direct request failed (${res.status}), trying proxy fallback: ${fallbackPath}`);
+    return await fetchWithTimeout(fallbackPath, options, timeout);
+  } catch (err) {
+    console.warn(`[API] Direct request network error (${err.message}), trying proxy fallback: ${fallbackPath}`);
+    return await fetchWithTimeout(fallbackPath, options, timeout);
+  }
+}
+
 const api = {
   /**
    * Mengambil daftar video (feed & listing) dengan query parameters.
@@ -53,17 +66,18 @@ const api = {
       });
 
       const qs = new URLSearchParams(cleanParams).toString();
-      const url = `${BASE}/posts?${qs}`;
+      const directUrl = `${BASE}/posts?${qs}`;
+      const fallbackUrl = `/api/posts?${qs}`;
       
-      if (apiCache.has(url)) {
-        return apiCache.get(url);
+      if (apiCache.has(directUrl)) {
+        return apiCache.get(directUrl);
       }
-      if (fetchPromises.has(url)) {
-        return fetchPromises.get(url);
+      if (fetchPromises.has(directUrl)) {
+        return fetchPromises.get(directUrl);
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithTimeout(url);
+        const res = await fetchWithFallback(directUrl, fallbackUrl);
         
         if (!res.ok) {
           throw new Error(`API Error ${res.status}: ${res.statusText}`);
@@ -76,17 +90,17 @@ const api = {
         const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
         
         const result = {
-          posts: Array.isArray(posts) ? posts : [],
-          total,
-          totalPages
+          posts: Array.isArray(posts) ? posts : (posts.posts || []),
+          total: total || (posts.total ? parseInt(posts.total, 10) : 0),
+          totalPages: totalPages || (posts.totalPages ? parseInt(posts.totalPages, 10) : 1)
         };
         
-        apiCache.set(url, result);
-        fetchPromises.delete(url);
+        apiCache.set(directUrl, result);
+        fetchPromises.delete(directUrl);
         return result;
       })();
       
-      fetchPromises.set(url, fetchPromise);
+      fetchPromises.set(directUrl, fetchPromise);
       return fetchPromise;
     } catch (error) {
       console.error('[API getPosts Error]', error);
@@ -104,6 +118,8 @@ const api = {
       if (!id) throw new Error('Post ID wajib disertakan');
       const lang = getActiveLang();
       const cacheKey = `post:${id}:${lang}`;
+      const directUrl = `${BASE}/posts/${id}?lang=${lang}`;
+      const fallbackUrl = `/api/posts/${id}?lang=${lang}`;
       
       // 1. Cek apakah ada SSR state yang diinjeksi oleh Cloudflare
       if (window.__SSR_POST__ && String(window.__SSR_POST__.id) === String(id)) {
@@ -122,7 +138,7 @@ const api = {
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithTimeout(`${BASE}/posts/${id}?lang=${lang}`);
+        const res = await fetchWithFallback(directUrl, fallbackUrl);
         
         if (!res.ok) {
           throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
@@ -152,6 +168,8 @@ const api = {
       if (!id) throw new Error('Player ID wajib disertakan');
       const lang = getActiveLang();
       const cacheKey = `player:${id}:${lang}`;
+      const directUrl = `${BASE}/player/${id}?lang=${lang}`;
+      const fallbackUrl = `/api/player/${id}?lang=${lang}`;
       
       if (apiCache.has(cacheKey)) {
         return apiCache.get(cacheKey);
@@ -161,7 +179,7 @@ const api = {
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithTimeout(`${BASE}/player/${id}?lang=${lang}`);
+        const res = await fetchWithFallback(directUrl, fallbackUrl);
         
         if (!res.ok) {
           throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);

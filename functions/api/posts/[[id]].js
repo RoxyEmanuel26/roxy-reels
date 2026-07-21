@@ -224,7 +224,7 @@ export async function onRequest(context) {
     let total = null;
     let totalPages = null;
 
-    const clientSite = request.headers.get('x-client-site') || 'https://missav-j.vercel.app';
+    const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
 
     if (isOtherStudio) {
       const requestedPage = parseInt(url.searchParams.get('page') || '1', 10);

@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-Client-Site': req.headers['x-client-site'] || 'https://missav-j.vercel.app'
+        'X-Client-Site': req.headers['x-client-site'] || 'https://www.missav-j.com'
       }
     });
 
