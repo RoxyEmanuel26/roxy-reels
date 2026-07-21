@@ -33,23 +33,8 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     // Keep original string if URL parsing fails
   }
 
-  const defaultHeaders = {
-    'Accept': 'application/json',
-    'X-Client-Site': window.location.origin,
-    'Referer': window.location.origin + '/'
-  };
-
-  const finalOptions = {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...(options.headers || {})
-    },
-    signal: controller.signal
-  };
-
   try {
-    const response = await fetch(targetUrlStr, finalOptions);
+    const response = await fetch(targetUrlStr, { ...options, signal: controller.signal });
     clearTimeout(id);
     return response;
   } catch (error) {
