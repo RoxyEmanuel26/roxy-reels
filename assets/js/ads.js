@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.5.6';
+import ui from './ui.js?v=2.5.7';
 
 
 // Konfigurasi Kunci Iklan
@@ -14,10 +14,10 @@ window.missavJAdConfig = {
   // Tentukan provider banner: 'exoclick' atau 'adsterra'
   bannerProvider: 'adsterra',
   // Ganti dengan Key asli Adsterra dari dashboard Anda
-  topBannerKey: 'bdec847e5576cfc239f93361b9353a34',         // Banner 728x90
-  topMobileBannerKey: '9263e17e549b59add0a02c334b7b6b7e',   // Banner 320x50
-  belowPlayerBannerKey: '42bf4702a7a9795846258d2f444784f4', // Banner 300x250
-  sidebarBannerKey: '42bf4702a7a9795846258d2f444784f4'     // Banner 300x250
+  topBannerKey: '2f381eb4963daa3290b18c301fa7bcf1',         // Banner 728x90
+  topMobileBannerKey: 'a22416b06f8e81df24a819d08d891499',   // Banner 320x50
+  belowPlayerBannerKey: 'cbbf0ce19e2c335d931aa7692e41932f', // Banner 300x250
+  sidebarBannerKey: 'cbbf0ce19e2c335d931aa7692e41932f'     // Banner 300x250
 };
 
 // Queue untuk memuat iklan berurutan (mencegah konflik atOptions)
@@ -354,7 +354,7 @@ export function initAdsterraPopunder() {
   const script = document.createElement('script');
   script.id = 'adsterra-popunder-script';
   script.type = 'text/javascript';
-  script.src = '//glamournakedemployee.com/b2/9e/1b/b29e1b8f1f4574a57f5873d55a1a1a29.js';
+  script.src = '//glamournakedemployee.com/20/6a/59/206a5938614f53f8c548d410f197cb16.js';
   script.async = true;
   document.head.appendChild(script);
 }
@@ -452,12 +452,12 @@ export function loadNativeBannerAd(containerId) {
           <link rel="canonical" href="${window.location.href}">
           <style>
             body { margin: 0; padding: 0; background: transparent; }
-            #container-21b7c6791db50dfb4cce684222b4187e { width: 100%; display: flex; justify-content: center; }
+            #container-2f68c13199d7138b262c1f91c111f139 { width: 100%; display: flex; justify-content: center; }
           </style>
         </head>
         <body>
-          <div id="container-21b7c6791db50dfb4cce684222b4187e"></div>
-          <script async="async" data-cfasync="false" src="https://glamournakedemployee.com/21b7c6791db50dfb4cce684222b4187e/invoke.js?cb=${Date.now()}"></script>
+          <div id="container-2f68c13199d7138b262c1f91c111f139"></div>
+          <script async="async" data-cfasync="false" src="https://glamournakedemployee.com/2f68c13199d7138b262c1f91c111f139/invoke.js?cb=${Date.now()}"></script>
         </body>
       </html>
     `);
@@ -473,7 +473,7 @@ export function loadNativeBannerAd(containerId) {
       }
       try {
         const doc = iframe.contentWindow.document;
-        const adWrapper = doc.getElementById('container-21b7c6791db50dfb4cce684222b4187e');
+        const adWrapper = doc.getElementById('container-2f68c13199d7138b262c1f91c111f139');
         if (adWrapper && adWrapper.scrollHeight > 50) {
           const newHeight = adWrapper.scrollHeight + 10;
           if (newHeight > parseInt(iframe.style.height || iframe.height)) {

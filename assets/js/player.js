@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.5.6';
-import ui from './ui.js?v=2.5.6';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.5.6';
-import i18n from './i18n.js?v=2.5.6';
-import ReferralSystem from './referral.js?v=2.5.6';
-import { Analytics } from './analytics.js?v=2.5.6';
+import api from './api.js?v=2.5.7';
+import ui from './ui.js?v=2.5.7';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.5.7';
+import i18n from './i18n.js?v=2.5.7';
+import ReferralSystem from './referral.js?v=2.5.7';
+import { Analytics } from './analytics.js?v=2.5.7';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -401,7 +401,7 @@ export function renderPostMeta(post, id) {
   // Setup Download Button with redirect link
   if (downloadBtn) {
     const downloadLinks = [
-      "https://glamournakedemployee.com/db15f33m?key=fa5b3c864a796b1dbbce19ed8d7e4806"
+      "https://glamournakedemployee.com/xvz5b27p?key=e93021d8d48312e0676820abac78db99"
     ];
     const randomUrl = downloadLinks[Math.floor(Math.random() * downloadLinks.length)];
     downloadBtn.href = randomUrl;
