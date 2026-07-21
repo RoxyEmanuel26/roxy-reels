@@ -50,10 +50,9 @@ async function fetchPostMetadata(id, origin) {
   try {
     const res = await fetch(apiUrl, {
       headers: {
-        'Accept': 'application/json',
-        'X-Client-Site': origin,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': origin
+        'Accept': 'application/json, text/plain, */*',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
       },
       signal: controller.signal
     });
