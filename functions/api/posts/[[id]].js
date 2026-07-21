@@ -183,7 +183,7 @@ export async function onRequest(context) {
     try {
       cache = caches.default;
       const cachedResponse = await cache.match(request);
-      if (cachedResponse) {
+      if (cachedResponse && cachedResponse.ok) {
         return cachedResponse;
       }
     } catch (e) {
