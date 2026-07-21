@@ -67,8 +67,8 @@ export async function onRequest(context) {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'X-Client-Site': 'https://missav-j.web.id',
-          'Referer': 'https://missav-j.web.id/',
+          'X-Client-Site': 'https://www.missav-j.com',
+          'Referer': 'https://www.missav-j.com/',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         },
         signal: controller.signal
