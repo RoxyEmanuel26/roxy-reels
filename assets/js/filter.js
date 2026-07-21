@@ -1,4 +1,4 @@
-import i18n from './i18n.js?v=2.6.4';
+import i18n from './i18n.js?v=2.6.5';
 
 // List kategori terkurasi untuk chip filter horizontal
 const POPULAR_CATEGORIES = [
@@ -155,4 +155,5 @@ export function init(container, currentFilters, onFilterChange) {
 }
 
 export default { init };
+
 

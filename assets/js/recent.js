@@ -4,7 +4,7 @@
  * Menggunakan sistem feed utama secara modular.
  */
 
-import { init as initFeed } from './feed.js?v=2.6.4';
+import { init as initFeed } from './feed.js?v=2.6.5';
 
 /**
  * Inisialisasi Halaman Terbaru
@@ -16,3 +16,4 @@ export function init() {
     order: 'DESC'
   });
 }
+

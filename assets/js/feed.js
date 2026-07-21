@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.6.4';
-import ui from './ui.js?v=2.6.4';
-import filter from './filter.js?v=2.6.4';
-import i18n from './i18n.js?v=2.6.4';
+import api from './api.js?v=2.6.5';
+import ui from './ui.js?v=2.6.5';
+import filter from './filter.js?v=2.6.5';
+import i18n from './i18n.js?v=2.6.5';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -675,3 +675,4 @@ function loadInlineGridAds() {
 }
 
 export default { init, renderVideoCard, bindHoverPreviews, clearActivePreview };
+
