@@ -1,9 +1,9 @@
 /**
  * MISSAV-J — API Client Wrapper
- * Mengintegrasikan front-end dengan apiJAV REST API melalui Cloudflare Pages Proxy (/api).
+ * Mengintegrasikan front-end dengan apiJAV REST API.
  */
 
-const BASE = '/api';
+const BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
 
 function getActiveLang() {
   const segments = window.location.pathname.replace(/^\//, '').split('/');
@@ -20,8 +20,36 @@ const fetchPromises = new Map();
 async function fetchWithTimeout(url, options = {}, timeout = 10000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
+  
+  // Attach _site parameter to bypass server cached CORS headers for old domain
+  let targetUrlStr = url;
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
+    const u = new URL(url, window.location.origin);
+    if (!u.searchParams.has('_site')) {
+      u.searchParams.set('_site', 'missav-j.com');
+    }
+    targetUrlStr = u.toString();
+  } catch (e) {
+    // Keep original string if URL parsing fails
+  }
+
+  const defaultHeaders = {
+    'Accept': 'application/json',
+    'X-Client-Site': window.location.origin,
+    'Referer': window.location.origin + '/'
+  };
+
+  const finalOptions = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers || {})
+    },
+    signal: controller.signal
+  };
+
+  try {
+    const response = await fetch(targetUrlStr, finalOptions);
     clearTimeout(id);
     return response;
   } catch (error) {
