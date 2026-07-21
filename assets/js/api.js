@@ -3,7 +3,7 @@
  * Mengintegrasikan front-end dengan apiJAV REST API.
  */
 
-const BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const BASE = '/api';
 
 function getActiveLang() {
   const segments = window.location.pathname.replace(/^\//, '').split('/');
