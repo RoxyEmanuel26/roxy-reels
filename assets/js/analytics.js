@@ -9,7 +9,7 @@
  *   Analytics.trackEvent('video_play', { video_id: '123', video_title: 'Title' });
  */
 
-const GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // TODO: Replace with actual GA4 ID
+const GA4_MEASUREMENT_ID = 'G-GEFLKZ0TNX';
 
 class AnalyticsManager {
   constructor() {
@@ -23,8 +23,8 @@ class AnalyticsManager {
    */
   init(measurementId) {
     const id = measurementId || GA4_MEASUREMENT_ID;
-    if (id === 'G-XXXXXXXXXX' || !id) {
-      console.warn('[Analytics] GA4 Measurement ID not configured. Set it in analytics.js');
+    if (!id) {
+      console.warn('[Analytics] GA4 Measurement ID not configured.');
       return;
     }
 
