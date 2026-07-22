@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.6.8';
+import ui from './ui.js?v=2.7.0';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [

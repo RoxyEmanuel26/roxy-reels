@@ -74,26 +74,40 @@ const api = {
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithTimeout(url);
-        
-        if (!res.ok) {
-          throw new Error(`API Error ${res.status}: ${res.statusText}`);
+        let lastError;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const res = await fetchWithTimeout(url);
+            
+            if (!res.ok) {
+              throw new Error(`API Error ${res.status}: ${res.statusText}`);
+            }
+            
+            const posts = await res.json();
+            
+            const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
+            const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+            
+            const result = {
+              posts: Array.isArray(posts) ? posts : (posts.posts || []),
+              total: total || (posts.total ? parseInt(posts.total, 10) : 0),
+              totalPages: totalPages || (posts.totalPages ? parseInt(posts.totalPages, 10) : 1)
+            };
+            
+            apiCache.set(url, result);
+            fetchPromises.delete(url);
+            return result;
+          } catch (err) {
+            lastError = err;
+            console.warn(`[API getPosts] Attempt ${attempt} failed:`, err.message);
+            if (attempt < 3) {
+              // Wait 1.5 seconds before retrying
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+          }
         }
-        
-        const posts = await res.json();
-        
-        const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
-        const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
-        
-        const result = {
-          posts: Array.isArray(posts) ? posts : (posts.posts || []),
-          total: total || (posts.total ? parseInt(posts.total, 10) : 0),
-          totalPages: totalPages || (posts.totalPages ? parseInt(posts.totalPages, 10) : 1)
-        };
-        
-        apiCache.set(url, result);
         fetchPromises.delete(url);
-        return result;
+        throw lastError;
       })();
       
       fetchPromises.set(url, fetchPromise);
