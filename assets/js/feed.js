@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.6.5';
-import ui from './ui.js?v=2.6.5';
-import filter from './filter.js?v=2.6.5';
-import i18n from './i18n.js?v=2.6.5';
+import api from './api.js?v=2.6.6';
+import ui from './ui.js?v=2.6.6';
+import filter from './filter.js?v=2.6.6';
+import i18n from './i18n.js?v=2.6.6';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -462,8 +462,10 @@ async function fetchAndRenderFeed(isInitial = false) {
     if (!grid) return;
     if (isInitial) {
       ui.showError(error.message, grid);
+      hasMore = false; // Mencegah sentinel memicu halaman 2 secara otomatis jika halaman 1 gagal
     } else {
       ui.showToast(i18n.t('error_load_more'));
+      currentPage--; // Mundurkan counter halaman agar user bisa mencoba scroll lagi untuk me-retry
     }
   } finally {
     isLoading = false;
