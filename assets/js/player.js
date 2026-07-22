@@ -442,7 +442,8 @@ export function renderPostMeta(post, id) {
           const translated = i18n.t(dictKey);
           if (translated) displayName = translated;
         }
-        return `<a href="#/${routePrefix}?name=${encodeURIComponent(safeItem)}" class="meta-tag-chip">${displayName}</a>`;
+        const lang = i18n.getLang() || 'en';
+        return `<a href="/${lang}/${routePrefix}?name=${encodeURIComponent(safeItem)}" class="meta-tag-chip">${displayName}</a>`;
       })
       .join('');
   };

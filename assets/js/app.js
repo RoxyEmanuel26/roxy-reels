@@ -144,6 +144,31 @@ window.missavJNavigate = function(routePath) {
   navigate(fullPath);
 };
 
+/**
+ * Handle SPA links click globally to prevent full page reloads for A href tags
+ */
+document.body.addEventListener('click', (e) => {
+  const chip = e.target.closest('.meta-tag-chip');
+  if (chip && chip.getAttribute('href') && chip.getAttribute('href').startsWith('/')) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Parse the href to pass to navigate, stripping the lang prefix if needed
+    // missavJNavigate takes a relative path like '/actor?name=...'
+    const url = new URL(chip.href, window.location.origin);
+    const pathParts = url.pathname.split('/');
+    // e.g. /en/actor -> ['','en','actor']
+    if (pathParts.length >= 3) {
+      pathParts.shift(); // remove empty string
+      pathParts.shift(); // remove 'en'
+      const relativePath = '/' + pathParts.join('/') + url.search;
+      window.missavJNavigate(relativePath);
+    } else {
+      window.missavJNavigate(url.pathname + url.search);
+    }
+  }
+});
+
 // Custom playlist grid renderer for Watch Later & Session History
 function renderSavedVideosPage(title, postsList, emptyMessage) {
   const mainApp = document.getElementById('app-content');
@@ -182,6 +207,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
     grid.addEventListener('click', (e) => {
       const actorChip = e.target.closest('.actor-chip');
       if (actorChip) {
+        e.preventDefault();
         e.stopPropagation();
         const actorName = decodeURIComponent(actorChip.dataset.actor);
         window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);

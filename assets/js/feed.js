@@ -106,7 +106,8 @@ export function renderVideoCard(post, index = 0) {
     .slice(0, 3) 
     .map(a => {
       const safeActor = ui.escapeHTML(a);
-      return `<span class="actor-chip" data-actor="${encodeURIComponent(safeActor)}">${safeActor}</span>`;
+      const lang = i18n.getLang() || 'en';
+      return `<a href="/${lang}/actor?name=${encodeURIComponent(safeActor)}" class="actor-chip" data-actor="${encodeURIComponent(safeActor)}">${safeActor}</a>`;
     })
     .join('');
 
@@ -539,6 +540,7 @@ function bindGridClicks(grid) {
   grid.addEventListener('click', (e) => {
     const actorChip = e.target.closest('.actor-chip');
     if (actorChip) {
+      e.preventDefault();
       e.stopPropagation();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
       window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);

@@ -50,8 +50,11 @@ function renderActorsGrid(actorsList, searchQuery = '') {
     const nativeHtml = safeNative ? `<div class="actor-browse-native" title="${safeNative}">${safeNative}</div>` : '';
     const countHtml = actor.count !== undefined ? `<div class="actor-video-count">🎬 ${actor.count}</div>` : '';
 
+    const lang = i18n.getLang() || 'en';
+    const actorUrl = `/${lang}/actor?name=${encodeURIComponent(actor.name)}`;
+
     return `
-      <div class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
+      <a href="${actorUrl}" class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
         <div class="actor-avatar-circle">
           <span class="actor-initial">${safeLetter}</span>
         </div>
@@ -60,7 +63,7 @@ function renderActorsGrid(actorsList, searchQuery = '') {
           ${nativeHtml}
         </div>
         ${countHtml}
-      </div>
+      </a>
     `;
   }).join('');
 }
@@ -187,6 +190,7 @@ export function init() {
     grid.addEventListener('click', (e) => {
       const card = e.target.closest('.actor-browse-card');
       if (card) {
+        e.preventDefault();
         const actorName = decodeURIComponent(card.dataset.name);
         window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       }

@@ -301,6 +301,7 @@ function bindGridClicks(grid) {
   grid.addEventListener('click', (e) => {
     const actorChip = e.target.closest('.actor-chip');
     if (actorChip) {
+      e.preventDefault();
       e.stopPropagation();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
       window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
