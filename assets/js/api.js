@@ -21,20 +21,8 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   
-  // Attach _site parameter to bypass server cached CORS headers for old domain
-  let targetUrlStr = url;
   try {
-    const u = new URL(url, window.location.origin);
-    if (!u.searchParams.has('_site')) {
-      u.searchParams.set('_site', 'missav-j.com');
-    }
-    targetUrlStr = u.toString();
-  } catch (e) {
-    // Keep original string if URL parsing fails
-  }
-
-  try {
-    const response = await fetch(targetUrlStr, { ...options, signal: controller.signal });
+    const response = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(id);
     return response;
   } catch (error) {
