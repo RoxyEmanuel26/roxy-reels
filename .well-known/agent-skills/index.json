@@ -1,0 +1,37 @@
+{
+  "$schema": "https://agentskills.io/schema/v0.2.0/index.schema.json",
+  "name": "MISSAV-J Agent Skills",
+  "description": "AI agent discovery index for MISSAV-J — a premium JAV streaming platform with a public video API.",
+  "url": "https://www.missav-j.com",
+  "contact": "https://www.missav-j.com",
+  "skills": [
+    {
+      "name": "search-videos",
+      "type": "api",
+      "description": "Search and browse JAV video posts by keyword, actor, category, or studio. Returns paginated results with title, thumbnail, URL, and metadata.",
+      "url": "https://www.missav-j.com/.well-known/agent-skills/search-videos/SKILL.md",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "browse-actors",
+      "type": "api",
+      "description": "Browse the full list of actors and performers available on MISSAV-J, with links to their video pages.",
+      "url": "https://www.missav-j.com/.well-known/agent-skills/browse-actors/SKILL.md",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "browse-categories",
+      "type": "api",
+      "description": "Browse all content categories available on MISSAV-J for filtering and discovery.",
+      "url": "https://www.missav-j.com/.well-known/agent-skills/browse-categories/SKILL.md",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "browse-studios",
+      "type": "api",
+      "description": "Browse all production studios available on MISSAV-J.",
+      "url": "https://www.missav-j.com/.well-known/agent-skills/browse-studios/SKILL.md",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

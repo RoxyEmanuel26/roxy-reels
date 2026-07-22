@@ -1,0 +1,53 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://www.missav-j.com/api/",
+      "service-desc": [
+        {
+          "href": "https://apijav.com/api-reference.html",
+          "type": "text/html"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://apijav.com/api-reference.html",
+          "type": "text/html"
+        }
+      ],
+      "describedby": [
+        {
+          "href": "https://www.missav-j.com/.well-known/api-catalog",
+          "type": "application/linkset+json"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://www.missav-j.com/api/posts?lang=en&page=1&site=missav-j.com",
+          "type": "application/json"
+        }
+      ],
+      "type": [
+        {
+          "href": "https://www.missav-j.com/api/posts",
+          "title": "Video Posts Feed API",
+          "description": "Returns paginated JAV video posts with title, thumbnail, URL, actors, categories, and studio metadata."
+        },
+        {
+          "href": "https://www.missav-j.com/api/actors",
+          "title": "Actors API",
+          "description": "Returns a list of actors/performers available on the platform."
+        },
+        {
+          "href": "https://www.missav-j.com/api/categories",
+          "title": "Categories API",
+          "description": "Returns all available content categories."
+        },
+        {
+          "href": "https://www.missav-j.com/api/studios",
+          "title": "Studios API",
+          "description": "Returns all available production studios."
+        }
+      ]
+    }
+  ]
+}

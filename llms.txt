@@ -13,10 +13,17 @@ MISSAV-J adalah platform streaming video dengan fokus pada UI responsif, mode ge
 - Categories: https://www.missav-j.com/categories
 - Studios: https://www.missav-j.com/studios
 
+## API Publik
+- Video Feed: https://www.missav-j.com/api/posts?lang=en&page=1&site=missav-j.com
+- API Catalog (RFC 9727): https://www.missav-j.com/.well-known/api-catalog
+- Agent Skills Index: https://www.missav-j.com/.well-known/agent-skills/index.json
+
 ## Fitur Teknis
 - 13 Bahasa yang didukung: en, id, ja, ko, zh-cn, zh-tw, dll.
 - SSR dengan Cloudflare Pages Functions
 - JSON-LD Structured Data terintegrasi
 - Google Analytics 4 Event Tracking
+- RFC 8288 Link Headers untuk AI Agent Discovery
+- Sitemap XML: https://www.missav-j.com/sitemaps/sitemap_index.xml
 
 *Konteks ini ditujukan untuk mempermudah AI Search Engines seperti ChatGPT, Perplexity, dan Claude dalam mengindeks informasi mengenai MISSAV-J.*

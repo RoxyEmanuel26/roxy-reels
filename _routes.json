@@ -26,7 +26,10 @@
   "exclude": [
     "/assets/*",
     "/sitemaps/*",
+    "/.well-known/*",
     "/robots.txt",
+    "/llms.txt",
+    "/ads.txt",
     "/favicon.ico",
     "/_headers",
     "/b773d20d41194391a49701f57581638e.txt"
