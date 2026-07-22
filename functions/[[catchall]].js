@@ -123,11 +123,13 @@ export async function onRequest(context) {
   // Check cache for GET requests on Watch and Listing Pages only
   const isGet = request.method === 'GET';
   const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?$/;
-  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios)$/;
+  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)$/;
+  const langRegex = /^\/([a-zA-Z\-]+)\/?$/;
   
   const isWatch = pathname.match(watchRegex);
   const isList = pathname.match(listRegex);
-  const isCacheableRoute = isGet && (isWatch || isList);
+  const isLangRoot = pathname.match(langRegex);
+  const isCacheableRoute = isGet && (isWatch || isList || isLangRoot);
 
   let cache = null;
   if (isCacheableRoute) {
@@ -339,11 +341,11 @@ export async function onRequest(context) {
     }
   } else {
     // 3. Programmatic SEO for Listing Pages (Actor, Category, Studio, Trending, etc)
-    const listMatch = isList;
+    const listMatch = isList || isLangRoot;
 
     if (listMatch) {
       const lang = listMatch[1] || 'en';
-      const type = listMatch[2];
+      const type = isList ? listMatch[2] : 'home';
       const isLangValid = VALID_LANGS.includes(lang);
 
       if (isLangValid || (!listMatch[1] && lang === 'en')) {
@@ -387,6 +389,21 @@ export async function onRequest(context) {
         } else if (type === 'studios') {
           pageTitle = `All JAV Studios | MISSAV-J`;
           pageDesc = `Browse videos from top JAV studios and production companies.`;
+        } else if (type === 'popular-actors') {
+          pageTitle = `Popular JAV Actresses | MISSAV-J`;
+          pageDesc = `Browse the most popular JAV actresses and their premium video collections.`;
+        } else if (type === 'watch-later') {
+          pageTitle = `Watch Later | MISSAV-J`;
+          pageDesc = `Your saved JAV videos to watch later.`;
+        } else if (type === 'history') {
+          pageTitle = `Session History | MISSAV-J`;
+          pageDesc = `Your recently watched JAV videos.`;
+        } else if (type === 'search') {
+          pageTitle = `Search Results | MISSAV-J`;
+          pageDesc = `Search results for premium JAV videos on MISSAV-J.`;
+        } else if (type === 'home' || !type) {
+          pageTitle = `MISSAV-J | Premium JAV Streaming`;
+          pageDesc = `Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses.`;
         }
 
         const pageUrl = `${url.origin}${url.pathname}${url.search}`;
