@@ -24,3 +24,7 @@ out/
 build/
 sitemaps/*.state
 sitemap_index.xml.state
+
+# Graphify Output
+graphify-out/
+
