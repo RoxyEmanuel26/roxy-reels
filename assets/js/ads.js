@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.7.2';
+import ui from './ui.js?v=2.7.3';
 
 
 // Konfigurasi Kunci Iklan
@@ -272,31 +272,23 @@ export function loadAdBanner(containerId, key, width, height) {
  * Dipanggil setiap kali router SPA berpindah halaman.
  */
 export function clearAdsterraSession() {
+  // HATI-HATI: JANGAN hapus semua cookies!
+  // Cookie Adsterra (seperti _UID, bidding data) menyimpan profil behavioral user
+  // yang dipakai algoritma bidding untuk menampilkan iklan mahal.
+  // Menghapusnya setiap navigasi = CPM turun drastis.
+  //
+  // Yang perlu di-reset hanya: lock "sudah muat iklan di halaman ini" agar
+  // iklan bisa dimuat ulang di halaman SPA berikutnya.
+  // Kita TIDAK menyentuh cookie targeting/profiling Adsterra sama sekali.
   try {
-    // Clear cookies
-    const cookies = document.cookie.split(";");
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i];
-      const eqPos = cookie.indexOf("=");
-      const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-      if (name.includes('adsterra') || name.startsWith('__') || name.length > 10) {
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=." + window.location.hostname.replace(/^www\./, '');
-      }
-    }
-    // Clear localStorage
-    for (let key in localStorage) {
-      if (key.includes('adsterra') || key.includes('pop') || key.length > 10) {
-        localStorage.removeItem(key);
-      }
-    }
-    // Clear sessionStorage (kecuali sticky_ad_closed agar tidak reset)
-    for (let key in sessionStorage) {
-      if (key.includes('adsterra') || key.includes('pop')) {
-        sessionStorage.removeItem(key);
-      }
-    }
+    // Hanya hapus session lock spesifik SPA kita sendiri (bukan cookie Adsterra)
+    const ownKeys = ['missavj_ad_page_loaded', 'missavj_popunder_fired', 'missavj_ad_session'];
+    ownKeys.forEach(key => {
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
+    });
+    // Reset flag adLoader antrian agar banner bisa dimuat ulang di halaman baru
+    adLoaderPromise = Promise.resolve();
   } catch (e) {
     console.warn('[Ads] Error clearing ad session:', e);
   }
@@ -369,7 +361,7 @@ function lazyLoadAd(containerId, loadCallback) {
         loadCallback();
       }
     });
-  }, { rootMargin: '500px 0px' });
+  }, { rootMargin: '200px 0px' }); // 200px — cukup buffer tanpa merusak viewability score
 
   observer.observe(container);
 }
@@ -492,7 +484,7 @@ export function loadNativeBannerAd(containerId) {
           if (isVisible) {
             writeIframeContent(); // Refresh isi iframe secara diam-diam
           }
-        }, 45000); // 45 detik
+        }, 90000); // 90 detik — interval aman agar semua tayangan dihitung valid oleh Adsterra
       } else if (!isVisible && refreshTimer) {
         clearInterval(refreshTimer);
         refreshTimer = null;
@@ -558,8 +550,17 @@ export function loadStickyBottomAd() {
     };
   }
 
-  // Muat banner 320x50 di dalam sticky-bottom-ad
-  loadAdBanner('sticky-bottom-ad', cfg.topMobileBannerKey, 320, 50);
+  // Sticky bottom: gunakan 300x250 di mobile untuk CPM 3-5x lebih tinggi dari 320x50
+  const stickyWidth = 300;
+  const stickyHeight = 250;
+  const stickyKey = cfg.belowPlayerBannerKey;
+  loadAdBanner('sticky-bottom-ad', stickyKey, stickyWidth, stickyHeight);
+  
+  // Update container height to fit 300x250
+  const stickyContainer = document.getElementById('sticky-bottom-ad-container');
+  if (stickyContainer) {
+    stickyContainer.style.setProperty('--sticky-ad-height', '270px');
+  }
 }
 
 // Ekspos secara global di namespace window untuk kemudahan integrasi dengan routing SPA
