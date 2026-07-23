@@ -1,21 +1,21 @@
-const CACHE_NAME = 'missavj-cache-v2.7.6';
+const CACHE_NAME = 'missavj-cache-v2.7.7';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/assets/css/components.css?v=2.7.6',
-  '/assets/css/base.css?v=2.7.6',
-  '/assets/css/layout.css?v=2.7.6',
-  '/assets/css/player.css?v=2.7.6',
-  '/assets/js/app.js?v=2.7.6',
-  '/assets/js/api.js?v=2.7.6',
-  '/assets/js/feed.js?v=2.7.6',
-  '/assets/js/i18n.js?v=2.7.6',
-  '/assets/js/player.js?v=2.7.6',
-  '/assets/js/ui.js?v=2.7.6',
-  '/assets/js/ads.js?v=2.7.6',
-  '/assets/js/analytics.js?v=2.7.6',
-  '/assets/js/referral.js?v=2.7.6',
+  '/assets/css/components.css?v=2.7.7',
+  '/assets/css/base.css?v=2.7.7',
+  '/assets/css/layout.css?v=2.7.7',
+  '/assets/css/player.css?v=2.7.7',
+  '/assets/js/app.js?v=2.7.7',
+  '/assets/js/api.js?v=2.7.7',
+  '/assets/js/feed.js?v=2.7.7',
+  '/assets/js/i18n.js?v=2.7.7',
+  '/assets/js/player.js?v=2.7.7',
+  '/assets/js/ui.js?v=2.7.7',
+  '/assets/js/ads.js?v=2.7.7',
+  '/assets/js/analytics.js?v=2.7.7',
+  '/assets/js/referral.js?v=2.7.7',
   '/assets/images/logo.png',
   '/favicon.svg'
 ];
@@ -66,6 +66,23 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => caches.match(event.request))
     );
+    return;
+  }
+
+  // === CRITICAL FOR AD REVENUE ===
+  // Script jaringan iklan (Adsterra, ExoClick) TIDAK boleh di-cache oleh Service Worker.
+  // Script iklan berisi kode bidding real-time yang harus selalu diambil fresh dari server.
+  // Men-cache script ini menyebabkan tayangan tidak terhitung & CPM turun drastis.
+  const AD_NETWORK_DOMAINS = [
+    'glamournakedemployee.com',
+    'a.adnxs.com',
+    's.magsrv.com',
+    'a.magsrv.com',
+    'syndication.adsterra.com',
+  ];
+  if (AD_NETWORK_DOMAINS.some(d => url.hostname.includes(d))) {
+    // Network Only — jangan pernah cache script iklan
+    event.respondWith(fetch(event.request));
     return;
   }
 

@@ -1,13 +1,18 @@
 # === Global Security Headers ===
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   X-XSS-Protection: 1; mode=block
-  Referrer-Policy: strict-origin-when-cross-origin
+  # Referrer-Policy diubah ke no-referrer-when-downgrade agar Adsterra bisa membaca
+  # URL halaman lengkap saat bidding RTB, sehingga CPM iklan jauh lebih tinggi.
+  # strict-origin-when-cross-origin menyebabkan CPM turun drastis karena Adsterra
+  # tidak tahu konten halaman yang ditonton pengunjung.
+  Referrer-Policy: no-referrer-when-downgrade
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, OPTIONS
   Access-Control-Allow-Headers: Content-Type, X-API-Key, X-Client-Site
+  # Permissions-Policy untuk mengizinkan autoplay dan fullscreen di player
+  Permissions-Policy: autoplay=(*), fullscreen=(*)
 
 # === RFC 8288 Link Headers — AI Agent Discovery (Homepage) ===
 /

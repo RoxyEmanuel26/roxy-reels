@@ -1,3 +1,5 @@
-# Ads.txt configuration for www.missav-j.com
-# Add your ad network authorized seller lines here, e.g.:
-# exoclick.com, [Account-ID], DIRECT
+# ads.txt — Authorized Sellers for www.missav-j.com
+# Format: <SSP Domain>, <Publisher Account ID>, <DIRECT/RESELLER>, <Certification Authority ID>
+
+adsterra.com, 3216356, DIRECT, 1ad675c9d6584321
+glamournakedemployee.com, 3216356, DIRECT
