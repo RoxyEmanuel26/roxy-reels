@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.7.7';
+import ui from './ui.js?v=2.7.8';
 
 
 // Konfigurasi Kunci Iklan
@@ -213,6 +213,7 @@ export function loadAdsterraBanner(containerId, key, width, height) {
 
       // Buat elemen script Adsterra
       const script = document.createElement('script');
+      script.setAttribute('data-cfasync', 'false'); // Cloudflare RocketLoader bypass
       script.type = 'text/javascript';
       script.src = `https://glamournakedemployee.com/${key}/invoke.js`;
       
