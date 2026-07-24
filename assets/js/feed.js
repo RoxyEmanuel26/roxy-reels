@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.7.9';
-import ui from './ui.js?v=2.7.9';
-import filter from './filter.js?v=2.7.9';
-import i18n from './i18n.js?v=2.7.9';
+import api from './api.js?v=2.8.0';
+import ui from './ui.js?v=2.8.0';
+import filter from './filter.js?v=2.8.0';
+import i18n from './i18n.js?v=2.8.0';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -406,17 +406,12 @@ async function fetchAndRenderFeed(isInitial = false) {
               return true;
             });
 
-            // Build cards list markup applying cascade staggered delays
             let cardsHtml = '';
             uniqueRetryPosts.forEach((post, idx) => {
               totalRenderedVideos++;
               cardsHtml += renderVideoCard(post, idx);
-              if (totalRenderedVideos % 12 === 0) {
-                cardsHtml += renderInlineAdCard(totalRenderedVideos);
-              }
             });
             grid.innerHTML = cardsHtml;
-            loadInlineGridAds();
             return;
           }
         }
@@ -439,14 +434,10 @@ async function fetchAndRenderFeed(isInitial = false) {
       return true;
     });
 
-    // Build cards list markup applying cascade staggered delays
     let cardsHtml = '';
     uniquePosts.forEach((post, idx) => {
       totalRenderedVideos++;
       cardsHtml += renderVideoCard(post, idx);
-      if (totalRenderedVideos % 12 === 0) {
-        cardsHtml += renderInlineAdCard(totalRenderedVideos);
-      }
     });
 
     if (isInitial) {
@@ -454,8 +445,6 @@ async function fetchAndRenderFeed(isInitial = false) {
     } else {
       grid.insertAdjacentHTML('beforeend', cardsHtml);
     }
-
-    loadInlineGridAds();
 
   } catch (error) {
     console.error('Fetch Feed Error:', error);
@@ -630,50 +619,6 @@ function startLivePreview(card, embedUrl) {
 export function bindHoverPreviews(grid) {
   // Disabled as per user request to remove live video playback preview on hover
   return;
-}
-
-/**
- * Renders HTML markup placeholder for inline grid ad slot
- */
-function renderInlineAdCard(adIndex) {
-  return `
-    <div class="grid-sponsor-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%;">
-      <div class="sponsor-media-box" id="grid-sponsor-slot-${adIndex}" style="width: 100%; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
-    </div>
-  `;
-}
-
-// Global IntersectionObserver for Ad Viewability
-let adViewabilityObserver = null;
-
-/**
- * Loads dynamic Native Banners using IntersectionObserver (Lazy Loading for max CPM Viewability)
- */
-function loadInlineGridAds() {
-  if (!adViewabilityObserver) {
-    adViewabilityObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const slot = entry.target;
-          if (slot.children.length === 0) {
-            if (window.missavJAds && typeof window.missavJAds.loadNativeBannerAd === 'function') {
-              window.missavJAds.loadNativeBannerAd(slot.id);
-            }
-          }
-          // Stop observing once loaded
-          observer.unobserve(slot);
-        }
-      });
-    }, {
-      rootMargin: '500px 0px' // Load 500px before it enters the viewport
-    });
-  }
-
-  const slots = document.querySelectorAll('.grid-sponsor-container .sponsor-media-box:not(.observed)');
-  slots.forEach(slot => {
-    adViewabilityObserver.observe(slot);
-    slot.classList.add('observed');
-  });
 }
 
 export default { init, renderVideoCard, bindHoverPreviews, clearActivePreview };

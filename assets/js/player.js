@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.7.9';
-import ui from './ui.js?v=2.7.9';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.7.9';
-import i18n from './i18n.js?v=2.7.9';
-import ReferralSystem from './referral.js?v=2.7.9';
-import { Analytics } from './analytics.js?v=2.7.9';
+import api from './api.js?v=2.8.0';
+import ui from './ui.js?v=2.8.0';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.0';
+import i18n from './i18n.js?v=2.8.0';
+import ReferralSystem from './referral.js?v=2.8.0';
+import { Analytics } from './analytics.js?v=2.8.0';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -91,9 +91,6 @@ export async function init(id) {
           </div>
         </div>
 
-        <!-- Banner Iklan Di Bawah Player (Mendukung 728x90) -->
-        <div class="sponsor-media-box" id="sponsor-below-player"></div>
-        
         <!-- Metadata Video -->
         <div class="player-metadata-container">
           <h1 class="player-title" id="player-title">${i18n.t('loading_video_title')}</h1>
@@ -162,16 +159,10 @@ export async function init(id) {
             </div>
           </div>
         </div>
-        
-        <!-- Native Banner Ad (4:1 Ratio) -->
-        <div class="sponsor-media-box" id="sponsor-native-banner" style="width: 100%; margin: 25px auto; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center;"></div>
       </div>
       
       <!-- Kolom Kanan: Rekomendasi Video Terkait & Iklan Sidebar -->
       <div class="player-sidebar-column">
-        <!-- Banner Iklan Sidebar (Mendukung 300x250) -->
-        <div class="sponsor-media-box" id="sponsor-sidebar"></div>
-
         <h3>${i18n.t('related_videos')}</h3>
         <div class="related-videos-list" id="related-videos-list">
           <!-- Diisi video rekomendasi -->
@@ -322,11 +313,6 @@ export async function init(id) {
 
     // 4. Catat Riwayat Tontonan Sesi (In-memory, hindari duplikasi rujukan)
     trackWatchHistory(post);
-
-    // 5. Muat Iklan Adsterra & Popunder Overlay
-    if (window.missavJAds && typeof window.missavJAds.loadWatchPageAds === 'function') {
-      window.missavJAds.loadWatchPageAds();
-    }
 
   } catch (error) {
     console.error('Failed to load player page:', error);
