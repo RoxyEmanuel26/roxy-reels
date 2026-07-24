@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.7.8';
+import ui from './ui.js?v=2.7.9';
 
 
 // Konfigurasi Kunci Iklan
@@ -295,44 +295,6 @@ export function clearAdsterraSession() {
   }
 }
 
-/**
- * Menginisialisasi klik pelindung transparan di atas player untuk pemicu popunder
- */
-export function initPlayerAdOverlay() {
-  const cfg = window.missavJAdConfig;
-  const adOverlay = document.getElementById('player-ad-overlay');
-  if (!adOverlay) return;
-
-  // Jika popunder tidak aktif, pastikan overlay disembunyikan dan abaikan inisialisasi click handler
-  if (!cfg || !cfg.popunderEnabled) {
-    adOverlay.classList.add('hidden');
-    return;
-  }
-
-  // Tampilkan kembali overlay transparan setiap memuat video baru
-  adOverlay.classList.remove('hidden');
-
-  // Bersihkan event listener lama jika ada (menghindari duplikasi callback)
-  const newOverlay = adOverlay.cloneNode(true);
-  adOverlay.parentNode.replaceChild(newOverlay, adOverlay);
-
-  let overlayTimeout = null;
-
-  newOverlay.addEventListener('click', (e) => {
-    console.log('[Ads] Popunder triggered on player click.');
-
-    // Sembunyikan pelindung transparan dengan efek transisi cepat
-    newOverlay.classList.add('hidden');
-
-    if (overlayTimeout) clearTimeout(overlayTimeout);
-
-    // Tampilkan kembali overlay setelah 40 detik (cooldown agar 2-3 kali per 2 menit)
-    overlayTimeout = setTimeout(() => {
-      console.log('[Ads] Restoring player ad overlay for next popunder trigger.');
-      newOverlay.classList.remove('hidden');
-    }, 40000); // 40 detik
-  });
-}
 
 /**
  * Menginisialisasi pemuatan script popunder Adsterra secara dinamis di watch page
@@ -391,8 +353,6 @@ export function loadWatchPageAds() {
     loadAdBanner('sponsor-sidebar', cfg.sidebarBannerKey, 300, 250);
   });
 
-  initPlayerAdOverlay();
-  
   // Muat script popunder Adsterra secara dinamis
   initAdsterraPopunder();
 }
@@ -570,7 +530,6 @@ window.missavJAds = {
   loadNativeBannerAd,
   loadExoClickBanner,
   loadAdsterraBanner,
-  initPlayerAdOverlay,
   loadWatchPageAds,
   loadGlobalTopAd,
   loadStickyBottomAd,
