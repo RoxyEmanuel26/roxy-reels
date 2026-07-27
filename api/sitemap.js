@@ -17,6 +17,10 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
 // 13 supported languages
 const LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
+// Map internal language keys to valid ISO 639-1 hreflang codes.
+// 'fil' (ISO 639-2) -> 'tl' (ISO 639-1); URL paths keep the 'fil' key.
+const HREFLANG_CODE_MAP = { fil: 'tl' };
+const hreflangCode = (lang) => HREFLANG_CODE_MAP[lang] || lang;
 
 // Domain constant
 const DOMAIN = 'https://www.missav-j.com';
@@ -137,7 +141,7 @@ async function getBatchTranslationsFromDb(ids) {
 function buildAlternates(makeUrl) {
   let xml = '';
   for (const l of LANGS) {
-    xml += `    <xhtml:link rel="alternate" hreflang="${l}" href="${escXml(makeUrl(l))}" />\n`;
+    xml += `    <xhtml:link rel="alternate" hreflang="${hreflangCode(l)}" href="${escXml(makeUrl(l))}" />\n`;
   }
   // x-default → English
   xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(makeUrl('en'))}" />\n`;
@@ -366,7 +370,7 @@ async function generateVideoSitemap(lang, page, domain) {
     for (const l of LANGS) {
       const altSlug = getLocalizedSlug(code, title, translations, l);
       const altUrl = `${domain}/${l}/watch/${altSlug}-${id}`;
-      xml += `    <xhtml:link rel="alternate" hreflang="${l}" href="${altUrl}" />\n`;
+      xml += `    <xhtml:link rel="alternate" hreflang="${hreflangCode(l)}" href="${altUrl}" />\n`;
     }
 
     // x-default points to English URL

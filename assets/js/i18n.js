@@ -23,6 +23,16 @@ export const LANGS = [
   { code: 'pt', label: 'Português', flag: '/assets/pics/brazil.png' }
 ];
 
+// Map internal language keys to valid ISO 639-1 hreflang codes.
+// Only 'fil' (ISO 639-2) needs remapping to 'tl' (ISO 639-1 for Tagalog/Filipino);
+// every other key is already a valid ISO 639-1 (or language-region) code.
+// Internal routing and /fil/ URL paths keep using the 'fil' key unchanged.
+export const HREFLANG_CODE_MAP = { fil: 'tl' };
+
+export function hreflangCode(langKey) {
+  return HREFLANG_CODE_MAP[langKey] || langKey;
+}
+
 // Kamus Terjemahan Komprehensif
 const DICTIONARY = {
   // Sidebar Navigasi
@@ -1070,6 +1080,6 @@ export function initTranslationObserver() {
   });
 }
 
-window.i18n = { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle, translateText, translatePageTitles, initTranslationObserver };
-export default { LANGS, getLang, setLang, t, translateStaticUI, translateVideoTitle, translateText, translatePageTitles, initTranslationObserver };
+window.i18n = { LANGS, HREFLANG_CODE_MAP, hreflangCode, getLang, setLang, t, translateStaticUI, translateVideoTitle, translateText, translatePageTitles, initTranslationObserver };
+export default { LANGS, HREFLANG_CODE_MAP, hreflangCode, getLang, setLang, t, translateStaticUI, translateVideoTitle, translateText, translatePageTitles, initTranslationObserver };
 
