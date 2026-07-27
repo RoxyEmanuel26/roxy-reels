@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.5';
-import ui from './ui.js?v=2.8.5';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.5';
-import i18n from './i18n.js?v=2.8.5';
-import ReferralSystem from './referral.js?v=2.8.5';
-import { Analytics } from './analytics.js?v=2.8.5';
+import api from './api.js?v=2.8.6';
+import ui from './ui.js?v=2.8.6';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.6';
+import i18n from './i18n.js?v=2.8.6';
+import ReferralSystem from './referral.js?v=2.8.6';
+import { Analytics } from './analytics.js?v=2.8.6';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -238,7 +238,18 @@ export async function init(id) {
       if (playerContainer) {
         const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
         
+        // Deteksi apakah pengakses adalah bot pencari (seperti Googlebot)
+        const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent);
+        
         const loadRealVideo = () => {
+          if (isBot) {
+            const inlinePlaceholder = document.querySelector('.player-container-placeholder');
+            if (inlinePlaceholder) {
+              inlinePlaceholder.innerHTML = getSecureIframeMarkup(iframeMarkup);
+              return;
+            }
+          }
+          
           playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
           
           // Hide the watch page loader shimmer when iframe is loaded
@@ -256,9 +267,6 @@ export async function init(id) {
           }
         };
 
-        // Deteksi apakah pengakses adalah bot pencari (seperti Googlebot)
-        const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent);
-        
         if (isBot) {
           console.log('[SEO] Bot detected, loading player iframe immediately...');
           loadRealVideo();
