@@ -265,7 +265,12 @@ function updateSEOTags(routePath, targetId) {
 
   const baseDomain = window.location.origin;
   const currentLang = i18n.getLang();
-  
+
+  // Keep <html lang> in sync with the active locale (SPA route change does not
+  // reload the document, so the static lang="id" in index.html would otherwise
+  // stick on every localized route -> "Hreflang and HTML lang mismatch").
+  document.documentElement.lang = i18n.hreflangCode(currentLang);
+
   let cleanRoutePath = routePath;
   let hasLocalizedSlugs = false;
   let localizedSlugsMap = {};
@@ -311,7 +316,7 @@ function updateSEOTags(routePath, targetId) {
     
     const altLink = document.createElement('link');
     altLink.rel = 'alternate';
-    altLink.hreflang = lang.code;
+    altLink.hreflang = i18n.hreflangCode(lang.code);
     altLink.href = `${baseDomain}/${lang.code}${langRoutePath}`;
     document.head.appendChild(altLink);
   });

@@ -9,6 +9,11 @@ const concurrencyLimit = 10;
 const LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
 const VIDEO_LANGS = ['en'];
 
+// Map internal language keys to valid ISO 639-1 hreflang codes.
+// 'fil' (ISO 639-2) -> 'tl' (ISO 639-1); URL paths keep the 'fil' key.
+const HREFLANG_CODE_MAP = { fil: 'tl' };
+const hreflangCode = (lang) => HREFLANG_CODE_MAP[lang] || lang;
+
 const STATIC_ROUTES = [
     { path: '', priority: '1.00', changefreq: 'daily' },
     { path: 'trending', priority: '0.90', changefreq: 'daily' },
@@ -212,7 +217,7 @@ async function main() {
         sbStatic += `  <url>\n    <loc>${escXml(canonicalUrl)}</loc>\n    <lastmod>${getTodayStr()}</lastmod>\n    <changefreq>${route.changefreq}</changefreq>\n    <priority>${route.priority}</priority>\n`;
         for (const lang of LANGS) {
             const u = `${baseUrl}/${lang}` + (route.path ? `/${route.path}` : '');
-            sbStatic += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${escXml(u)}" />\n`;
+            sbStatic += `    <xhtml:link rel="alternate" hreflang="${hreflangCode(lang)}" href="${escXml(u)}" />\n`;
         }
         sbStatic += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(canonicalUrl)}" />\n  </url>\n`;
     }
@@ -236,7 +241,7 @@ async function main() {
                 const canonicalUrl = `${baseUrl}/en/actor?name=${encoded}`;
                 sb += `  <url>\n    <loc>${escXml(canonicalUrl)}</loc>\n    <lastmod>${getTodayStr()}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.60</priority>\n`;
                 for (const lang of LANGS) {
-                    sb += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${escXml(`${baseUrl}/${lang}/actor?name=${encoded}`)}" />\n`;
+                    sb += `    <xhtml:link rel="alternate" hreflang="${hreflangCode(lang)}" href="${escXml(`${baseUrl}/${lang}/actor?name=${encoded}`)}" />\n`;
                 }
                 sb += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(canonicalUrl)}" />\n  </url>\n`;
             }
@@ -255,7 +260,7 @@ async function main() {
             const canonicalUrl = `${baseUrl}/en/category?name=${encoded}`;
             sb += `  <url>\n    <loc>${escXml(canonicalUrl)}</loc>\n    <lastmod>${getTodayStr()}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.60</priority>\n`;
             for (const lang of LANGS) {
-                sb += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${escXml(`${baseUrl}/${lang}/category?name=${encoded}`)}" />\n`;
+                sb += `    <xhtml:link rel="alternate" hreflang="${hreflangCode(lang)}" href="${escXml(`${baseUrl}/${lang}/category?name=${encoded}`)}" />\n`;
             }
             sb += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(canonicalUrl)}" />\n  </url>\n`;
         }
@@ -273,7 +278,7 @@ async function main() {
             const canonicalUrl = `${baseUrl}/en/studio?name=${encoded}`;
             sb += `  <url>\n    <loc>${escXml(canonicalUrl)}</loc>\n    <lastmod>${getTodayStr()}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.50</priority>\n`;
             for (const lang of LANGS) {
-                sb += `    <xhtml:link rel="alternate" hreflang="${lang}" href="${escXml(`${baseUrl}/${lang}/studio?name=${encoded}`)}" />\n`;
+                sb += `    <xhtml:link rel="alternate" hreflang="${hreflangCode(lang)}" href="${escXml(`${baseUrl}/${lang}/studio?name=${encoded}`)}" />\n`;
             }
             sb += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(canonicalUrl)}" />\n  </url>\n`;
         }
@@ -375,7 +380,7 @@ async function main() {
             sb += `  <url>\n    <loc>${escXml(locUrl)}</loc>\n    <lastmod>${dateVal}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n`;
             for (const altLang of LANGS) {
                 const altUrl = `${baseUrl}/${altLang}/watch/${localizedSlugs[altLang]}`;
-                sb += `    <xhtml:link rel="alternate" hreflang="${altLang}" href="${escXml(altUrl)}" />\n`;
+                sb += `    <xhtml:link rel="alternate" hreflang="${hreflangCode(altLang)}" href="${escXml(altUrl)}" />\n`;
             }
             sb += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(locUrl)}" />\n  </url>\n`;
         }
