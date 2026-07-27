@@ -13,6 +13,8 @@
   Access-Control-Allow-Headers: Content-Type, X-API-Key, X-Client-Site
   # Permissions-Policy untuk mengizinkan autoplay dan fullscreen di player
   Permissions-Policy: autoplay=(*), fullscreen=(*)
+  # WAJIB: Jangan cache rute SPA secara default agar index.html (dan script iklan) selalu fresh
+  Cache-Control: no-cache, no-store, must-revalidate
 
 # === RFC 8288 Link Headers — AI Agent Discovery (Homepage) ===
 /
