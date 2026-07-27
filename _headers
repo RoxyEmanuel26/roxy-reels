@@ -59,3 +59,12 @@
   Cache-Control: no-cache, no-store, must-revalidate
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate
+
+# === index.html — WAJIB tidak di-cache oleh Cloudflare CDN ===
+# Script Popunder & Social Bar Adsterra ada di dalam file ini.
+# Jika Cloudflare meng-cache index.html di edge server,
+# script iklan tidak akan dimuat ulang saat reload, sehingga Popunder MENGHILANG.
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+/
+  Cache-Control: no-cache, no-store, must-revalidate
