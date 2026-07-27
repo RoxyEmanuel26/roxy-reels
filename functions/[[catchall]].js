@@ -192,7 +192,19 @@ export async function onRequest(context) {
             const description = descFn(code, title);
 
             let imageUrl = post.thumbnail || '/assets/images/logo.png';
-            if (imageUrl && !imageUrl.startsWith('http')) {
+            
+            // Bypass API image proxy for Googlebot to prevent 403 Forbidden on thumbnails
+            if (imageUrl.includes('apijav.php?url=')) {
+              try {
+                const urlObj = new URL(imageUrl);
+                const actualUrl = urlObj.searchParams.get('url');
+                if (actualUrl) imageUrl = actualUrl;
+              } catch (e) {}
+            }
+
+            if (imageUrl && imageUrl.startsWith('//')) {
+              imageUrl = `https:${imageUrl}`;
+            } else if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
               imageUrl = `${url.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
             }
 
