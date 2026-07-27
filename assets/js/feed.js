@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.3';
-import ui from './ui.js?v=2.8.3';
-import filter from './filter.js?v=2.8.3';
-import i18n from './i18n.js?v=2.8.3';
+import api from './api.js?v=2.8.4';
+import ui from './ui.js?v=2.8.4';
+import filter from './filter.js?v=2.8.4';
+import i18n from './i18n.js?v=2.8.4';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -530,7 +530,6 @@ function bindGridClicks(grid) {
     const actorChip = e.target.closest('.actor-chip');
     if (actorChip) {
       e.preventDefault();
-      e.stopPropagation();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
       window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       return;
@@ -538,7 +537,6 @@ function bindGridClicks(grid) {
 
     const studioName = e.target.closest('.card-studio');
     if (studioName) {
-      e.stopPropagation();
       const studio = decodeURIComponent(studioName.dataset.studio);
       window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
       return;
