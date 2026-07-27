@@ -1,8 +1,5 @@
-const CACHE_NAME = 'missavj-cache-v2.8.0';
+const CACHE_NAME = 'missavj-cache-v2.8.1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
   '/assets/css/components.css?v=2.8.0',
   '/assets/css/base.css?v=2.8.0',
   '/assets/css/layout.css?v=2.8.0',
@@ -19,6 +16,8 @@ const ASSETS_TO_CACHE = [
   '/assets/images/logo.png',
   '/favicon.svg'
 ];
+// PENTING: index.html, manifest.json, dan sw.js SENGAJA TIDAK di-cache
+// agar script iklan Adsterra selalu dimuat ulang fresh dari server.
 
 // Install Event: Cache Core Assets
 self.addEventListener('install', (event) => {
@@ -44,12 +43,42 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event: Stale-While-Revalidate strategy for API, Cache First for assets
+// Fetch Event
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Ignore non-GET requests or browser extension requests
   if (event.request.method !== 'GET' || url.protocol.startsWith('chrome-extension')) {
+    return;
+  }
+
+  // === CRITICAL FOR AD REVENUE ===
+  // Script jaringan iklan (Adsterra) TIDAK boleh di-cache oleh Service Worker.
+  // Script iklan berisi kode bidding real-time yang harus selalu diambil fresh dari server.
+  // Men-cache script ini menyebabkan tayangan tidak terhitung & CPM turun drastis.
+  const AD_NETWORK_DOMAINS = [
+    'glamournakedemployee.com',
+    'a.adnxs.com',
+    's.magsrv.com',
+    'a.magsrv.com',
+    'syndication.adsterra.com',
+  ];
+  if (AD_NETWORK_DOMAINS.some(d => url.hostname.includes(d))) {
+    // Network Only — jangan pernah cache script iklan
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // === CRITICAL FOR AD REVENUE ===
+  // index.html WAJIB selalu diambil dari network (Network First).
+  // Karena script Popunder & Social Bar Adsterra ada di dalam index.html,
+  // jika index.html di-cache dan dikembalikan dari cache (stale),
+  // browser tidak akan memuat ulang script iklan sehingga Popunder & Social Bar MENGHILANG.
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => caches.match('/index.html')) // Fallback ke cache HANYA jika offline
+    );
     return;
   }
 
@@ -69,31 +98,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // === CRITICAL FOR AD REVENUE ===
-  // Script jaringan iklan (Adsterra, ExoClick) TIDAK boleh di-cache oleh Service Worker.
-  // Script iklan berisi kode bidding real-time yang harus selalu diambil fresh dari server.
-  // Men-cache script ini menyebabkan tayangan tidak terhitung & CPM turun drastis.
-  const AD_NETWORK_DOMAINS = [
-    'glamournakedemployee.com',
-    'a.adnxs.com',
-    's.magsrv.com',
-    'a.magsrv.com',
-    'syndication.adsterra.com',
-  ];
-  if (AD_NETWORK_DOMAINS.some(d => url.hostname.includes(d))) {
-    // Network Only — jangan pernah cache script iklan
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Static Assets & App Shell: Cache First, fallback to Network
+  // Static Assets (CSS, JS, images): Cache First, fallback to Network
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
       return fetch(event.request).then((response) => {
-        // Cache dynamically fetched assets (like lazy loaded images or chunks)
         if (response && response.status === 200 && response.type === 'basic') {
           const clonedResponse = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -103,7 +114,6 @@ self.addEventListener('fetch', (event) => {
         return response;
       });
     }).catch(() => {
-      // Offline fallback: Serve index.html for navigation requests
       if (event.request.mode === 'navigate') {
         return caches.match('/index.html');
       }
