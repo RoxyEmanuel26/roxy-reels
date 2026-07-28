@@ -20,8 +20,9 @@
 - If you add a language whose internal key isn't a valid ISO 639-1 code, add it to `HREFLANG_CODE_MAP` in ALL emitters (i18n.js, generate_sitemap.js, api/sitemap.js, functions/api/sitemap.js).
 
 ## Known Ahrefs Site Audit issues (project 10157215, crawl 2026-07-27, health 6.96)
-- **FIXED (this branch)**: "Hreflang and HTML lang mismatch" (1,749) — `<html lang>` was frozen at `id` from `index.html`; `updateSEOTags()` now sets `document.documentElement.lang`.
-- **FIXED (this branch)**: "Hreflang annotation invalid / Incorrect value" (1,749) — invalid `fil` hreflang code, now mapped to `tl`.
+- **FIXED (Worker, server-side)**: "Hreflang and HTML lang mismatch" (1,749) — the earlier `updateSEOTags()` fix only set `document.documentElement.lang` in a JS-executing browser; the crawler-facing Worker (`functions/[[catchall]].js`) still served the static `lang="id"` from `index.html` to non-JS crawlers (verified live 2026-07-28: Googlebot saw `<html lang="id">` on `/en/...`). The Worker now rewrites `<html lang>` per route in both the watch and listing branches, via `hreflangCode()` (`fil`->`tl`). The JS fix remains as a belt-and-suspenders for in-browser SPA route changes.
+- **FIXED (sitemaps, real)**: "Hreflang annotation invalid / Incorrect value" (1,749) — invalid `fil` hreflang code mapped to `tl`. This one is genuinely fixed for crawlers because hreflang annotations are read from the static XML sitemaps (0 `hreflang="fil"` remain, 125 files now emit `tl`).
+- **NOTE**: hreflang annotations Ahrefs reads come from the XML **sitemaps**, not page `<head>` (the Worker does not emit hreflang `<link>` tags; only client JS does). Keep sitemap emitters authoritative for hreflang.
 - **STILL OPEN** (not touched): Orphan pages (1,749 indexable), Non-canonical page in sitemap (2), Title/meta length warnings (~133), IndexNow notice (1,750), plus minor redirect/sitemap notices.
 
 ## Edge cases / gotchas
