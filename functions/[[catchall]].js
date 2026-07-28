@@ -116,6 +116,16 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Truncate a RAW (un-escaped) string to at most `max` characters, appending an
+// ellipsis when clipped. Operate on the raw name and escape AFTER, so we never
+// slice through an HTML entity. Fixes Ahrefs "Title too long" / "Meta
+// description too long" on programmatic actor pages whose names are very long.
+function truncateChars(str, max) {
+  if (!str) return '';
+  if (str.length <= max) return str;
+  return str.slice(0, max - 1).trimEnd() + '\u2026';
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -394,8 +404,14 @@ export async function onRequest(context) {
         const safeName = escapeHtml(nameParam);
         
         if (type === 'actor' && nameParam) {
-          pageTitle = `${safeName} - Actress Profile & Videos | MISSAV-J`;
-          pageDesc = `Watch the best JAV videos starring ${safeName} in premium HD. Explore ${safeName}'s full filmography and profile on MISSAV-J.`;
+          // Keep <title> <=60 chars and meta description within 110-160 chars for
+          // long actor names (Ahrefs "Title/Meta description too long"). Truncate
+          // the RAW name to fit, then escape. Suffix " | MISSAV-J" = 11 chars, so
+          // the name gets 49 chars. Description static text = 95 chars, name budget 65.
+          const titleName = escapeHtml(truncateChars(nameParam, 49));
+          const descName = escapeHtml(truncateChars(nameParam, 65));
+          pageTitle = `${titleName} | MISSAV-J`;
+          pageDesc = `Watch JAV videos starring ${descName} in premium HD on MISSAV-J. Explore the full filmography and profile.`;
           schemaType = 'ProfilePage';
         } else if (type === 'category' && nameParam) {
           pageTitle = `${safeName} JAV Videos | MISSAV-J`;
@@ -405,19 +421,19 @@ export async function onRequest(context) {
           pageDesc = `Explore the official collection of ${safeName} JAV videos. High definition streaming for ${safeName} studio releases.`;
         } else if (type === 'trending') {
           pageTitle = `Trending JAV Videos | MISSAV-J`;
-          pageDesc = `Watch the most popular and trending JAV videos right now on MISSAV-J.`;
+          pageDesc = `Watch the most popular and trending JAV videos right now on MISSAV-J. Discover what everyone is streaming today in premium HD quality.`;
         } else if (type === 'recent') {
           pageTitle = `Recent JAV Videos | MISSAV-J`;
-          pageDesc = `Watch the newest and latest JAV video releases on MISSAV-J.`;
+          pageDesc = `Watch the newest and latest JAV video releases on MISSAV-J. Stream fresh uploads added daily in premium high-definition quality.`;
         } else if (type === 'actors') {
           pageTitle = `All JAV Actresses | MISSAV-J`;
-          pageDesc = `Browse our complete database of JAV actresses and their video collections.`;
+          pageDesc = `Browse our complete database of JAV actresses and their full video collections. Find your favorite performers and explore their filmographies.`;
         } else if (type === 'categories') {
           pageTitle = `All JAV Categories | MISSAV-J`;
-          pageDesc = `Explore all JAV categories, genres, and tags. Find exactly what you want to watch.`;
+          pageDesc = `Explore all JAV categories, genres, and tags on MISSAV-J. Browse by theme and find exactly the videos you want to watch in premium HD.`;
         } else if (type === 'studios') {
           pageTitle = `All JAV Studios | MISSAV-J`;
-          pageDesc = `Browse videos from top JAV studios and production companies.`;
+          pageDesc = `Browse videos from top JAV studios and production companies on MISSAV-J. Explore official releases from the industry's leading labels in HD.`;
         } else if (type === 'popular-actors') {
           pageTitle = `Popular JAV Actresses | MISSAV-J`;
           pageDesc = `Browse the most popular JAV actresses and their premium video collections.`;
