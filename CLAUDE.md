@@ -30,6 +30,10 @@
 - Names in actors.json are pre-HTML-encoded (`&amp;`), no raw `<>"`, so display text inserted verbatim (escaping would double-encode).
 - Covers `/en/` only (100% of orphans). Directory link list uses the hub's own `activeLang`, so `/ja/actors` would emit `/ja/` links if other-language actor pages later get orphaned.
 - ~500 KB added to the `/actors` page HTML (7,375 links). Edge-cached; fine for an index page.
+- **FIXED (Worker, server-side)**: "Hreflang and HTML lang mismatch" (1,749) — the earlier `updateSEOTags()` fix only set `document.documentElement.lang` in a JS-executing browser; the crawler-facing Worker (`functions/[[catchall]].js`) still served the static `lang="id"` from `index.html` to non-JS crawlers (verified live 2026-07-28: Googlebot saw `<html lang="id">` on `/en/...`). The Worker now rewrites `<html lang>` per route in both the watch and listing branches, via `hreflangCode()` (`fil`->`tl`). The JS fix remains as a belt-and-suspenders for in-browser SPA route changes.
+- **FIXED (sitemaps, real)**: "Hreflang annotation invalid / Incorrect value" (1,749) — invalid `fil` hreflang code mapped to `tl`. This one is genuinely fixed for crawlers because hreflang annotations are read from the static XML sitemaps (0 `hreflang="fil"` remain, 125 files now emit `tl`).
+- **NOTE**: hreflang annotations Ahrefs reads come from the XML **sitemaps**, not page `<head>` (the Worker does not emit hreflang `<link>` tags; only client JS does). Keep sitemap emitters authoritative for hreflang.
+- **STILL OPEN** (not touched): Orphan pages (1,749 indexable), Non-canonical page in sitemap (2), Title/meta length warnings (~133), IndexNow notice (1,750), plus minor redirect/sitemap notices.
 
 ## Edge cases / gotchas
 - `index.html` line 2 has a static `<html lang="id">` — that's just the pre-JS default; the crawler reads the JS-updated value. Don't hardcode a different fixed lang there.

@@ -9,6 +9,12 @@
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
 const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
 
+// Map internal language keys to valid ISO 639-1 hreflang / html-lang codes.
+// Mirrors HREFLANG_CODE_MAP in assets/js/i18n.js and the sitemap emitters:
+// URL paths keep /fil/, but the lang attribute must be 'tl' (ISO 639-1 Tagalog).
+const HREFLANG_CODE_MAP = { fil: 'tl' };
+const hreflangCode = (langKey) => HREFLANG_CODE_MAP[langKey] || langKey;
+
 const DESC_TEMPLATES = {
   'zh-TW': (code, title) => `免費觀看 JAV ${code ? code + ' ' : ''}${title}，盡在 MISSAV-J 高畫質串流平台。`,
   'zh-CN': (code, title) => `免费观看 JAV ${code ? code + ' ' : ''}${title}，尽在 MISSAV-J 高清流媒体平台。`,
@@ -167,6 +173,12 @@ export async function onRequest(context) {
         return new Response('Internal Server Error: Failed to fetch index.html', { status: 500 });
       }
       let htmlContent = await indexResponse.text();
+
+      // Stamp <html lang> to match the route's language for crawlers. index.html
+      // ships a static lang="id" default; without this the JS-only fix in app.js
+      // never reaches non-JS crawlers -> "Hreflang and HTML lang mismatch".
+      const watchHtmlLang = hreflangCode(isLangValid ? lang : 'en');
+      htmlContent = htmlContent.replace(/<html lang="[^"]*"/i, `<html lang="${watchHtmlLang}"`);
 
       if (id) {
         try {
@@ -369,7 +381,12 @@ export async function onRequest(context) {
           return new Response('Internal Server Error: Failed to fetch index.html', { status: 500 });
         }
         let htmlContent = await indexResponse.text();
-        
+
+        // Stamp <html lang> to match the route's language for crawlers (see note
+        // in the watch branch above) -> fixes "Hreflang and HTML lang mismatch".
+        const listHtmlLang = hreflangCode(activeLang);
+        htmlContent = htmlContent.replace(/<html lang="[^"]*"/i, `<html lang="${listHtmlLang}"`);
+
         let pageTitle = 'MISSAV-J';
         let pageDesc = 'MISSAV-J Streaming';
         let schemaType = 'CollectionPage';
