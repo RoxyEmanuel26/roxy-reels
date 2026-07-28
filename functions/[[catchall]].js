@@ -501,14 +501,45 @@ export async function onRequest(context) {
           `<script type="application/ld+json" id="json-ld-data">${JSON.stringify(structuredData, null, 2)}</script>`
         );
         
-        // Inject fallback h1 text
+        // On the /actors directory hub, inject a real crawlable <a> list of every
+        // actor into the server-side fallback. Actor links are otherwise built only
+        // by client JS, so non-JS crawlers never see an internal link into any
+        // /actor?name=... page -> 1,744 indexable "Orphan page" errors. This gives
+        // every actor page one incoming internal link from an indexable hub.
+        let actorLinksHtml = '';
+        if (type === 'actors') {
+          try {
+            const actorsRes = await env.ASSETS.fetch(new URL('/api/actors.json', request.url));
+            if (actorsRes.ok) {
+              const actorNames = await actorsRes.json();
+              if (Array.isArray(actorNames)) {
+                // Names in actors.json are already HTML-encoded (e.g. '&amp;') and
+                // contain no raw <, >, or " -> insert display text verbatim (escaping
+                // would double-encode). href uses encodeURIComponent, matching the
+                // exact encoding used in sitemaps/sitemap_actors_*.xml.
+                const items = actorNames
+                  .filter(n => typeof n === 'string' && n.trim() !== '')
+                  .map(n => `<li><a href="/${activeLang}/actor?name=${encodeURIComponent(n)}">${n}</a></li>`)
+                  .join('');
+                actorLinksHtml = `<nav aria-label="All actors"><ul>${items}</ul></nav>`;
+              }
+            }
+          } catch (err) {
+            console.error('[Actor Directory Error]', err);
+          }
+        }
+
+        // Inject fallback h1 text (+ crawlable actor directory on /actors)
         const seoFallbackContent = `
           <div class="seo-fallback" style="display: none;">
             <h1>${pageTitle}</h1>
             <p>${pageDesc}</p>
+            ${actorLinksHtml}
           </div>
         `;
-        htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, seoFallbackContent);
+        // Function replacer: actor names may contain `$`, which is special in a
+        // string replacement ($&, $1, ...). A function value is inserted verbatim.
+        htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, () => seoFallbackContent);
 
         const listResponse = new Response(htmlContent, {
           headers: {

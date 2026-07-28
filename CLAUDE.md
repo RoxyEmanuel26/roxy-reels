@@ -22,7 +22,14 @@
 ## Known Ahrefs Site Audit issues (project 10157215, crawl 2026-07-27, health 6.96)
 - **FIXED (this branch)**: "Hreflang and HTML lang mismatch" (1,749) — `<html lang>` was frozen at `id` from `index.html`; `updateSEOTags()` now sets `document.documentElement.lang`.
 - **FIXED (this branch)**: "Hreflang annotation invalid / Incorrect value" (1,749) — invalid `fil` hreflang code, now mapped to `tl`.
-- **STILL OPEN** (not touched): Orphan pages (1,749 indexable), Non-canonical page in sitemap (2), Title/meta length warnings (~133), IndexNow notice (1,750), plus minor redirect/sitemap notices.
+- **FIXED (Worker, server-side — branch fix/orphan-actor-directory)**: "Orphan page" (1,744 of 1,749 = every `/en/actor?name=...` page). Actor links are built only by client JS (`actors.js`/`feed.js` -> `missavJNavigate`); the Worker's `seo-fallback` had no `<a>` links, so non-JS crawlers (Ahrefs) found actor pages only via sitemap = orphaned (verified live 2026-07-28: `/en/actors` served 0 actor links). The listing branch now renders a crawlable `<a>` directory of all 7,375 actors from `api/actors.json` into the `/actors` hub fallback. hrefs use `encodeURIComponent`, byte-matching `sitemaps/sitemap_actors_*.xml`.
+- **STILL OPEN** (not touched): Non-canonical page in sitemap (2), Title/meta length warnings (~133), IndexNow notice (1,750), the 5 non-actor orphan hubs, plus minor redirect/sitemap notices.
+
+### Orphan directory notes (2026-07)
+- Injected only when `type === 'actors'`, into `/actors` (routed through Worker per `_routes.json`). Function replacer on `.replace()` because actor names may contain `$`.
+- Names in actors.json are pre-HTML-encoded (`&amp;`), no raw `<>"`, so display text inserted verbatim (escaping would double-encode).
+- Covers `/en/` only (100% of orphans). Directory link list uses the hub's own `activeLang`, so `/ja/actors` would emit `/ja/` links if other-language actor pages later get orphaned.
+- ~500 KB added to the `/actors` page HTML (7,375 links). Edge-cached; fine for an index page.
 
 ## Edge cases / gotchas
 - `index.html` line 2 has a static `<html lang="id">` — that's just the pre-JS default; the crawler reads the JS-updated value. Don't hardcode a different fixed lang there.
