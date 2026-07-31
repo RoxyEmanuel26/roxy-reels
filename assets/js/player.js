@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.16';
-import ui from './ui.js?v=2.8.16';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.16';
-import i18n from './i18n.js?v=2.8.16';
-import ReferralSystem from './referral.js?v=2.8.16';
-import { Analytics } from './analytics.js?v=2.8.16';
+import api from './api.js?v=2.8.20';
+import ui from './ui.js?v=2.8.20';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.20';
+import i18n from './i18n.js?v=2.8.20';
+import ReferralSystem from './referral.js?v=2.8.20';
+import { Analytics } from './analytics.js?v=2.8.20';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -377,8 +377,12 @@ export function renderPostMeta(post, id) {
   
   if (dateEl && post.date) {
     const pubDate = new Date(post.date);
-    const dateFormatted = pubDate.toLocaleDateString(i18n.getLang(), { year: 'numeric', month: 'long', day: 'numeric' });
-    dateEl.textContent = `${i18n.t('published')} ${dateFormatted}`;
+    if (!isNaN(pubDate.getTime())) {
+      const dateFormatted = pubDate.toLocaleDateString(i18n.getLang(), { year: 'numeric', month: 'long', day: 'numeric' });
+      dateEl.textContent = `${i18n.t('published')} ${dateFormatted}`;
+    } else {
+      dateEl.style.display = 'none';
+    }
   }
 
   // Code & Studio

@@ -136,13 +136,21 @@ module.exports = async (req, res) => {
     // Dynamic schema metadata for SEO search bots
     if (htmlContent.includes('"@type": "WebSite"')) {
       const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`;
+      let uploadDate = new Date().toISOString();
+      if (post.date) {
+        const parsedDate = new Date(post.date);
+        if (!isNaN(parsedDate.getTime())) {
+          uploadDate = parsedDate.toISOString();
+        }
+      }
+
       const structuredData = {
         "@context": "https://schema.org",
         "@type": "VideoObject",
         "name": title,
         "description": description,
         "thumbnailUrl": imageUrl,
-        "uploadDate": post.date ? new Date(post.date).toISOString() : new Date().toISOString(),
+        "uploadDate": uploadDate,
         "embedUrl": cleanEmbedUrl
       };
       htmlContent = htmlContent.replace(

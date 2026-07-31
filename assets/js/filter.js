@@ -1,4 +1,4 @@
-import i18n from './i18n.js?v=2.8.16';
+import i18n from './i18n.js?v=2.8.20';
 
 // List kategori terkurasi untuk chip filter horizontal
 const POPULAR_CATEGORIES = [

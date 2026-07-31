@@ -279,12 +279,20 @@ export async function onRequest(context) {
               }));
               const genreList = (post.categories || []).map(c => typeof c === 'string' ? c : (c.name || c));
 
+              let uploadDate = new Date().toISOString();
+              if (post.date) {
+                const parsedDate = new Date(post.date);
+                if (!isNaN(parsedDate.getTime())) {
+                  uploadDate = parsedDate.toISOString();
+                }
+              }
+
               const videoSchema = {
                 "@type": "VideoObject",
                 "name": title,
                 "description": description,
                 "thumbnailUrl": imageUrl,
-                "uploadDate": post.date ? new Date(post.date).toISOString() : new Date().toISOString(),
+                "uploadDate": uploadDate,
                 "embedUrl": cleanEmbedUrl,
                 "publisher": {
                   "@type": "Organization",
