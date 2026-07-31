@@ -27,14 +27,14 @@
   <meta property="og:url" id="og-url" content="https://www.missav-j.com">
   <meta property="og:title" id="og-title" content="MISSAV-J — Premium Video Streaming Feed">
   <meta property="og:description" id="og-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
-  <meta property="og:image" id="og-image" content="/assets/images/logo.png">
+  <meta property="og:image" id="og-image" content="/assets/images/logo.webp">
   <meta property="og:locale" id="og-locale" content="en_US">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" id="twitter-card" content="summary_large_image">
   <meta name="twitter:title" id="twitter-title" content="MISSAV-J — Premium Video Streaming Feed">
   <meta name="twitter:description" id="twitter-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
-  <meta name="twitter:image" id="twitter-image" content="/assets/images/logo.png">
+  <meta name="twitter:image" id="twitter-image" content="/assets/images/logo.webp">
   <meta property="og:video" id="og-video" content="">
   <meta property="og:video:type" content="text/html">
   <meta property="og:video:width" content="1280">
@@ -73,13 +73,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 
   <!-- Premium Modular Stylesheets -->
-  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.11">
-  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.11">
-  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.11">
-  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.11">
+  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.14">
+  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.14">
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.14">
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.14">
 
-  <!-- Adsterra Popunder Script (Placed before closing head for compliance) -->
-  <script data-cfasync="false" type='text/javascript' src='//glamournakedemployee.com/20/6a/59/206a5938614f53f8c548d410f197cb16.js'></script>
+  <!-- Ad scripts have been deferred to improve PageSpeed (TBT) -->
 </head>
 <body>
 
@@ -132,7 +131,7 @@
       <!-- Flag Language Dropdown Popover (Premium circular style) -->
       <div class="lang-dropdown" id="lang-dropdown">
         <button class="lang-trigger" id="lang-dropdown-trigger" title="Change Language" aria-haspopup="true" aria-expanded="false">
-          <img id="lang-trigger-flag" src="/assets/pics/united-kingdom.png" alt="English">
+          <img id="lang-trigger-flag" src="/assets/pics/united-kingdom.webp" alt="English">
         </button>
         <div class="lang-menu hidden" id="lang-dropdown-menu">
           <!-- Diisi secara dinamis oleh app.js berdasarkan i18n.LANGS -->
@@ -266,7 +265,7 @@
 
 
   <!-- Modular SPA Script Bootstrap -->
-  <script type="module" src="/assets/js/app.js?v=2.8.11"></script>
+  <script type="module" src="/assets/js/app.js?v=2.8.14"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>
@@ -281,8 +280,42 @@
     }
   </script>
 
-  <!-- Adsterra Global Scripts -->
-  <script data-cfasync="false" type='text/javascript' src='//glamournakedemployee.com/34/2c/a9/342ca9d1e39cefa817e38f34b37c114d.js'></script> <!-- Social Bar -->
+  <!-- Adsterra & Third-Party Lazy Loader -->
+  <script>
+    (function() {
+      let isLoaded = false;
+      const loadExternalScripts = () => {
+        if (isLoaded) return;
+        isLoaded = true;
+        
+        const scriptsToLoad = [
+          '//glamournakedemployee.com/20/6a/59/206a5938614f53f8c548d410f197cb16.js', // Popunder
+          '//glamournakedemployee.com/34/2c/a9/342ca9d1e39cefa817e38f34b37c114d.js'  // Social Bar
+        ];
+        
+        scriptsToLoad.forEach(src => {
+          const script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = src;
+          script.setAttribute('data-cfasync', 'false');
+          document.body.appendChild(script);
+        });
+
+        // Cleanup event listeners
+        ['scroll', 'mousemove', 'touchstart', 'click', 'keydown'].forEach(evt => {
+          window.removeEventListener(evt, loadExternalScripts);
+        });
+      };
+
+      // Load on first interaction
+      ['scroll', 'mousemove', 'touchstart', 'click', 'keydown'].forEach(evt => {
+        window.addEventListener(evt, loadExternalScripts, { once: true, passive: true });
+      });
+
+      // Fallback: load after 4 seconds if no interaction
+      setTimeout(loadExternalScripts, 4000);
+    })();
+  </script>
 </body>
 </html>
 

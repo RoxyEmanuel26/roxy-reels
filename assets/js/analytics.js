@@ -28,14 +28,24 @@ class AnalyticsManager {
       return;
     }
 
-    // Load gtag.js dynamically
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
-    document.head.appendChild(script);
-
+    // Set up dataLayer immediately to buffer commands
     window.dataLayer = window.dataLayer || [];
     window.gtag = function() { window.dataLayer.push(arguments); };
+
+    // Load gtag.js lazily to prevent blocking the main thread
+    const loadGtag = () => {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+      document.head.appendChild(script);
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(loadGtag, { timeout: 2000 });
+    } else {
+      setTimeout(loadGtag, 1000);
+    }
+    
     window.gtag('js', new Date());
     window.gtag('config', id, {
       send_page_view: false, // Manual page_view for SPA

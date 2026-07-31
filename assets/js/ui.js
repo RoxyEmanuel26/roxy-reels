@@ -32,7 +32,8 @@ const ui = {
    */
   getProxiedThumbnail(url) {
     if (!url) return '';
-    return url;
+    // Gunakan wsrv.nl untuk resize otomatis ke 320x180 & WebP
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=320&h=180&output=webp&fit=cover`;
   },
 
   /**

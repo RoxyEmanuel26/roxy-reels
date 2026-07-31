@@ -213,7 +213,7 @@ export async function onRequest(context) {
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
             const description = descFn(code, title);
 
-            let imageUrl = post.thumbnail || '/assets/images/logo.png';
+            let imageUrl = post.thumbnail || '/assets/images/logo.webp';
             
             // Bypass API image proxy for Googlebot to prevent 403 Forbidden on thumbnails
             if (imageUrl.includes('apijav.php?url=')) {
@@ -292,7 +292,7 @@ export async function onRequest(context) {
                   "url": "https://www.missav-j.com",
                   "logo": {
                     "@type": "ImageObject",
-                    "url": "https://www.missav-j.com/assets/images/logo.png"
+                    "url": "https://www.missav-j.com/assets/images/logo.webp"
                   }
                 },
                 "inLanguage": "ja"

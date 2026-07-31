@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.11';
-import ui from './ui.js?v=2.8.11';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.11';
-import i18n from './i18n.js?v=2.8.11';
-import ReferralSystem from './referral.js?v=2.8.11';
-import { Analytics } from './analytics.js?v=2.8.11';
+import api from './api.js?v=2.8.14';
+import ui from './ui.js?v=2.8.14';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.14';
+import i18n from './i18n.js?v=2.8.14';
+import ReferralSystem from './referral.js?v=2.8.14';
+import { Analytics } from './analytics.js?v=2.8.14';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -460,7 +460,7 @@ export function renderPostMeta(post, id) {
       const shareUrl = ReferralSystem.generateShareLink(window.location.href, 'video_share');
       const titleElement = document.getElementById('player-title');
       const translatedTitle = titleElement ? titleElement.textContent : (post.title ? i18n.translateVideoTitle(post.title) : i18n.t('btn_share'));
-      const thumbnailUrl = post.thumbnail ? (post.thumbnail.startsWith('http') ? post.thumbnail : window.location.origin + post.thumbnail) : (window.location.origin + '/assets/images/logo.png');
+      const thumbnailUrl = post.thumbnail ? (post.thumbnail.startsWith('http') ? post.thumbnail : window.location.origin + post.thumbnail) : (window.location.origin + '/assets/images/logo.webp');
       showShareModal(translatedTitle, shareUrl, thumbnailUrl);
       Analytics.trackShare(id, 'modal');
     });
