@@ -465,7 +465,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
     };
 
     const pageDescriptions = {
-      '/':          i18n.t('meta_home_desc') || 'Discover the best video streaming with a premium YouTube-inspired dark mode interface.',
+      '/':          i18n.t('meta_home_desc') || 'Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses in high quality.',
       '/trending':  i18n.t('meta_trending_desc') || 'Browse the most popular and trending videos right now.',
       '/recent':    i18n.t('meta_recent_desc') || 'Watch the latest and most recently uploaded videos.',
       '/actors':    i18n.t('meta_actors_desc') || 'Browse all actors and actresses.',

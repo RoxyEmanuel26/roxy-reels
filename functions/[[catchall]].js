@@ -36,19 +36,71 @@ function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
 }
 
 const DESC_TEMPLATES = {
-  'zh-TW': (code, title) => `免費觀看 JAV ${code ? code + ' ' : ''}${title}，盡在 MISSAV-J 高畫質串流平台。`,
-  'zh-CN': (code, title) => `免费观看 JAV ${code ? code + ' ' : ''}${title}，尽在 MISSAV-J 高清流媒体平台。`,
-  'en': (code, title) => `Watch ${code ? code + ' ' : ''}${title} for free in premium HD streaming quality on MISSAV-J.`,
-  'ja': (code, title) => `MISSAV-J で ${code ? code + ' ' : ''}${title} を高画質で無料視聴。`,
-  'ko': (code, title) => `MISSAV-J에서 ${code ? code + ' ' : ''}${title} 무료 HD 스트리밍 시청.`,
-  'ms': (code, title) => `Tonton ${code ? code + ' ' : ''}${title} secara percuma dengan kualiti HD premium di MISSAV-J.`,
-  'th': (code, title) => `ดู ${code ? code + ' ' : ''}${title} ฟรีในคุณภาพ HD ระดับพรีเมียมบน MISSAV-J`,
-  'de': (code, title) => `Sehen Sie ${code ? code + ' ' : ''}${title} kostenlos in Premium-HD-Streaming-Qualität auf MISSAV-J.`,
-  'fr': (code, title) => `Regardez ${code ? code + ' ' : ''}${title} gratuitement en qualité HD premium sur MISSAV-J.`,
-  'vi': (code, title) => `Xem ${code ? code + ' ' : ''}${title} miễn phí chất lượng HD cao cấp trên MISSAV-J.`,
-  'id': (code, title) => `Nonton video JAV ${code ? code + ' ' : ''}${title} gratis dengan streaming kualitas premium di MISSAV-J.`,
-  'fil': (code, title) => `Panoorin ang ${code ? code + ' ' : ''}${title} nang libre sa premium HD streaming sa MISSAV-J.`,
-  'pt': (code, title) => `Assista ao ${code ? code + ' ' : ''}${title} gratuitamente em qualidade de streaming HD premium na MISSAV-J.`
+  'zh-TW': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = `，${a ? '由 ' + a + ' 主演' : ''}${a && s ? '，' : ''}${s ? '由 ' + s + ' 製作' : ''}`;
+    return `免費觀看 JAV ${c ? c + ' ' : ''}${t}${extra}，盡在 MISSAV-J 高畫質串流平台。`;
+  },
+  'zh-CN': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = `，${a ? '由 ' + a + ' 主演' : ''}${a && s ? '，' : ''}${s ? '由 ' + s + ' 制作' : ''}`;
+    return `免费观看 JAV ${c ? c + ' ' : ''}${t}${extra}，尽在 MISSAV-J 高清流媒体平台。`;
+  },
+  'en': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'starring ' + a : ''}${a && s ? ' ' : ''}${s ? 'by ' + s : ''}`;
+    return `Watch ${c ? c + ' ' : ''}${t}${extra} for free in premium HD streaming quality on MISSAV-J.`;
+  },
+  'ja': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? a + '出演' : ''}${a && s ? '・' : ''}${s ? s + '制作' : ''}`;
+    return `MISSAV-J で ${c ? c + ' ' : ''}${t}${extra} を高画質で無料視聴。`;
+  },
+  'ko': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? a + ' 주연' : ''}${a && s ? ', ' : ''}${s ? s + ' 제작' : ''}`;
+    return `MISSAV-J에서 ${c ? c + ' ' : ''}${t}${extra} 무료 HD 스트리밍 시청.`;
+  },
+  'ms': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'dibintangi oleh ' + a : ''}${a && s ? ' ' : ''}${s ? 'dari ' + s : ''}`;
+    return `Tonton ${c ? c + ' ' : ''}${t}${extra} secara percuma dengan kualiti HD premium di MISSAV-J.`;
+  },
+  'th': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'นำแสดงโดย ' + a : ''}${a && s ? ' ' : ''}${s ? 'โดยสตูดิโอ ' + s : ''}`;
+    return `ดู ${c ? c + ' ' : ''}${t}${extra} ฟรีในคุณภาพ HD ระดับพรีเมียมบน MISSAV-J`;
+  },
+  'de': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'mit ' + a : ''}${a && s ? ' ' : ''}${s ? 'von ' + s : ''}`;
+    return `Sehen Sie ${c ? c + ' ' : ''}${t}${extra} kostenlos in Premium-HD-Streaming-Qualität auf MISSAV-J.`;
+  },
+  'fr': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'mettant en vedette ' + a : ''}${a && s ? ' ' : ''}${s ? 'par ' + s : ''}`;
+    return `Regardez ${c ? c + ' ' : ''}${t}${extra} gratuitement en qualité HD premium sur MISSAV-J.`;
+  },
+  'vi': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'với sự tham gia của ' + a : ''}${a && s ? ' ' : ''}${s ? 'từ ' + s : ''}`;
+    return `Xem ${c ? c + ' ' : ''}${t}${extra} miễn phí chất lượng HD cao cấp trên MISSAV-J.`;
+  },
+  'id': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'dibintangi ' + a : ''}${a && s ? ' ' : ''}${s ? 'dari ' + s : ''}`;
+    return `Nonton video JAV ${c ? c + ' ' : ''}${t}${extra} gratis dengan streaming kualitas premium di MISSAV-J.`;
+  },
+  'fil': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'pinagbibidahan ni ' + a : ''}${a && s ? ' ' : ''}${s ? 'mula sa ' + s : ''}`;
+    return `Panoorin ang ${c ? c + ' ' : ''}${t}${extra} nang libre sa premium HD streaming sa MISSAV-J.`;
+  },
+  'pt': (c, t, a, s) => {
+    let extra = '';
+    if (a || s) extra = ` ${a ? 'estrelado por ' + a : ''}${a && s ? ' ' : ''}${s ? 'do estúdio ' + s : ''}`;
+    return `Assista ao ${c ? c + ' ' : ''}${t}${extra} gratuitamente em qualidade de streaming HD premium na MISSAV-J.`;
+  }
 };
 
 const SEO_I18N = {
@@ -326,8 +378,20 @@ async function getTranslatedTitle(id, lang, supabaseUrl, supabaseKey) {
 }
 
 function escapeHtml(str) {
+  if (typeof str !== 'string') str = String(str || '');
   if (!str) return '';
-  return str
+  
+  // Unescape first to prevent double-escaping if the string is already escaped
+  const unescaped = str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#39;/g, "'");
+
+  // Then escape safely
+  return unescaped
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -359,7 +423,7 @@ export async function onRequest(context) {
   const isGet = request.method === 'GET';
   const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?$/;
   const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)$/;
-  const langRegex = /^\/([a-zA-Z\-]+)\/?$/;
+  const langRegex = /^\/([a-zA-Z\-]+)?\/?$/;
   
   const isWatch = pathname.match(watchRegex);
   const isList = pathname.match(listRegex);
@@ -429,8 +493,18 @@ export async function onRequest(context) {
 
             const code = post.code || '';
             const fullTitle = code ? `[${code}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
+            
+            let actorsStr = '';
+            if (post.actors && Array.isArray(post.actors)) {
+              actorsStr = post.actors.map(a => typeof a === 'string' ? a : a.name).filter(Boolean).slice(0, 3).join(', ');
+            }
+            let studioStr = '';
+            if (post.studio) {
+              studioStr = typeof post.studio === 'string' ? post.studio : (post.studio.name || '');
+            }
+
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
-            const description = descFn(code, title);
+            const description = descFn(code, title, actorsStr, studioStr);
 
             let imageUrl = post.thumbnail || '/assets/images/logo.webp';
             
@@ -451,46 +525,46 @@ export async function onRequest(context) {
 
             const pageUrl = `${url.origin}${url.pathname}${url.search}`;
 
-            htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(fullTitle)}</title>`);
+            htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(fullTitle)}</title>`);
             htmlContent = htmlContent.replace(
               /<meta name="description" id="meta-description" content="[^"]*"/i,
-              `<meta name="description" id="meta-description" content="${escapeHtml(description)}"`
+              () => `<meta name="description" id="meta-description" content="${escapeHtml(description)}"`
             );
             htmlContent = htmlContent.replace(
               /<link rel="canonical" id="canonical-url" href="[^"]*"/i,
-              `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}"`
+              () => `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta property="og:url" id="og-url" content="[^"]*"/i,
-              `<meta property="og:url" id="og-url" content="${escapeHtml(pageUrl)}"`
+              () => `<meta property="og:url" id="og-url" content="${escapeHtml(pageUrl)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta property="og:title" id="og-title" content="[^"]*"/i,
-              `<meta property="og:title" id="og-title" content="${escapeHtml(fullTitle)}"`
+              () => `<meta property="og:title" id="og-title" content="${escapeHtml(fullTitle)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta property="og:description" id="og-description" content="[^"]*"/i,
-              `<meta property="og:description" id="og-description" content="${escapeHtml(description)}"`
+              () => `<meta property="og:description" id="og-description" content="${escapeHtml(description)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta property="og:image" id="og-image" content="[^"]*"/i,
-              `<meta property="og:image" id="og-image" content="${escapeHtml(imageUrl)}"`
+              () => `<meta property="og:image" id="og-image" content="${escapeHtml(imageUrl)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta name="twitter:title" id="twitter-title" content="[^"]*"/i,
-              `<meta name="twitter:title" id="twitter-title" content="${escapeHtml(fullTitle)}"`
+              () => `<meta name="twitter:title" id="twitter-title" content="${escapeHtml(fullTitle)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta name="twitter:description" id="twitter-description" content="[^"]*"/i,
-              `<meta name="twitter:description" id="twitter-description" content="${escapeHtml(description)}"`
+              () => `<meta name="twitter:description" id="twitter-description" content="${escapeHtml(description)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta name="twitter:image" id="twitter-image" content="[^"]*"/i,
-              `<meta name="twitter:image" id="twitter-image" content="${escapeHtml(imageUrl)}"`
+              () => `<meta name="twitter:image" id="twitter-image" content="${escapeHtml(imageUrl)}"`
             );
             
             const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
-            htmlContent = htmlContent.replace(/<\/head>/i, `  ${hreflangBlock}\n</head>`);
+            htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
 
             if (htmlContent.includes('"@type": "WebSite"')) {
               const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`;
@@ -570,7 +644,7 @@ export async function onRequest(context) {
               };
               htmlContent = htmlContent.replace(
                 /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/i,
-                `<script type="application/ld+json" id="json-ld-data">${JSON.stringify(structuredData, null, 2)}</script>`
+                () => `<script type="application/ld+json" id="json-ld-data">${JSON.stringify(structuredData, null, 2).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')}</script>`
               );
 
               // Inject iframe into raw HTML for first-wave crawler indexing
@@ -581,7 +655,7 @@ export async function onRequest(context) {
           <iframe src="${escapeHtml(cleanEmbedUrl)}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>
         </div>
               `;
-              htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, seoFallbackContent);
+              htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, () => seoFallbackContent);
             }
           }
         } catch (err) {
@@ -636,9 +710,9 @@ export async function onRequest(context) {
         const langDict = SEO_I18N[activeLang] || SEO_I18N['en'];
         const pageTemplate = langDict[typeKey] || SEO_I18N['en'][typeKey] || langDict['default'] || SEO_I18N['en']['default'];
         
-        const safeName = nameParam ? escapeHtml(nameParam) : '';
-        const titleName = (type === 'actor') ? escapeHtml(truncateChars(nameParam, 49)) : safeName;
-        const descName = (type === 'actor') ? escapeHtml(truncateChars(nameParam, 65)) : safeName;
+        const safeName = nameParam || '';
+        const titleName = (type === 'actor') ? truncateChars(nameParam, 49) : safeName;
+        const descName = (type === 'actor') ? truncateChars(nameParam, 65) : safeName;
         
         pageTitle = pageTemplate.t.replace(/%s/g, titleName);
         pageDesc = pageTemplate.d.replace(/%s/g, descName);
@@ -651,38 +725,38 @@ export async function onRequest(context) {
 
         const pageUrl = `${url.origin}${url.pathname}${url.search}`;
         
-        htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, `<title>${pageTitle}</title>`);
+        htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(pageTitle)}</title>`);
         htmlContent = htmlContent.replace(
           /<meta name="description" id="meta-description" content="[^"]*"/i,
-          `<meta name="description" id="meta-description" content="${pageDesc}"`
+          () => `<meta name="description" id="meta-description" content="${escapeHtml(pageDesc)}"`
         );
         htmlContent = htmlContent.replace(
           /<link rel="canonical" id="canonical-url" href="[^"]*"/i,
-          `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}"`
+          () => `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}"`
         );
         htmlContent = htmlContent.replace(
           /<meta property="og:url" id="og-url" content="[^"]*"/i,
-          `<meta property="og:url" id="og-url" content="${escapeHtml(pageUrl)}"`
+          () => `<meta property="og:url" id="og-url" content="${escapeHtml(pageUrl)}"`
         );
         htmlContent = htmlContent.replace(
           /<meta property="og:title" id="og-title" content="[^"]*"/i,
-          `<meta property="og:title" id="og-title" content="${pageTitle}"`
+          () => `<meta property="og:title" id="og-title" content="${escapeHtml(pageTitle)}"`
         );
         htmlContent = htmlContent.replace(
           /<meta property="og:description" id="og-description" content="[^"]*"/i,
-          `<meta property="og:description" id="og-description" content="${pageDesc}"`
+          () => `<meta property="og:description" id="og-description" content="${escapeHtml(pageDesc)}"`
         );
         htmlContent = htmlContent.replace(
           /<meta name="twitter:title" id="twitter-title" content="[^"]*"/i,
-          `<meta name="twitter:title" id="twitter-title" content="${pageTitle}"`
+          () => `<meta name="twitter:title" id="twitter-title" content="${escapeHtml(pageTitle)}"`
         );
         htmlContent = htmlContent.replace(
           /<meta name="twitter:description" id="twitter-description" content="[^"]*"/i,
-          `<meta name="twitter:description" id="twitter-description" content="${pageDesc}"`
+          () => `<meta name="twitter:description" id="twitter-description" content="${escapeHtml(pageDesc)}"`
         );
         
         const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
-        htmlContent = htmlContent.replace(/<\/head>/i, `  ${hreflangBlock}\n</head>`);
+        htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
 
         // JSON-LD ItemList / ProfilePage / CollectionPage / SearchResultsPage
         let schemaJson = {};
@@ -739,8 +813,8 @@ export async function onRequest(context) {
         };
         
         htmlContent = htmlContent.replace(
-          /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/i,
-          `<script type="application/ld+json" id="json-ld-data">${JSON.stringify(structuredData, null, 2)}</script>`
+          /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/is,
+          () => `<script type="application/ld+json" id="json-ld-data">${JSON.stringify(structuredData, null, 2).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')}</script>`
         );
         
         // On the /actors directory hub, inject a real crawlable <a> list of every
@@ -774,8 +848,8 @@ export async function onRequest(context) {
         // Inject fallback h1 text (+ crawlable actor directory on /actors)
         const seoFallbackContent = `
           <div class="seo-fallback" style="display: none;">
-            <h1>${pageTitle}</h1>
-            <p>${pageDesc}</p>
+            <h1>${escapeHtml(pageTitle)}</h1>
+            <p>${escapeHtml(pageDesc)}</p>
             ${actorLinksHtml}
           </div>
         `;
