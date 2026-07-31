@@ -649,13 +649,15 @@ export async function onRequest(context) {
 
               // Inject iframe into raw HTML for first-wave crawler indexing
               const seoFallbackContent = `
-        <div class="seo-fallback" style="display: none;">
-          <h1>${escapeHtml(fullTitle)}</h1>
-          <p>${escapeHtml(description)}</p>
-          <iframe src="${escapeHtml(cleanEmbedUrl)}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>
+        <div class="seo-fallback" style="width: 100%; max-width: 1200px; margin: 0 auto;">
+          <h1 style="position: absolute; width: 1px; height: 1px; overflow: hidden;">${escapeHtml(fullTitle)}</h1>
+          <p style="position: absolute; width: 1px; height: 1px; overflow: hidden;">${escapeHtml(description)}</p>
+          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000;">
+            <iframe src="${escapeHtml(cleanEmbedUrl)}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+          </div>
         </div>
               `;
-              htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, () => seoFallbackContent);
+              htmlContent = htmlContent.replace(/<div class="seo-fallback"[^>]*>[\s\S]*?<\/div>/i, () => seoFallbackContent);
             }
           }
         } catch (err) {
@@ -847,7 +849,7 @@ export async function onRequest(context) {
 
         // Inject fallback h1 text (+ crawlable actor directory on /actors)
         const seoFallbackContent = `
-          <div class="seo-fallback" style="display: none;">
+          <div class="seo-fallback" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0);">
             <h1>${escapeHtml(pageTitle)}</h1>
             <p>${escapeHtml(pageDesc)}</p>
             ${actorLinksHtml}
@@ -855,7 +857,7 @@ export async function onRequest(context) {
         `;
         // Function replacer: actor names may contain `$`, which is special in a
         // string replacement ($&, $1, ...). A function value is inserted verbatim.
-        htmlContent = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, () => seoFallbackContent);
+        htmlContent = htmlContent.replace(/<div class="seo-fallback"[^>]*>[\s\S]*?<\/div>/i, () => seoFallbackContent);
 
         const listResponse = new Response(htmlContent, {
           headers: {

@@ -10,15 +10,17 @@ const cleanEmbedUrl = 'https://server.apijav.com/embed/96475';
 const escapeHtml = (str) => str;
 
 const seoFallbackContent = `
-        <div class="seo-fallback" style="display: none;">
-          <h1>${escapeHtml(fullTitle)}</h1>
-          <p>${escapeHtml(description)}</p>
-          <iframe src="${escapeHtml(cleanEmbedUrl)}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>
+        <div class="seo-fallback" style="width: 100%; max-width: 1200px; margin: 0 auto;">
+          <h1 style="position: absolute; width: 1px; height: 1px; overflow: hidden;">${escapeHtml(fullTitle)}</h1>
+          <p style="position: absolute; width: 1px; height: 1px; overflow: hidden;">${escapeHtml(description)}</p>
+          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000;">
+            <iframe src="${escapeHtml(cleanEmbedUrl)}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+          </div>
         </div>
 `;
 
 console.log('Testing replacement...');
-const newHtml = htmlContent.replace(/<div class="seo-fallback" style="display: none;">[\s\S]*?<\/div>/i, seoFallbackContent);
+const newHtml = htmlContent.replace(/<div class="seo-fallback"[^>]*>[\s\S]*?<\/div>/i, () => seoFallbackContent);
 
 const hasIframe = newHtml.includes('<iframe');
 console.log('Contains iframe in output?', hasIframe);
