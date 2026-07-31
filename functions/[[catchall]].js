@@ -15,6 +15,26 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 const HREFLANG_CODE_MAP = { fil: 'tl' };
 const hreflangCode = (langKey) => HREFLANG_CODE_MAP[langKey] || langKey;
 
+function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
+  let cleanPath = urlPathname.replace(/^\/(id|ja|ko|zh-TW|zh-CN|ms|th|de|fr|vi|fil|pt)(?=\/|$)/, '');
+  if (cleanPath === '') cleanPath = '/';
+  
+  const allLangs = ['en', 'id', 'ja', 'ko', 'zh-TW', 'zh-CN', 'ms', 'th', 'de', 'fr', 'vi', 'fil', 'pt'];
+  
+  const tags = allLangs.map(lang => {
+    const code = hreflangCode(lang);
+    let path = cleanPath;
+    if (lang !== 'en') {
+      path = cleanPath === '/' ? `/${lang}` : `/${lang}${cleanPath}`;
+    }
+    // Use escapeHtml to safely encode ampersands (&) and quotes from urlSearch
+    return `<link rel="alternate" hreflang="${code}" href="${escapeHtml(urlOrigin + path + urlSearch)}" />`;
+  });
+  
+  tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(urlOrigin + cleanPath + urlSearch)}" />`);
+  return tags.join('\n  ');
+}
+
 const DESC_TEMPLATES = {
   'zh-TW': (code, title) => `免費觀看 JAV ${code ? code + ' ' : ''}${title}，盡在 MISSAV-J 高畫質串流平台。`,
   'zh-CN': (code, title) => `免费观看 JAV ${code ? code + ' ' : ''}${title}，尽在 MISSAV-J 高清流媒体平台。`,
@@ -28,8 +48,207 @@ const DESC_TEMPLATES = {
   'vi': (code, title) => `Xem ${code ? code + ' ' : ''}${title} miễn phí chất lượng HD cao cấp trên MISSAV-J.`,
   'id': (code, title) => `Nonton video JAV ${code ? code + ' ' : ''}${title} gratis dengan streaming kualitas premium di MISSAV-J.`,
   'fil': (code, title) => `Panoorin ang ${code ? code + ' ' : ''}${title} nang libre sa premium HD streaming sa MISSAV-J.`,
-  'pt': (code, title) => `Assista ${code ? code + ' ' : ''}${title} gratuitamente em qualidade HD premium no MISSAV-J.`
+  'pt': (code, title) => `Assista ao ${code ? code + ' ' : ''}${title} gratuitamente em qualidade de streaming HD premium na MISSAV-J.`
 };
+
+const SEO_I18N = {
+  en: {
+    home: { t: "MISSAV-J | Premium JAV Streaming", d: "Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses." },
+    actor: { t: "%s | MISSAV-J", d: "Watch JAV videos starring %s in premium HD on MISSAV-J. Explore the full filmography and profile." },
+    category: { t: "%s JAV Videos | MISSAV-J", d: "Watch the latest and best %s JAV videos online for free. Premium high-quality streaming on MISSAV-J." },
+    studio: { t: "%s Studio JAV Videos | MISSAV-J", d: "Explore the official collection of %s JAV videos. High definition streaming for %s releases." },
+    trending: { t: "Trending JAV Videos | MISSAV-J", d: "Watch the most popular and trending JAV videos right now on MISSAV-J." },
+    recent: { t: "Recent JAV Videos | MISSAV-J", d: "Watch the newest and latest JAV video releases on MISSAV-J." },
+    actors: { t: "All JAV Actresses | MISSAV-J", d: "Browse our complete database of JAV actresses and their full video collections." },
+    categories: { t: "All JAV Categories | MISSAV-J", d: "Explore all JAV categories, genres, and tags on MISSAV-J." },
+    studios: { t: "All JAV Studios | MISSAV-J", d: "Browse videos from top JAV studios and production companies on MISSAV-J." },
+    search: { t: "Search Results | MISSAV-J", d: "Search results for premium JAV videos on MISSAV-J." },
+    history: { t: "Session History | MISSAV-J", d: "Your recently watched JAV videos on MISSAV-J." },
+    watch_later: { t: "Watch Later | MISSAV-J", d: "Your saved JAV videos to watch later on MISSAV-J." },
+    default: { t: "MISSAV-J | Premium JAV Streaming", d: "Watch the best premium JAV streaming on MISSAV-J." }
+  },
+  id: {
+    home: { t: "MISSAV-J | Streaming JAV Premium", d: "Tonton video JAV premium terbaik. Jelajahi rilis terbaru, video trending, dan aktris top." },
+    actor: { t: "%s | MISSAV-J", d: "Tonton video JAV dari %s dalam kualitas HD premium di MISSAV-J. Jelajahi profil lengkapnya." },
+    category: { t: "Video JAV %s | MISSAV-J", d: "Tonton video JAV %s terbaru dan terbaik secara online. Streaming kualitas tinggi premium di MISSAV-J." },
+    studio: { t: "Video JAV %s | MISSAV-J", d: "Jelajahi koleksi resmi video JAV %s. Streaming definisi tinggi untuk rilis %s." },
+    trending: { t: "Video JAV Trending | MISSAV-J", d: "Tonton video JAV paling populer dan trending saat ini di MISSAV-J." },
+    recent: { t: "Video JAV Terbaru | MISSAV-J", d: "Tonton rilis video JAV terbaru dan teranyar di MISSAV-J." },
+    actors: { t: "Semua Aktris JAV | MISSAV-J", d: "Jelajahi basis data lengkap aktris JAV kami dan koleksi video mereka." },
+    categories: { t: "Semua Kategori JAV | MISSAV-J", d: "Jelajahi semua kategori, genre, dan tag JAV di MISSAV-J." },
+    studios: { t: "Semua Studio JAV | MISSAV-J", d: "Jelajahi video dari studio dan perusahaan produksi JAV teratas di MISSAV-J." },
+    search: { t: "Hasil Pencarian | MISSAV-J", d: "Hasil pencarian untuk video JAV premium di MISSAV-J." },
+    history: { t: "Riwayat Sesi | MISSAV-J", d: "Video JAV yang baru saja Anda tonton di MISSAV-J." },
+    watch_later: { t: "Tonton Nanti | MISSAV-J", d: "Video JAV yang Anda simpan untuk ditonton nanti di MISSAV-J." },
+    default: { t: "MISSAV-J | Streaming JAV Premium", d: "Tonton streaming JAV premium terbaik di MISSAV-J." }
+  },
+  ja: {
+    home: { t: "MISSAV-J | プレミアムJAVストリーミング", d: "最高のプレミアムJAVストリーミングを視聴。最新リリース、トレンド動画、人気女優を探索。" },
+    actor: { t: "%s | MISSAV-J", d: "MISSAV-Jで %s 出演のJAV動画をプレミアムHDで視聴。完全なプロフィールを探索。" },
+    category: { t: "%s JAV動画 | MISSAV-J", d: "最新かつ最高の %s JAV動画をオンラインで無料視聴。MISSAV-Jでのプレミアム高品質ストリーミング。" },
+    studio: { t: "%s JAV動画 | MISSAV-J", d: "公式の %s JAV動画コレクションを探索。%s リリースの高解像度ストリーミング。" },
+    trending: { t: "急上昇JAV動画 | MISSAV-J", d: "MISSAV-Jで今最も人気のあるトレンドJAV動画を視聴。" },
+    recent: { t: "新着JAV動画 | MISSAV-J", d: "MISSAV-Jで最新のJAV動画リリースを視聴。" },
+    actors: { t: "すべてのJAV女優 | MISSAV-J", d: "JAV女優の完全なデータベースとフルビデオコレクションを閲覧。" },
+    categories: { t: "すべてのJAVカテゴリー | MISSAV-J", d: "MISSAV-JですべてのJAVカテゴリー、ジャンル、タグを探索。" },
+    studios: { t: "すべてのJAVメーカー | MISSAV-J", d: "MISSAV-JでトップJAVメーカーや制作会社の動画を閲覧。" },
+    search: { t: "検索結果 | MISSAV-J", d: "MISSAV-JのプレミアムJAV動画の検索結果。" },
+    history: { t: "視聴履歴 | MISSAV-J", d: "MISSAV-Jで最近視聴したJAV動画。" },
+    watch_later: { t: "後で見る | MISSAV-J", d: "MISSAV-Jで後で見るために保存したJAV動画。" },
+    default: { t: "MISSAV-J | プレミアムJAVストリーミング", d: "MISSAV-Jで最高のプレミアムJAVストリーミングを視聴。" }
+  },
+  ko: {
+    home: { t: "MISSAV-J | 프리미엄 JAV 스트리밍", d: "최고의 프리미엄 JAV 스트리밍을 시청하세요. 최신 릴리스, 인기 동영상 및 최고 여배우를 탐색하십시오." },
+    actor: { t: "%s | MISSAV-J", d: "MISSAV-J에서 %s 출연 JAV 동영상을 프리미엄 HD로 시청하세요." },
+    category: { t: "%s JAV 동영상 | MISSAV-J", d: "온라인에서 최신 및 최고의 %s JAV 동영상을 무료로 시청하세요." },
+    studio: { t: "%s JAV 동영상 | MISSAV-J", d: "공식 %s JAV 동영상 컬렉션을 탐색하십시오." },
+    trending: { t: "인기 JAV 동영상 | MISSAV-J", d: "MISSAV-J에서 지금 가장 인기 있고 트렌디한 JAV 동영상을 시청하세요." },
+    recent: { t: "최신 JAV 동영상 | MISSAV-J", d: "MISSAV-J에서 최신 JAV 동영상 릴리스를 시청하세요." },
+    actors: { t: "모든 JAV 여배우 | MISSAV-J", d: "우리의 완전한 JAV 여배우 데이터베이스를 찾아보십시오." },
+    categories: { t: "모든 JAV 카테고리 | MISSAV-J", d: "MISSAV-J에서 모든 JAV 카테고리를 탐색하십시오." },
+    studios: { t: "모든 JAV 스튜디오 | MISSAV-J", d: "MISSAV-J에서 인기 JAV 스튜디오의 동영상을 찾아보십시오." },
+    search: { t: "검색 결과 | MISSAV-J", d: "MISSAV-J의 프리미엄 JAV 동영상 검색 결과." },
+    history: { t: "시청 기록 | MISSAV-J", d: "MISSAV-J에서 최근에 시청한 JAV 동영상." },
+    watch_later: { t: "나중에 보기 | MISSAV-J", d: "MISSAV-J에 나중에 보기 위해 저장한 JAV 동영상." },
+    default: { t: "MISSAV-J | 프리미엄 JAV 스트리밍", d: "MISSAV-J에서 최고의 프리미엄 JAV 스트리밍을 시청하세요." }
+  },
+  'zh-TW': {
+    home: { t: "MISSAV-J | 高級 JAV 串流", d: "觀看最好的高級 JAV 串流。探索最新發布、熱門影片和頂級女優。" },
+    actor: { t: "%s | MISSAV-J", d: "在 MISSAV-J 上以高級 HD 觀看由 %s 主演的 JAV 影片。探索完整的影片庫。" },
+    category: { t: "%s JAV 影片 | MISSAV-J", d: "在線免費觀看最新最好的 %s JAV 影片。MISSAV-J 提供高級高品質串流。" },
+    studio: { t: "%s JAV 影片 | MISSAV-J", d: "探索官方的 %s JAV 影片收藏。MISSAV-J 提供高畫質串流。" },
+    trending: { t: "熱門 JAV 影片 | MISSAV-J", d: "在 MISSAV-J 上觀看目前最受歡迎和熱門的 JAV 影片。" },
+    recent: { t: "最新 JAV 影片 | MISSAV-J", d: "在 MISSAV-J 上觀看最新的 JAV 影片發布。" },
+    actors: { t: "所有 JAV 女優 | MISSAV-J", d: "瀏覽我們完整的 JAV 女優數據庫和她們的影片收藏。" },
+    categories: { t: "所有 JAV 分類 | MISSAV-J", d: "探索 MISSAV-J 上的所有 JAV 分類、流派和標籤。" },
+    studios: { t: "所有 JAV 片商 | MISSAV-J", d: "瀏覽 MISSAV-J 上頂級 JAV 片商的影片。" },
+    search: { t: "搜索結果 | MISSAV-J", d: "MISSAV-J 上高級 JAV 影片的搜索結果。" },
+    history: { t: "觀看歷史 | MISSAV-J", d: "您最近在 MISSAV-J 觀看的 JAV 影片。" },
+    watch_later: { t: "稍後觀看 | MISSAV-J", d: "您保存在 MISSAV-J 稍後觀看的 JAV 影片。" },
+    default: { t: "MISSAV-J | 高級 JAV 串流", d: "在 MISSAV-J 觀看最好的高級 JAV 串流。" }
+  },
+  'zh-CN': {
+    home: { t: "MISSAV-J | 高级 JAV 流媒体", d: "观看最好的高级 JAV 流媒体。探索最新发布、热门视频和顶级女优。" },
+    actor: { t: "%s | MISSAV-J", d: "在 MISSAV-J 上以高级 HD 观看由 %s 主演的 JAV 视频。探索完整的影片库。" },
+    category: { t: "%s JAV 视频 | MISSAV-J", d: "在线免费观看最新最好的 %s JAV 视频。MISSAV-J 提供高级高质量流媒体。" },
+    studio: { t: "%s JAV 视频 | MISSAV-J", d: "探索官方的 %s JAV 视频收藏。MISSAV-J 提供高清流媒体。" },
+    trending: { t: "热门 JAV 视频 | MISSAV-J", d: "在 MISSAV-J 上观看目前最受欢迎和热门的 JAV 视频。" },
+    recent: { t: "最新 JAV 视频 | MISSAV-J", d: "在 MISSAV-J 上观看最新的 JAV 视频发布。" },
+    actors: { t: "所有 JAV 女优 | MISSAV-J", d: "浏览我们完整的 JAV 女优数据库和她们的视频收藏。" },
+    categories: { t: "所有 JAV 分类 | MISSAV-J", d: "探索 MISSAV-J 上的所有 JAV 分类、流派和标签。" },
+    studios: { t: "所有 JAV 片商 | MISSAV-J", d: "浏览 MISSAV-J 上顶级 JAV 片商的视频。" },
+    search: { t: "搜索结果 | MISSAV-J", d: "MISSAV-J 上高级 JAV 视频的搜索结果。" },
+    history: { t: "观看历史 | MISSAV-J", d: "您最近在 MISSAV-J 观看的 JAV 视频。" },
+    watch_later: { t: "稍后观看 | MISSAV-J", d: "您保存在 MISSAV-J 稍后观看的 JAV 视频。" },
+    default: { t: "MISSAV-J | 高级 JAV 流媒体", d: "在 MISSAV-J 观看最好的高级 JAV 流媒体。" }
+  },
+  ms: {
+    home: { t: "MISSAV-J | Penstriman JAV Premium", d: "Tonton penstriman JAV premium terbaik. Terokai keluaran terkini, video trending dan pelakon popular." },
+    actor: { t: "%s | MISSAV-J", d: "Tonton video JAV yang dibintangi %s dalam HD premium di MISSAV-J." },
+    category: { t: "Video JAV %s | MISSAV-J", d: "Tonton video JAV %s terkini dan terbaik dalam talian secara percuma." },
+    studio: { t: "Video JAV %s | MISSAV-J", d: "Terokai koleksi rasmi video JAV %s di MISSAV-J." },
+    trending: { t: "Video JAV Trending | MISSAV-J", d: "Tonton video JAV paling popular dan trending sekarang di MISSAV-J." },
+    recent: { t: "Video JAV Terkini | MISSAV-J", d: "Tonton keluaran video JAV terkini di MISSAV-J." },
+    actors: { t: "Semua Pelakon JAV | MISSAV-J", d: "Semak imbas pangkalan data lengkap pelakon JAV kami." },
+    categories: { t: "Semua Kategori JAV | MISSAV-J", d: "Terokai semua kategori, genre dan tag JAV di MISSAV-J." },
+    studios: { t: "Semua Studio JAV | MISSAV-J", d: "Semak imbas video dari studio JAV teratas di MISSAV-J." },
+    search: { t: "Hasil Carian | MISSAV-J", d: "Hasil carian untuk video JAV premium di MISSAV-J." },
+    history: { t: "Sejarah Sesi | MISSAV-J", d: "Video JAV yang anda tonton baru-baru ini di MISSAV-J." },
+    watch_later: { t: "Tonton Nanti | MISSAV-J", d: "Video JAV yang anda simpan untuk ditonton nanti di MISSAV-J." },
+    default: { t: "MISSAV-J | Penstriman JAV Premium", d: "Tonton penstriman JAV premium terbaik di MISSAV-J." }
+  },
+  th: {
+    home: { t: "MISSAV-J | สตรีมมิ่ง JAV พรีเมียม", d: "ดูการสตรีม JAV พรีเมียมที่ดีที่สุด สำรวจการเปิดตัวล่าสุด วิดีโอยอดนิยม และนักแสดงหญิงชั้นนำ" },
+    actor: { t: "%s | MISSAV-J", d: "ดูวิดีโอ JAV ที่นำแสดงโดย %s ในรูปแบบ HD พรีเมียมบน MISSAV-J" },
+    category: { t: "วิดีโอ JAV %s | MISSAV-J", d: "ดูวิดีโอ JAV %s ล่าสุดและดีที่สุดออนไลน์ฟรี" },
+    studio: { t: "วิดีโอ JAV %s | MISSAV-J", d: "สำรวจคอลเลกชันอย่างเป็นทางการของวิดีโอ JAV %s บน MISSAV-J" },
+    trending: { t: "วิดีโอ JAV ยอดนิยม | MISSAV-J", d: "ดูวิดีโอ JAV ที่ได้รับความนิยมและเป็นกระแสที่สุดตอนนี้บน MISSAV-J" },
+    recent: { t: "วิดีโอ JAV ล่าสุด | MISSAV-J", d: "ดูวิดีโอ JAV ล่าสุดที่เพิ่งเปิดตัวบน MISSAV-J" },
+    actors: { t: "นักแสดงหญิง JAV ทั้งหมด | MISSAV-J", d: "เรียกดูฐานข้อมูลนักแสดงหญิง JAV ที่สมบูรณ์ของเรา" },
+    categories: { t: "หมวดหมู่ JAV ทั้งหมด | MISSAV-J", d: "สำรวจหมวดหมู่และแนวเพลง JAV ทั้งหมดบน MISSAV-J" },
+    studios: { t: "สตูดิโอ JAV ทั้งหมด | MISSAV-J", d: "เรียกดูวิดีโอจากสตูดิโอ JAV ชั้นนำบน MISSAV-J" },
+    search: { t: "ผลการค้นหา | MISSAV-J", d: "ผลการค้นหาสำหรับวิดีโอ JAV พรีเมียมบน MISSAV-J" },
+    history: { t: "ประวัติการเข้าชม | MISSAV-J", d: "วิดีโอ JAV ที่คุณเพิ่งดูล่าสุดบน MISSAV-J" },
+    watch_later: { t: "ดูภายหลัง | MISSAV-J", d: "วิดีโอ JAV ที่คุณบันทึกไว้เพื่อดูภายหลังบน MISSAV-J" },
+    default: { t: "MISSAV-J | สตรีมมิ่ง JAV พรีเมียม", d: "ดูการสตรีม JAV พรีเมียมที่ดีที่สุดบน MISSAV-J" }
+  },
+  de: {
+    home: { t: "MISSAV-J | Premium JAV Streaming", d: "Sehen Sie sich die besten Premium-JAV-Streams an. Entdecken Sie die neuesten Veröffentlichungen, Trendvideos und Top-Schauspielerinnen." },
+    actor: { t: "%s | MISSAV-J", d: "Sehen Sie sich JAV-Videos mit %s in Premium-HD auf MISSAV-J an." },
+    category: { t: "%s JAV-Videos | MISSAV-J", d: "Sehen Sie sich die neuesten und besten %s JAV-Videos online kostenlos an." },
+    studio: { t: "%s JAV-Videos | MISSAV-J", d: "Entdecken Sie die offizielle Sammlung von %s JAV-Videos auf MISSAV-J." },
+    trending: { t: "Trendige JAV-Videos | MISSAV-J", d: "Sehen Sie sich jetzt die beliebtesten und angesagtesten JAV-Videos auf MISSAV-J an." },
+    recent: { t: "Neueste JAV-Videos | MISSAV-J", d: "Sehen Sie sich die neuesten JAV-Video-Veröffentlichungen auf MISSAV-J an." },
+    actors: { t: "Alle JAV-Schauspielerinnen | MISSAV-J", d: "Durchsuchen Sie unsere komplette Datenbank von JAV-Schauspielerinnen." },
+    categories: { t: "Alle JAV-Kategorien | MISSAV-J", d: "Entdecken Sie alle JAV-Kategorien und Genres auf MISSAV-J." },
+    studios: { t: "Alle JAV-Studios | MISSAV-J", d: "Durchsuchen Sie Videos von den besten JAV-Studios auf MISSAV-J." },
+    search: { t: "Suchergebnisse | MISSAV-J", d: "Suchergebnisse für Premium-JAV-Videos auf MISSAV-J." },
+    history: { t: "Verlauf | MISSAV-J", d: "Ihre kürzlich angesehenen JAV-Videos auf MISSAV-J." },
+    watch_later: { t: "Später ansehen | MISSAV-J", d: "Ihre gespeicherten JAV-Videos auf MISSAV-J." },
+    default: { t: "MISSAV-J | Premium JAV Streaming", d: "Sehen Sie sich die besten Premium-JAV-Streams auf MISSAV-J an." }
+  },
+  fr: {
+    home: { t: "MISSAV-J | Streaming JAV Premium", d: "Regardez le meilleur streaming JAV premium. Découvrez les dernières sorties, les vidéos tendance et les meilleures actrices." },
+    actor: { t: "%s | MISSAV-J", d: "Regardez des vidéos JAV avec %s en HD premium sur MISSAV-J." },
+    category: { t: "Vidéos JAV %s | MISSAV-J", d: "Regardez les dernières et les meilleures vidéos JAV %s en ligne gratuitement." },
+    studio: { t: "Vidéos JAV %s | MISSAV-J", d: "Découvrez la collection officielle de vidéos JAV %s sur MISSAV-J." },
+    trending: { t: "Vidéos JAV tendance | MISSAV-J", d: "Regardez les vidéos JAV les plus populaires en ce moment sur MISSAV-J." },
+    recent: { t: "Dernières vidéos JAV | MISSAV-J", d: "Regardez les dernières sorties de vidéos JAV sur MISSAV-J." },
+    actors: { t: "Toutes les actrices JAV | MISSAV-J", d: "Parcourez notre base de données complète d'actrices JAV." },
+    categories: { t: "Toutes les catégories JAV | MISSAV-J", d: "Découvrez toutes les catégories et genres JAV sur MISSAV-J." },
+    studios: { t: "Tous les studios JAV | MISSAV-J", d: "Parcourez les vidéos des meilleurs studios JAV sur MISSAV-J." },
+    search: { t: "Résultats de recherche | MISSAV-J", d: "Résultats de recherche pour les vidéos JAV premium sur MISSAV-J." },
+    history: { t: "Historique | MISSAV-J", d: "Vos vidéos JAV récemment regardées sur MISSAV-J." },
+    watch_later: { t: "À regarder plus tard | MISSAV-J", d: "Vos vidéos JAV enregistrées sur MISSAV-J." },
+    default: { t: "MISSAV-J | Streaming JAV Premium", d: "Regardez le meilleur streaming JAV premium sur MISSAV-J." }
+  },
+  vi: {
+    home: { t: "MISSAV-J | Truyền phát JAV Cao cấp", d: "Xem truyền phát JAV cao cấp tốt nhất. Khám phá các bản phát hành mới nhất, video thịnh hành và các nữ diễn viên hàng đầu." },
+    actor: { t: "%s | MISSAV-J", d: "Xem video JAV có sự tham gia của %s với chất lượng HD cao cấp trên MISSAV-J." },
+    category: { t: "Video JAV %s | MISSAV-J", d: "Xem video JAV %s mới nhất và tốt nhất trực tuyến miễn phí." },
+    studio: { t: "Video JAV %s | MISSAV-J", d: "Khám phá bộ sưu tập chính thức của các video JAV %s trên MISSAV-J." },
+    trending: { t: "Video JAV thịnh hành | MISSAV-J", d: "Xem các video JAV phổ biến và thịnh hành nhất ngay bây giờ trên MISSAV-J." },
+    recent: { t: "Video JAV mới nhất | MISSAV-J", d: "Xem các bản phát hành video JAV mới nhất trên MISSAV-J." },
+    actors: { t: "Tất cả Nữ diễn viên JAV | MISSAV-J", d: "Duyệt qua cơ sở dữ liệu hoàn chỉnh của chúng tôi về các nữ diễn viên JAV." },
+    categories: { t: "Tất cả Danh mục JAV | MISSAV-J", d: "Khám phá tất cả các danh mục và thể loại JAV trên MISSAV-J." },
+    studios: { t: "Tất cả Studio JAV | MISSAV-J", d: "Duyệt video từ các studio JAV hàng đầu trên MISSAV-J." },
+    search: { t: "Kết quả Tìm kiếm | MISSAV-J", d: "Kết quả tìm kiếm cho các video JAV cao cấp trên MISSAV-J." },
+    history: { t: "Lịch sử xem | MISSAV-J", d: "Các video JAV bạn đã xem gần đây trên MISSAV-J." },
+    watch_later: { t: "Xem sau | MISSAV-J", d: "Các video JAV bạn đã lưu để xem sau trên MISSAV-J." },
+    default: { t: "MISSAV-J | Truyền phát JAV Cao cấp", d: "Xem truyền phát JAV cao cấp tốt nhất trên MISSAV-J." }
+  },
+  fil: {
+    home: { t: "MISSAV-J | Premium JAV Streaming", d: "Panoorin ang pinakamahusay na premium JAV streaming. Tuklasin ang mga pinakabagong release, trending videos, at top actresses." },
+    actor: { t: "%s | MISSAV-J", d: "Panoorin ang mga JAV video na pinagbibidahan ni %s sa premium HD sa MISSAV-J." },
+    category: { t: "%s JAV Videos | MISSAV-J", d: "Panoorin ang pinakabago at pinakamahusay na %s JAV videos online nang libre." },
+    studio: { t: "%s JAV Videos | MISSAV-J", d: "Galugarin ang opisyal na koleksyon ng mga %s JAV videos sa MISSAV-J." },
+    trending: { t: "Trending JAV Videos | MISSAV-J", d: "Panoorin ang pinakasikat at trending na JAV videos ngayon sa MISSAV-J." },
+    recent: { t: "Pinakabagong JAV Videos | MISSAV-J", d: "Panoorin ang mga pinakabagong release ng JAV video sa MISSAV-J." },
+    actors: { t: "Lahat ng JAV Actresses | MISSAV-J", d: "I-browse ang aming kumpletong database ng mga JAV actresses." },
+    categories: { t: "Lahat ng JAV Categories | MISSAV-J", d: "Galugarin ang lahat ng JAV categories at genres sa MISSAV-J." },
+    studios: { t: "Lahat ng JAV Studios | MISSAV-J", d: "Mag-browse ng mga video mula sa nangungunang JAV studios sa MISSAV-J." },
+    search: { t: "Mga Resulta ng Paghahanap | MISSAV-J", d: "Mga resulta ng paghahanap para sa premium JAV videos sa MISSAV-J." },
+    history: { t: "Kasaysayan ng Napanood | MISSAV-J", d: "Ang iyong mga kamakailang napanood na JAV videos sa MISSAV-J." },
+    watch_later: { t: "Panoorin Mamaya | MISSAV-J", d: "Ang iyong mga na-save na JAV videos para panoorin mamaya sa MISSAV-J." },
+    default: { t: "MISSAV-J | Premium JAV Streaming", d: "Panoorin ang pinakamahusay na premium JAV streaming sa MISSAV-J." }
+  },
+  pt: {
+    home: { t: "MISSAV-J | Streaming JAV Premium", d: "Assista ao melhor streaming JAV premium. Explore os lançamentos mais recentes, vídeos em alta e as melhores atrizes." },
+    actor: { t: "%s | MISSAV-J", d: "Assista a vídeos JAV com %s em HD premium no MISSAV-J." },
+    category: { t: "Vídeos JAV %s | MISSAV-J", d: "Assista aos melhores e mais recentes vídeos JAV %s online gratuitamente." },
+    studio: { t: "Vídeos JAV %s | MISSAV-J", d: "Explore a coleção oficial de vídeos JAV %s no MISSAV-J." },
+    trending: { t: "Vídeos JAV em alta | MISSAV-J", d: "Assista aos vídeos JAV mais populares e em alta no momento no MISSAV-J." },
+    recent: { t: "Vídeos JAV mais recentes | MISSAV-J", d: "Assista aos lançamentos de vídeos JAV mais recentes no MISSAV-J." },
+    actors: { t: "Todas as atrizes JAV | MISSAV-J", d: "Navegue pelo nosso banco de dados completo de atrizes JAV." },
+    categories: { t: "Todas as categorias JAV | MISSAV-J", d: "Explore todas as categorias e gêneros JAV no MISSAV-J." },
+    studios: { t: "Todos os estúdios JAV | MISSAV-J", d: "Navegue por vídeos dos principais estúdios JAV no MISSAV-J." },
+    search: { t: "Resultados da pesquisa | MISSAV-J", d: "Resultados da pesquisa por vídeos JAV premium no MISSAV-J." },
+    history: { t: "Histórico | MISSAV-J", d: "Seus vídeos JAV assistidos recentemente no MISSAV-J." },
+    watch_later: { t: "Assistir mais tarde | MISSAV-J", d: "Seus vídeos JAV salvos para assistir mais tarde no MISSAV-J." },
+    default: { t: "MISSAV-J | Streaming JAV Premium", d: "Assista ao melhor streaming JAV premium no MISSAV-J." }
+  }
+};
+
 
 function formatDuration(durationStr) {
   if (!durationStr || durationStr === '00:00:00') return null;
@@ -269,6 +488,9 @@ export async function onRequest(context) {
               /<meta name="twitter:image" id="twitter-image" content="[^"]*"/i,
               `<meta name="twitter:image" id="twitter-image" content="${escapeHtml(imageUrl)}"`
             );
+            
+            const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
+            htmlContent = htmlContent.replace(/<\/head>/i, `  ${hreflangBlock}\n</head>`);
 
             if (htmlContent.includes('"@type": "WebSite"')) {
               const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`;
@@ -409,54 +631,22 @@ export async function onRequest(context) {
         let pageDesc = 'MISSAV-J Streaming';
         let schemaType = 'CollectionPage';
         
-        const safeName = escapeHtml(nameParam);
+        // Resolve actual route type from URL pattern (popular-actors falls back to actors, empty type is home)
+        const typeKey = (type === 'popular-actors') ? 'actors' : (type === 'watch-later') ? 'watch_later' : (type || 'home');
+        const langDict = SEO_I18N[activeLang] || SEO_I18N['en'];
+        const pageTemplate = langDict[typeKey] || SEO_I18N['en'][typeKey] || langDict['default'] || SEO_I18N['en']['default'];
+        
+        const safeName = nameParam ? escapeHtml(nameParam) : '';
+        const titleName = (type === 'actor') ? escapeHtml(truncateChars(nameParam, 49)) : safeName;
+        const descName = (type === 'actor') ? escapeHtml(truncateChars(nameParam, 65)) : safeName;
+        
+        pageTitle = pageTemplate.t.replace(/%s/g, titleName);
+        pageDesc = pageTemplate.d.replace(/%s/g, descName);
         
         if (type === 'actor' && nameParam) {
-          // Keep <title> <=60 chars and meta description within 110-160 chars for
-          // long actor names (Ahrefs "Title/Meta description too long"). Truncate
-          // the RAW name to fit, then escape. Suffix " | MISSAV-J" = 11 chars, so
-          // the name gets 49 chars. Description static text = 95 chars, name budget 65.
-          const titleName = escapeHtml(truncateChars(nameParam, 49));
-          const descName = escapeHtml(truncateChars(nameParam, 65));
-          pageTitle = `${titleName} | MISSAV-J`;
-          pageDesc = `Watch JAV videos starring ${descName} in premium HD on MISSAV-J. Explore the full filmography and profile.`;
           schemaType = 'ProfilePage';
-        } else if (type === 'category' && nameParam) {
-          pageTitle = `${safeName} JAV Videos | MISSAV-J`;
-          pageDesc = `Watch the latest and best ${safeName} JAV videos online for free. Premium high-quality streaming on MISSAV-J.`;
-        } else if (type === 'studio' && nameParam) {
-          pageTitle = `${safeName} Studio JAV Videos | MISSAV-J`;
-          pageDesc = `Explore the official collection of ${safeName} JAV videos. High definition streaming for ${safeName} studio releases.`;
-        } else if (type === 'trending') {
-          pageTitle = `Trending JAV Videos | MISSAV-J`;
-          pageDesc = `Watch the most popular and trending JAV videos right now on MISSAV-J. Discover what everyone is streaming today in premium HD quality.`;
-        } else if (type === 'recent') {
-          pageTitle = `Recent JAV Videos | MISSAV-J`;
-          pageDesc = `Watch the newest and latest JAV video releases on MISSAV-J. Stream fresh uploads added daily in premium high-definition quality.`;
-        } else if (type === 'actors') {
-          pageTitle = `All JAV Actresses | MISSAV-J`;
-          pageDesc = `Browse our complete database of JAV actresses and their full video collections. Find your favorite performers and explore their filmographies.`;
-        } else if (type === 'categories') {
-          pageTitle = `All JAV Categories | MISSAV-J`;
-          pageDesc = `Explore all JAV categories, genres, and tags on MISSAV-J. Browse by theme and find exactly the videos you want to watch in premium HD.`;
-        } else if (type === 'studios') {
-          pageTitle = `All JAV Studios | MISSAV-J`;
-          pageDesc = `Browse videos from top JAV studios and production companies on MISSAV-J. Explore official releases from the industry's leading labels in HD.`;
-        } else if (type === 'popular-actors') {
-          pageTitle = `Popular JAV Actresses | MISSAV-J`;
-          pageDesc = `Browse the most popular JAV actresses and their premium video collections.`;
-        } else if (type === 'watch-later') {
-          pageTitle = `Watch Later | MISSAV-J`;
-          pageDesc = `Your saved JAV videos to watch later.`;
-        } else if (type === 'history') {
-          pageTitle = `Session History | MISSAV-J`;
-          pageDesc = `Your recently watched JAV videos.`;
         } else if (type === 'search') {
-          pageTitle = `Search Results | MISSAV-J`;
-          pageDesc = `Search results for premium JAV videos on MISSAV-J.`;
-        } else if (type === 'home' || !type) {
-          pageTitle = `MISSAV-J | Premium JAV Streaming`;
-          pageDesc = `Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses.`;
+          schemaType = 'SearchResultsPage';
         }
 
         const pageUrl = `${url.origin}${url.pathname}${url.search}`;
@@ -490,8 +680,11 @@ export async function onRequest(context) {
           /<meta name="twitter:description" id="twitter-description" content="[^"]*"/i,
           `<meta name="twitter:description" id="twitter-description" content="${pageDesc}"`
         );
+        
+        const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
+        htmlContent = htmlContent.replace(/<\/head>/i, `  ${hreflangBlock}\n</head>`);
 
-        // JSON-LD ItemList / ProfilePage / CollectionPage
+        // JSON-LD ItemList / ProfilePage / CollectionPage / SearchResultsPage
         let schemaJson = {};
         if (schemaType === 'ProfilePage' && nameParam) {
           schemaJson = {
@@ -502,6 +695,14 @@ export async function onRequest(context) {
               "name": nameParam,
               "url": pageUrl
             }
+          };
+        } else if (schemaType === 'SearchResultsPage') {
+          schemaJson = {
+            "@context": "https://schema.org",
+            "@type": "SearchResultsPage",
+            "name": pageTitle,
+            "description": pageDesc,
+            "url": pageUrl
           };
         } else {
           schemaJson = {

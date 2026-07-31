@@ -21,7 +21,9 @@
     "/*/categories",
     "/studios",
     "/*/studios",
-    "/sitemap.xml"
+    "/sitemap.xml",
+    "/",
+    "/en", "/id", "/ja", "/ko", "/zh-TW", "/zh-CN", "/th", "/vi", "/ms", "/fil", "/fr", "/pt", "/de"
   ],
   "exclude": [
     "/assets/*",
