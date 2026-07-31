@@ -1761,3 +1761,41 @@
  
  
  
+/* Custom Sponsor Banner */
+.custom-sponsor-banner {
+  width: 100%;
+  max-width: 728px;
+  margin: 16px auto 0 auto;
+  text-align: center;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  justify-content: center;
+}
+
+.custom-sponsor-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.custom-sponsor-banner a {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.custom-sponsor-banner img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .custom-sponsor-banner {
+    margin: 12px 16px 0 16px;
+    width: calc(100% - 32px);
+  }
+}
