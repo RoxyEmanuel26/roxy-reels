@@ -421,8 +421,8 @@ export async function onRequest(context) {
   }
   // Check cache for GET requests on Watch and Listing Pages only
   const isGet = request.method === 'GET';
-  const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?$/;
-  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)$/;
+  const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?\/?$/;
+  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)\/?$/;
   const langRegex = /^\/([a-zA-Z\-]+)?\/?$/;
   
   const isWatch = pathname.match(watchRegex);
