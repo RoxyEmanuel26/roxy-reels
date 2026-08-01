@@ -171,8 +171,8 @@ module.exports = async (req, res) => {
       htmlContent = htmlContent.replace(/<div class="seo-fallback"[^>]*>[\s\S]*?<\/div>/i, () => seoFallbackContent);
     }
 
-    // Set caching headers for Edge network to cache the dynamic page for 5 minutes
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // Set caching headers for Edge network to cache the dynamic page for 12 hours
+    res.setHeader('Cache-Control', 'public, s-maxage=43200, stale-while-revalidate=86400');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(htmlContent);
 
