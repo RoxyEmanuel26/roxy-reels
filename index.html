@@ -75,12 +75,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 
   <!-- Premium Modular Stylesheets -->
-  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.26">
-  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.26">
-  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.26">
-  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.26">
+  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.27">
+  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.27">
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.27">
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.27">
+  <!-- ============================================================ -->
+  <!-- Adsterra POPUNDER — wajib di <head> sesuai ketentuan Adsterra -->
+  <!-- data-cfasync="false" wajib untuk Cloudflare (cegah RocketLoader) -->
+  <!-- ============================================================ -->
+  <script data-cfasync="false" type="text/javascript" src="//glamournakedemployee.com/20/6a/59/206a5938614f53f8c548d410f197cb16.js"></script>
 
-  <!-- Ad scripts have been deferred to improve PageSpeed (TBT) -->
 </head>
 <body>
 
@@ -274,7 +278,7 @@
 
 
   <!-- Modular SPA Script Bootstrap -->
-  <script type="module" src="/assets/js/app.js?v=2.8.26"></script>
+  <script type="module" src="/assets/js/app.js?v=2.8.27"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>
@@ -289,42 +293,12 @@
     }
   </script>
 
-  <!-- Adsterra & Third-Party Lazy Loader -->
-  <script>
-    (function() {
-      let isLoaded = false;
-      const loadExternalScripts = () => {
-        if (isLoaded) return;
-        isLoaded = true;
-        
-        const scriptsToLoad = [
-          '//glamournakedemployee.com/20/6a/59/206a5938614f53f8c548d410f197cb16.js', // Popunder
-          '//glamournakedemployee.com/34/2c/a9/342ca9d1e39cefa817e38f34b37c114d.js'  // Social Bar
-        ];
-        
-        scriptsToLoad.forEach(src => {
-          const script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.src = src;
-          script.setAttribute('data-cfasync', 'false');
-          document.body.appendChild(script);
-        });
+  <!-- ============================================================ -->
+  <!-- Adsterra SOCIAL BAR — wajib sebelum </body> sesuai ketentuan -->
+  <!-- data-cfasync="false" wajib untuk Cloudflare (cegah RocketLoader) -->
+  <!-- ============================================================ -->
+  <script data-cfasync="false" type="text/javascript" src="//glamournakedemployee.com/34/2c/a9/342ca9d1e39cefa817e38f34b37c114d.js"></script>
 
-        // Cleanup event listeners
-        ['scroll', 'mousemove', 'touchstart', 'click', 'keydown'].forEach(evt => {
-          window.removeEventListener(evt, loadExternalScripts);
-        });
-      };
-
-      // Load on first interaction
-      ['scroll', 'mousemove', 'touchstart', 'click', 'keydown'].forEach(evt => {
-        window.addEventListener(evt, loadExternalScripts, { once: true, passive: true });
-      });
-
-      // Fallback: load after 4 seconds if no interaction
-      setTimeout(loadExternalScripts, 4000);
-    })();
-  </script>
 </body>
 </html>
 
