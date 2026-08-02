@@ -3,8 +3,6 @@
  * Mengintegrasikan front-end dengan apiJAV REST API.
  */
 
-const BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
-
 function getActiveLang() {
   const segments = window.location.pathname.replace(/^\//, '').split('/');
   const lang = segments[0] || 'en';
@@ -37,6 +35,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
 const api = {
   /**
    * Mengambil daftar video (feed & listing) dengan query parameters.
+   * Menggunakan Vercel proxy /api/posts untuk menghindari CORS error.
    * @param {Object} params - Query parameters
    * @returns {Promise<{posts: Array, total: number, totalPages: number}>}
    */
@@ -52,7 +51,10 @@ const api = {
       });
 
       const qs = new URLSearchParams(cleanParams).toString();
-      const url = `${BASE}/posts?${qs}`;
+      // Gunakan proxy /api/posts (Vercel serverless) untuk menghindari CORS.
+      // server.apijav.com hanya mengizinkan missav-j.com (no-www),
+      // sedangkan website berjalan di www.missav-j.com. Proxy mengembalikan CORS: *
+      const url = `/api/posts?${qs}`;
       
       if (apiCache.has(url)) {
         return apiCache.get(url);
@@ -108,6 +110,7 @@ const api = {
 
   /**
    * Mengambil detail lengkap video tunggal berdasarkan ID.
+   * Menggunakan Vercel proxy /api/posts?id=<id> untuk menghindari CORS error.
    * @param {string|number} id - ID Post / Video
    * @returns {Promise<Object>} Detail post/video
    */
@@ -116,7 +119,8 @@ const api = {
       if (!id) throw new Error('Post ID wajib disertakan');
       const lang = getActiveLang();
       const cacheKey = `post:${id}:${lang}`;
-      const url = `${BASE}/posts/${id}?lang=${lang}`;
+      // Gunakan proxy /api/posts dengan parameter id untuk single post
+      const url = `/api/posts?id=${id}&lang=${lang}`;
       
       if (window.__SSR_POST__ && String(window.__SSR_POST__.id) === String(id)) {
         apiCache.set(cacheKey, window.__SSR_POST__);
@@ -154,6 +158,7 @@ const api = {
 
   /**
    * Mengambil data embed player berdasarkan ID video.
+   * Menggunakan Vercel proxy /api/player untuk menghindari CORS error.
    * @param {string|number} id - ID Post / Video
    * @returns {Promise<{iframe_html: string}>} Data player berisi markup iframe
    */
@@ -162,7 +167,8 @@ const api = {
       if (!id) throw new Error('Player ID wajib disertakan');
       const lang = getActiveLang();
       const cacheKey = `player:${id}:${lang}`;
-      const url = `${BASE}/player/${id}?lang=${lang}`;
+      // Gunakan proxy /api/player bukan langsung ke server.apijav.com
+      const url = `/api/player?id=${id}&lang=${lang}`;
       
       if (apiCache.has(cacheKey)) {
         return apiCache.get(cacheKey);
