@@ -184,8 +184,7 @@ export async function onRequest(context) {
       cache = caches.default;
       const cachedResponse = await cache.match(request);
       if (cachedResponse && cachedResponse.ok) {
-        // TEMPORARY: Bypass cache to clear stuck +1 IDs
-        // return cachedResponse;
+        return cachedResponse;
       }
     } catch (e) {
       console.error('[Cache Posts Match Error]', e);
@@ -212,9 +211,6 @@ export async function onRequest(context) {
     } else {
       targetUrl = new URL(`${TARGET_BASE}/posts`);
     }
-    
-    // Force bypass upstream APIJAV cache
-    targetUrl.searchParams.set('nocache', Date.now());
 
     const isOtherStudio = url.searchParams.get('studio') === 'Other' || url.searchParams.get('studio') === 'Unknown Studio';
 
@@ -349,7 +345,7 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+      'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400'
     };
 
     if (total) responseHeaders['X-WP-Total'] = total;
