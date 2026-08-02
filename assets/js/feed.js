@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.27';
-import ui from './ui.js?v=2.8.27';
-import filter from './filter.js?v=2.8.27';
-import i18n from './i18n.js?v=2.8.27';
+import api from './api.js?v=2.8.28';
+import ui from './ui.js?v=2.8.28';
+import filter from './filter.js?v=2.8.28';
+import i18n from './i18n.js?v=2.8.28';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -452,6 +452,15 @@ async function fetchAndRenderFeed(isInitial = false) {
     if (!grid) return;
     if (isInitial) {
       hasMore = false;
+      // Tampilkan pesan error dengan tombol retry agar user tidak melihat skeleton selamanya
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center;">
+          <div class="empty-icon">⚠️</div>
+          <h3 style="margin-bottom: 0.5rem;">Gagal Memuat Video</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">${error.message || 'Koneksi ke server gagal. Periksa koneksi internet Anda.'}</p>
+          <button onclick="window.location.reload()" class="btn-primary" style="padding: 0.6rem 1.5rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.875rem;">🔄 Coba Lagi</button>
+        </div>
+      `;
     } else {
       currentPage--;
     }
