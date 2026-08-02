@@ -106,7 +106,7 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=1800'
+      'Cache-Control': 'public, max-age=0, s-maxage=604800, stale-while-revalidate=86400'
     };
 
     const responseToReturn = new Response(JSON.stringify(data), {

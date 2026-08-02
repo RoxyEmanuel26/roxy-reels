@@ -50,10 +50,10 @@ module.exports = async (req, res) => {
 
     // =========================================================================
     // OPTIMASI EMAS: INJEKSI VERCEL EDGE CDN CACHING HEADERS (100% GRATIS)
-    // - s-maxage=3600 (Player iframe disimpan di Edge CDN Vercel selama 1 jam)
-    // - stale-while-revalidate=1800 (Servis data usang selama revalidasi background hingga 30 menit)
+    // - s-maxage=604800 (Player iframe disimpan di CDN selama 1 minggu)
+    // - stale-while-revalidate=86400 (Servis data usang selama revalidasi background hingga 1 hari)
     // =========================================================================
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=1800');
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=604800, stale-while-revalidate=86400');
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
     return res.status(200).json(data);

@@ -668,8 +668,8 @@ export async function onRequest(context) {
       const watchResponse = new Response(htmlContent, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400',
-          'CDN-Cache-Control': 'public, max-age=43200'
+          'Cache-Control': 'public, max-age=0, s-maxage=604800, must-revalidate',
+          'CDN-Cache-Control': 'public, max-age=604800'
         }
       });
 
@@ -862,8 +862,8 @@ export async function onRequest(context) {
         const listResponse = new Response(htmlContent, {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400',
-            'CDN-Cache-Control': 'public, max-age=43200'
+            'Cache-Control': 'public, max-age=0, s-maxage=604800, must-revalidate',
+            'CDN-Cache-Control': 'public, max-age=604800'
           }
         });
 
@@ -888,8 +888,8 @@ export async function onRequest(context) {
       return new Response(indexResponse.body, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600',
-          'CDN-Cache-Control': 'public, max-age=3600'
+          'Cache-Control': 'public, max-age=0, s-maxage=604800, must-revalidate',
+          'CDN-Cache-Control': 'public, max-age=604800'
         }
       });
     }
