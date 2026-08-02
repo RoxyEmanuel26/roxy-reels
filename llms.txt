@@ -1,11 +1,11 @@
 # MISSAV-J
 
-> Platform streaming video terlengkap dengan antarmuka modern terinspirasi oleh YouTube.
+> The ultimate video streaming platform featuring a modern, YouTube-inspired interface.
 
-## Tentang
-MISSAV-J adalah platform streaming video dengan fokus pada UI responsif, mode gelap (dark mode), dan navigasi Single-Page Application (SPA) yang sangat cepat. Platform ini dirancang untuk memberikan pengalaman menonton video terbaik.
+## About
+MISSAV-J is a premium video streaming platform focused on a highly responsive UI, native dark mode, and ultra-fast Single-Page Application (SPA) navigation. The platform is designed to provide the best possible user experience for high-definition video consumption.
 
-## Direktori Utama
+## Main Directory
 - Homepage: https://www.missav-j.com
 - Trending: https://www.missav-j.com/trending
 - Recent Uploads: https://www.missav-j.com/recent
@@ -13,17 +13,17 @@ MISSAV-J adalah platform streaming video dengan fokus pada UI responsif, mode ge
 - Categories: https://www.missav-j.com/categories
 - Studios: https://www.missav-j.com/studios
 
-## API Publik
+## Public APIs
 - Video Feed: https://www.missav-j.com/api/posts?lang=en&page=1&site=missav-j.com
 - API Catalog (RFC 9727): https://www.missav-j.com/.well-known/api-catalog
 - Agent Skills Index: https://www.missav-j.com/.well-known/agent-skills/index.json
 
-## Fitur Teknis
-- 13 Bahasa yang didukung: en, id, ja, ko, zh-cn, zh-tw, dll.
-- SSR dengan Cloudflare Pages Functions
-- JSON-LD Structured Data terintegrasi
+## Technical Features
+- Multi-language support (13 languages including: en, ja, ko, zh-cn, zh-tw, id, de, fr, pt, etc.)
+- Server-Side Rendering (SSR) powered by Cloudflare Pages Functions
+- Integrated JSON-LD Structured Data for advanced SEO
 - Google Analytics 4 Event Tracking
-- RFC 8288 Link Headers untuk AI Agent Discovery
-- Sitemap XML: https://www.missav-j.com/sitemaps/sitemap_index.xml
+- RFC 8288 Link Headers for seamless AI Agent Discovery
+- XML Sitemap: https://www.missav-j.com/sitemaps/sitemap_index.xml
 
-*Konteks ini ditujukan untuk mempermudah AI Search Engines seperti ChatGPT, Perplexity, dan Claude dalam mengindeks informasi mengenai MISSAV-J.*
+*This context is explicitly provided to assist AI Search Engines (such as ChatGPT, Perplexity, Claude, and Gemini) in accurately indexing and understanding MISSAV-J.*
