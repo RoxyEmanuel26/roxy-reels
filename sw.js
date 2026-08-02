@@ -1,18 +1,18 @@
-const CACHE_NAME = 'missavj-cache-v2.8.31';
+const CACHE_NAME = 'missavj-cache-v2.8.32';
 const ASSETS_TO_CACHE = [
-  '/assets/css/components.css?v=2.8.31',
-  '/assets/css/base.css?v=2.8.31',
-  '/assets/css/layout.css?v=2.8.31',
-  '/assets/css/player.css?v=2.8.31',
-  '/assets/js/app.js?v=2.8.31',
-  '/assets/js/api.js?v=2.8.31',
-  '/assets/js/feed.js?v=2.8.31',
-  '/assets/js/i18n.js?v=2.8.31',
-  '/assets/js/player.js?v=2.8.31',
-  '/assets/js/ui.js?v=2.8.31',
-  '/assets/js/ads.js?v=2.8.31',
-  '/assets/js/analytics.js?v=2.8.31',
-  '/assets/js/referral.js?v=2.8.31',
+  '/assets/css/components.css?v=2.8.32',
+  '/assets/css/base.css?v=2.8.32',
+  '/assets/css/layout.css?v=2.8.32',
+  '/assets/css/player.css?v=2.8.32',
+  '/assets/js/app.js?v=2.8.32',
+  '/assets/js/api.js?v=2.8.32',
+  '/assets/js/feed.js?v=2.8.32',
+  '/assets/js/i18n.js?v=2.8.32',
+  '/assets/js/player.js?v=2.8.32',
+  '/assets/js/ui.js?v=2.8.32',
+  '/assets/js/ads.js?v=2.8.32',
+  '/assets/js/analytics.js?v=2.8.32',
+  '/assets/js/referral.js?v=2.8.32',
   '/assets/images/logo.webp',
   '/favicon.svg'
 ];
@@ -93,7 +93,11 @@ self.addEventListener('fetch', (event) => {
           });
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => {
+          return caches.match(event.request).then((cached) => {
+            return cached || Response.error();
+          });
+        })
     );
     return;
   }
@@ -117,6 +121,7 @@ self.addEventListener('fetch', (event) => {
       if (event.request.mode === 'navigate') {
         return caches.match('/index.html');
       }
+      return Response.error();
     })
   );
 });
