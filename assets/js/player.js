@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.33';
-import ui from './ui.js?v=2.8.33';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.33';
-import i18n from './i18n.js?v=2.8.33';
-import ReferralSystem from './referral.js?v=2.8.33';
-import { Analytics } from './analytics.js?v=2.8.33';
+import api from './api.js?v=2.8.34';
+import ui from './ui.js?v=2.8.34';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.34';
+import i18n from './i18n.js?v=2.8.34';
+import ReferralSystem from './referral.js?v=2.8.34';
+import { Analytics } from './analytics.js?v=2.8.34';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -340,6 +340,13 @@ function trackWatchHistory(post) {
   }
   
   history.unshift(post); // Masukkan di antrean terdepan
+  
+  // Save to localStorage
+  try {
+    localStorage.setItem('missav_history', JSON.stringify(history));
+  } catch (e) {
+    console.warn('Failed to save history to localStorage', e);
+  }
 }
 
 /**
@@ -573,6 +580,14 @@ function setupWatchLaterLogic(post) {
       ui.showToast(i18n.t('toast_saved_watch_later'));
       Analytics.trackWatchLaterAdd(id, post.title);
     }
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('missav_watch_later', JSON.stringify(window.missavJState.watchLater));
+    } catch (e) {
+      console.warn('Failed to save watch later to localStorage', e);
+    }
+
     updateButtonVisualState();
   });
 }

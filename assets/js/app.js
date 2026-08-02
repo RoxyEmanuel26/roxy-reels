@@ -4,17 +4,23 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.33';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.33';
-import i18n from './i18n.js?v=2.8.33';
-import { Analytics } from './analytics.js?v=2.8.33';
-import ReferralSystem from './referral.js?v=2.8.33';
-import './ads.js?v=2.8.33';
+import ui from './ui.js?v=2.8.34';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.34';
+import i18n from './i18n.js?v=2.8.34';
+import { Analytics } from './analytics.js?v=2.8.34';
+import ReferralSystem from './referral.js?v=2.8.34';
+import './ads.js?v=2.8.34';
 
 // Initialize Global In-Memory SPA States
+let savedWatchLater = [];
+try { savedWatchLater = JSON.parse(localStorage.getItem('missav_watch_later')) || []; } catch(e) {}
+
+let savedHistory = [];
+try { savedHistory = JSON.parse(localStorage.getItem('missav_history')) || []; } catch(e) {}
+
 window.missavJState = {
-  watchLater: [],   // Stores post objects saved to Watch Later list
-  history: [],      // Session play history for recent video plays
+  watchLater: savedWatchLater,   // Stores post objects saved to Watch Later list
+  history: savedHistory,      // Session play history for recent video plays
   activeVideo: null, // Holds details of the currently active playing video
   isFloating: false, // Flag to trace if the player is currently in Picture-in-Picture (PiP) mode
   currentPath: ''    // Holds the currently active SPA route path
@@ -234,21 +240,21 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.33').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.33').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.33').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.33').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.33').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.33').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.33').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.33').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.33').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.34').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.34').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.34').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.34').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.34').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.34').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.34').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.34').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.34').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.33').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.33').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.33').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.33').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.34').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.34').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.34').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.34').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -591,7 +597,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.33').then(m => {
+    import('./player.js?v=2.8.34').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -602,7 +608,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.33').then(m => {
+    import('./player.js?v=2.8.34').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -694,7 +700,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.33').then(m => {
+  import('./player.js?v=2.8.34').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -887,7 +893,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.33').then(m => {
+      import('./player.js?v=2.8.34').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
