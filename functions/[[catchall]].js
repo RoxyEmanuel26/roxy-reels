@@ -16,7 +16,9 @@ const HREFLANG_CODE_MAP = { fil: 'tl' };
 const hreflangCode = (langKey) => HREFLANG_CODE_MAP[langKey] || langKey;
 
 function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
-  let cleanPath = urlPathname.replace(/^\/(id|ja|ko|zh-TW|zh-CN|ms|th|de|fr|vi|fil|pt)(?=\/|$)/, '');
+  // Strip ANY lang prefix (including 'en') so we get the bare route path
+  // e.g. /en/trending → /trending, /ko/watch/abc → /watch/abc
+  let cleanPath = urlPathname.replace(/^\/(en|id|ja|ko|zh-TW|zh-CN|ms|th|de|fr|vi|fil|pt)(?=\/|$)/, '');
   if (cleanPath === '') cleanPath = '/';
   
   const allLangs = ['en', 'id', 'ja', 'ko', 'zh-TW', 'zh-CN', 'ms', 'th', 'de', 'fr', 'vi', 'fil', 'pt'];
@@ -409,10 +411,94 @@ function truncateChars(str, max) {
   return str.slice(0, max - 1).trimEnd() + '\u2026';
 }
 
+// ── Geo-Redirect: Country → Language mapping ──────────────────────────────
+// Maps ISO 3166-1 alpha-2 country codes (from CF-IPCountry header) to the
+// language code used in URL prefixes (matches VALID_LANGS above).
+const COUNTRY_TO_LANG = {
+  // East Asia
+  JP: 'ja',
+  KR: 'ko',
+  TW: 'zh-TW', HK: 'zh-TW', MO: 'zh-TW',
+  CN: 'zh-CN',
+  // Southeast Asia
+  ID: 'id',
+  VN: 'vi',
+  TH: 'th',
+  MY: 'ms', SG: 'ms', BN: 'ms',
+  PH: 'fil',
+  // Europe
+  DE: 'de', AT: 'de',
+  FR: 'fr', BE: 'fr', LU: 'fr',
+  // Portuguese-speaking
+  BR: 'pt', PT: 'pt', AO: 'pt', MZ: 'pt', CV: 'pt', GW: 'pt', ST: 'pt', TL: 'pt',
+};
+
+/**
+ * Deteksi bahasa berdasarkan kode negara CF-IPCountry.
+ * Fallback ke 'en' jika negara tidak dikenali.
+ * @param {string} countryCode — 2-letter ISO code, misal 'KR', 'JP'
+ * @returns {string} Language code, misal 'ko', 'ja', 'en'
+ */
+function detectLangFromCountry(countryCode) {
+  if (!countryCode || countryCode === 'XX' || countryCode === 'T1') return 'en';
+  return COUNTRY_TO_LANG[countryCode.toUpperCase()] || 'en';
+}
+
+/**
+ * Baca nilai cookie missav_lang dari header Cookie request.
+ * Digunakan agar preferensi bahasa yang sudah dipilih user tetap dihormati.
+ * @param {Request} req
+ * @returns {string|null} Language code atau null jika tidak ada
+ */
+function getCookieLang(req) {
+  const cookieHeader = req.headers.get('Cookie') || '';
+  const match = cookieHeader.match(/(?:^|;\s*)missav_lang=([^;]+)/);
+  return match ? match[1].trim() : null;
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const pathname = url.pathname;
+
+  // ── GEO-REDIRECT ─────────────────────────────────────────────────────────
+  // Hanya redirect saat user membuka root "/" tanpa prefix bahasa apapun.
+  // URL yang sudah punya prefix (/ko/, /en/, /watch/...) TIDAK disentuh —
+  // ini mencegah redirect-loop dan tidak merusak link sharing.
+  if (request.method === 'GET' && (pathname === '/' || pathname === '')) {
+    // Cek preferensi tersimpan di cookie (prioritas utama — user sudah pernah pilih)
+    const cookieLang = getCookieLang(request);
+    let targetLang;
+
+    if (cookieLang && VALID_LANGS.includes(cookieLang)) {
+      // User sudah pernah set bahasa → hormati pilihannya
+      targetLang = cookieLang;
+    } else {
+      // Belum ada preferensi → deteksi dari negara via CF-IPCountry
+      const country =
+        request.headers.get('CF-IPCountry') ||
+        (request.cf && request.cf.country) ||
+        '';
+      targetLang = detectLangFromCountry(country);
+    }
+
+    // Bangun URL tujuan: missav-j.com/{lang}/
+    const redirectUrl = `${url.origin}/${targetLang}/${url.search}`;
+
+    return new Response(null, {
+      status: 302, // Temporary redirect — izinkan cache browser di-expire
+      headers: {
+        'Location': redirectUrl,
+        // Simpan preferensi bahasa ke cookie 30 hari (2592000 detik)
+        // agar kunjungan berikutnya langsung pakai bahasa yang sama tanpa geo-detect
+        'Set-Cookie': `missav_lang=${targetLang}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`,
+        // JANGAN cache redirect di CDN — setiap user bisa dari negara berbeda
+        'Cache-Control': 'no-store, no-cache',
+        'Vary': 'CF-IPCountry, Cookie',
+      },
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   // 1. Handle sitemap.xml rewrite to static sitemap_index.xml
   if (pathname === '/sitemap.xml') {
@@ -619,7 +705,7 @@ export async function onRequest(context) {
               if (post.studio) {
                 videoSchema.productionCompany = {
                   "@type": "Organization",
-                  "name": typeof post.studio === 'string' ? post.studio : (post.studio.name || post.studio)
+                  "name": typeof post.studio === 'string' ? post.studio : (post.studio?.name || '')
                 };
               }
 

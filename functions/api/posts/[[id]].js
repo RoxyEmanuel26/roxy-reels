@@ -227,7 +227,7 @@ export async function onRequest(context) {
     const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
 
     if (isOtherStudio) {
-      const requestedPage = parseInt(url.searchParams.get('page') || '1', 10);
+      const requestedPage = parseInt(url.searchParams.get('page') || '1', 10) || 1;
       const perPageNum = 100;
       const startPage = (requestedPage - 1) * 4 + 1;
       const pagesToFetch = [startPage, startPage + 1, startPage + 2, startPage + 3];
@@ -264,7 +264,7 @@ export async function onRequest(context) {
       const results = await Promise.all(pagesToFetch.map(p => fetchPage(p)));
       const allPosts = results.flat();
 
-      data = allPosts.filter(post => !post.studio);
+      data = allPosts.filter(post => post && post.id && !post.studio);
       total = '120';
       totalPages = '10';
     } else {

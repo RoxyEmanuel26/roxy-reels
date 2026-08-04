@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.8.37';
+import ui from './ui.js?v=2.8.41';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -693,6 +693,10 @@ export function getLang() {
  */
 export function setLang(langCode, triggerRedirect = true) {
   localStorage.setItem('missav_lang', langCode);
+  // Simpan juga ke cookie agar Cloudflare Worker bisa membaca preferensi ini
+  // saat request berikutnya, mencegah geo-redirect menimpa pilihan manual user.
+  const secureFlag = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `missav_lang=${langCode}; Path=/; Max-Age=2592000; SameSite=Lax${secureFlag}`;
   
   // Translate static UI elements immediately
   translateStaticUI();

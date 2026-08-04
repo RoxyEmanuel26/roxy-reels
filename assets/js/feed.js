@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.37';
-import ui from './ui.js?v=2.8.37';
-import filter from './filter.js?v=2.8.37';
-import i18n from './i18n.js?v=2.8.37';
+import api from './api.js?v=2.8.41';
+import ui from './ui.js?v=2.8.41';
+import filter from './filter.js?v=2.8.41';
+import i18n from './i18n.js?v=2.8.41';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -107,7 +107,8 @@ export function renderVideoCard(post, index = 0) {
     .map(a => {
       const safeActor = ui.escapeHTML(a);
       const lang = i18n.getLang() || 'en';
-      return `<a href="/${lang}/actor?name=${encodeURIComponent(safeActor)}" class="actor-chip" data-actor="${encodeURIComponent(safeActor)}">${safeActor}</a>`;
+      // encodeURIComponent uses raw 'a' (not safeActor) to avoid double-encoding HTML entities
+      return `<a href="/${lang}/actor?name=${encodeURIComponent(a)}" class="actor-chip" data-actor="${encodeURIComponent(a)}">${safeActor}</a>`;
     })
     .join('');
 
@@ -120,7 +121,7 @@ export function renderVideoCard(post, index = 0) {
 
   // Format Studio link
   const studioMarkup = safeStudio 
-    ? `<span class="card-studio" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</span>`
+    ? `<span class="card-studio" data-studio="${encodeURIComponent(post.studio || '')}">` + safeStudio + `</span>`
     : `<span class="card-studio text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
 
   // Format views

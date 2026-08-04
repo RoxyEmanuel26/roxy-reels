@@ -4,11 +4,11 @@
  * perayapan infinite scroll, penyorotan kata kunci yang aman dari XSS, dan staggered delay.
  */
 
-import api from './api.js?v=2.8.37';
-import ui from './ui.js?v=2.8.37';
-import filter from './filter.js?v=2.8.37';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.37';
-import i18n from './i18n.js?v=2.8.37';
+import api from './api.js?v=2.8.41';
+import ui from './ui.js?v=2.8.41';
+import filter from './filter.js?v=2.8.41';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.41';
+import i18n from './i18n.js?v=2.8.41';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
@@ -63,7 +63,7 @@ function renderSearchVideoCard(post, index) {
   
   return cardHtml.replace(
     `class="card-title" title="${safeTitle}">${safeTitle}`,
-    `class="card-title" title="${safeTitle}">${highlightedTitle}`
+    () => `class="card-title" title="${safeTitle}">${highlightedTitle}`
   );
 }
 
@@ -173,9 +173,10 @@ export async function init(query = '') {
         seenCodes = new Set();
         seenTitles = new Set();
 
-        // Perbarui hash URL tanpa reload SPA router
-        const newHash = `#/search?q=${encodeURIComponent(val)}`;
-        history.replaceState(null, '', newHash);
+        // Perbarui URL dengan clean path (bukan hash agar tidak merusak History API)
+        const currentLang = i18n.getLang() || 'en';
+        const newPath = `/${currentLang}/search?q=${encodeURIComponent(val)}`;
+        history.replaceState(null, '', newPath);
 
         const grid = document.getElementById('search-video-grid');
         if (grid) {
@@ -183,6 +184,14 @@ export async function init(query = '') {
           await fetchAndRenderSearch(true);
         }
       }, 400); // 400ms debounce — hanya eksekusi setelah 400ms berhenti mengetik
+    } else if (val.length === 0) {
+      // Jika input dikosongkan, reset UI dan kembalikan URL search tanpa query
+      currentQuery = '';
+      currentFilters.search = '';
+      const currentLang = i18n.getLang() || 'en';
+      history.replaceState(null, '', `/${currentLang}/search`);
+      const grid = document.getElementById('search-video-grid');
+      if (grid) ui.showEmpty('', grid);
     }
   };
 }

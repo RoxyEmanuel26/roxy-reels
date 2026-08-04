@@ -18,11 +18,16 @@
   # Membiarkan global override di sini menyebabkan konflik.
 
 # === RFC 8288 Link Headers — AI Agent Discovery (Homepage) ===
+# Cache-Control: no-store di sini WAJIB untuk geo-redirect:
+# Tanpa ini, Cloudflare CDN bisa meng-cache redirect /ko/ untuk user Korea
+# dan melayani redirect yang sama ke user dari negara lain.
 /
   Link: </.well-known/api-catalog>; rel="api-catalog"
   Link: </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"
   Link: </llms.txt>; rel="describedby"; type="text/plain"
   Link: </sitemaps/sitemap_index.xml>; rel="sitemap"; type="application/xml"
+  Cache-Control: no-store, no-cache
+  Vary: CF-IPCountry, Cookie
 
 # === .well-known — AI Agent Discovery Files ===
 /.well-known/api-catalog

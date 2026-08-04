@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.37';
-import ui from './ui.js?v=2.8.37';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.37';
-import i18n from './i18n.js?v=2.8.37';
-import ReferralSystem from './referral.js?v=2.8.37';
-import { Analytics } from './analytics.js?v=2.8.37';
+import api from './api.js?v=2.8.41';
+import ui from './ui.js?v=2.8.41';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.41';
+import i18n from './i18n.js?v=2.8.41';
+import ReferralSystem from './referral.js?v=2.8.41';
+import { Analytics } from './analytics.js?v=2.8.41';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -453,7 +453,7 @@ export function renderPostMeta(post, id) {
           if (translated) displayName = translated;
         }
         const lang = i18n.getLang() || 'en';
-        return `<a href="/${lang}/${routePrefix}?name=${encodeURIComponent(safeItem)}" class="meta-tag-chip">${displayName}</a>`;
+        return `<a href="/${lang}/${routePrefix}?name=${encodeURIComponent(item)}" class="meta-tag-chip">${displayName}</a>`;
       })
       .join('');
   };
@@ -712,6 +712,8 @@ export async function loadRelatedVideos(post) {
   const relatedList = document.getElementById('related-videos-list');
   if (!relatedList) return;
 
+  const initialPath = window.missavJState?.currentPath;
+
   try {
     const promises = [];
     const queryLabels = []; // Label debug untuk setiap query
@@ -756,7 +758,7 @@ export async function loadRelatedVideos(post) {
     
     // [FIX K-5] Guard: if user navigated away before promises settled, abort render
     const relatedListNow = document.getElementById('related-videos-list');
-    if (!relatedListNow || window.missavJState.currentPath !== window.missavJState.currentPath) {
+    if (!relatedListNow || window.missavJState?.currentPath !== initialPath) {
       return;
     }
 

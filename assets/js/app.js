@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.37';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.37';
-import i18n from './i18n.js?v=2.8.37';
-import { Analytics } from './analytics.js?v=2.8.37';
-import ReferralSystem from './referral.js?v=2.8.37';
-import './ads.js?v=2.8.37';
+import ui from './ui.js?v=2.8.41';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.41';
+import i18n from './i18n.js?v=2.8.41';
+import { Analytics } from './analytics.js?v=2.8.41';
+import ReferralSystem from './referral.js?v=2.8.41';
+import './ads.js?v=2.8.41';
 
 // Initialize Global In-Memory SPA States
 let savedWatchLater = [];
@@ -240,21 +240,21 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.37').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.37').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.37').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.37').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.37').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.37').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.37').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.37').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.37').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.41').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.41').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.41').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.41').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.41').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.41').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.41').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.41').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.41').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.37').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.37').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.37').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.37').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.41').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.41').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.41').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.41').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -532,9 +532,12 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
 function navigate(urlPath) {
   const { lang, routePath } = parseUrl(urlPath);
   
-  // Sync selected language dynamically if it differs from current i18n states
-  if (lang && lang !== i18n.getLang()) {
-    i18n.setLang(lang, false); // Set active language segment without invoking popstate routing loops
+  // Sync selected language dynamically if it differs from stored preference.
+  // IMPORTANT: compare against localStorage (not i18n.getLang()) because
+  // history.pushState() already updated window.location BEFORE navigate() was called,
+  // making i18n.getLang() return the NEW lang — so the comparison was always false.
+  if (lang && lang !== (localStorage.getItem('missav_lang') || 'en')) {
+    i18n.setLang(lang, false); // Set active language without triggering popstate routing loops
   }
 
   // Update Telegram floating button link/label dynamically on routing/language shifts
@@ -597,7 +600,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.37').then(m => {
+    import('./player.js?v=2.8.41').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -608,7 +611,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.37').then(m => {
+    import('./player.js?v=2.8.41').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -700,7 +703,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.37').then(m => {
+  import('./player.js?v=2.8.41').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -893,7 +896,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.37').then(m => {
+      import('./player.js?v=2.8.41').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
@@ -1745,6 +1748,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Default to English for URLs without language prefix
     const defaultLang = 'en';
     localStorage.setItem('missav_lang', defaultLang);
+    // Sync to cookie so Worker geo-redirect respects this 'en' preference on next visit
+    const secureFlag = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `missav_lang=${defaultLang}; Path=/; Max-Age=2592000; SameSite=Lax${secureFlag}`;
     const targetPath = currentPathname === '/' || currentPathname === '' 
       ? `/${defaultLang}/` 
       : `/${defaultLang}${currentPathname}${window.location.search}`;
