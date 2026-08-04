@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.8.43';
+import ui from './ui.js?v=2.8.44';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -79,6 +79,9 @@ const DICTIONARY = {
   },
   maintenance_btn: {
     en: 'Refresh Page', id: 'Muat Ulang Halaman', 'zh-TW': '重新整理', 'zh-CN': '刷新页面', ja: 'ページを更新', ko: '페이지 새로고침', ms: 'Muat Semula Halaman', th: 'รีเฟรชหน้า', de: 'Seite aktualisieren', fr: 'Actualiser la page', vi: 'Làm mới trang', fil: 'I-refresh ang Pahina', pt: 'Atualizar Página'
+  },
+  maintenance_alt_btn: {
+    en: 'Watch on Alternative Site', id: 'Nonton di Web Alternatif', 'zh-TW': '在替代網站上觀看', 'zh-CN': '在替代网站上观看', ja: '代替サイトで見る', ko: '대체 사이트에서 보기', ms: 'Tonton di Laman Alternatif', th: 'ดูบนเว็บไซต์สำรอง', de: 'Auf alternativer Seite ansehen', fr: 'Regarder sur le site alternatif', vi: 'Xem trên trang web thay thế', fil: 'Manood sa Alternatibong Site', pt: 'Assistir no Site Alternativo'
   },
 
   // Judul Pembagi / Section Titles
