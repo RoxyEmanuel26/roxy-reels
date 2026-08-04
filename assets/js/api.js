@@ -15,7 +15,7 @@ const apiCache = new Map();
 // In-flight request deduplication map
 const fetchPromises = new Map();
 
-async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+async function fetchWithTimeout(url, options = {}, timeout = 5000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   
@@ -65,7 +65,7 @@ const api = {
       
       const fetchPromise = (async () => {
         let lastError;
-        for (let attempt = 1; attempt <= 3; attempt++) {
+        for (let attempt = 1; attempt <= 1; attempt++) {
           try {
             const res = await fetchWithTimeout(url);
             
@@ -90,7 +90,7 @@ const api = {
           } catch (err) {
             lastError = err;
             console.warn(`[API getPosts] Attempt ${attempt} failed:`, err.message);
-            if (attempt < 3) {
+            if (attempt < 1) {
               // Wait 1.5 seconds before retrying
               await new Promise(resolve => setTimeout(resolve, 1500));
             }
