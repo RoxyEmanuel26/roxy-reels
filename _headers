@@ -13,8 +13,9 @@
   Access-Control-Allow-Headers: Content-Type, X-API-Key, X-Client-Site
   # Permissions-Policy untuk mengizinkan autoplay dan fullscreen di player
   Permissions-Policy: autoplay=(*), fullscreen=(*)
-  # WAJIB: Jangan cache rute SPA secara default agar index.html (dan script iklan) selalu fresh
-  Cache-Control: no-cache, no-store, must-revalidate
+  # Cache-Control DIHAPUS dari /* karena setiap Worker/Pages Function
+  # sudah menyetel header Cache-Control sendiri per-response secara tepat.
+  # Membiarkan global override di sini menyebabkan konflik.
 
 # === RFC 8288 Link Headers — AI Agent Discovery (Homepage) ===
 /
@@ -49,10 +50,10 @@
   CDN-Cache-Control: public, max-age=86400
   Content-Type: application/xml; charset=utf-8
 
-# === API Endpoints — Cache 5 menit di CDN ===
+# === API Endpoints — Cache 1 minggu di CDN (sesuai Worker functions) ===
 /api/*
-  Cache-Control: public, s-maxage=300, stale-while-revalidate=600
-  CDN-Cache-Control: public, max-age=300
+  Cache-Control: public, s-maxage=604800, stale-while-revalidate=86400
+  CDN-Cache-Control: public, max-age=604800
 
 # === Robots.txt, Ads.txt & Service Worker ===
 /robots.txt
@@ -62,10 +63,9 @@
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate
 
-# === index.html — WAJIB tidak di-cache oleh Cloudflare CDN ===
+# === index.html — WAJIB tidak di-cache oleh browser dan CDN ===
 # Script Popunder & Social Bar Adsterra ada di dalam file ini.
-# Jika Cloudflare meng-cache index.html di edge server,
-# script iklan tidak akan dimuat ulang saat reload, sehingga Popunder MENGHILANG.
+# Jika di-cache, script iklan tidak dimuat ulang saat reload → Popunder MENGHILANG.
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
 /

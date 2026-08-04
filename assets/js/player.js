@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.35';
-import ui from './ui.js?v=2.8.35';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.35';
-import i18n from './i18n.js?v=2.8.35';
-import ReferralSystem from './referral.js?v=2.8.35';
-import { Analytics } from './analytics.js?v=2.8.35';
+import api from './api.js?v=2.8.37';
+import ui from './ui.js?v=2.8.37';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.37';
+import i18n from './i18n.js?v=2.8.37';
+import ReferralSystem from './referral.js?v=2.8.37';
+import { Analytics } from './analytics.js?v=2.8.37';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -340,6 +340,11 @@ function trackWatchHistory(post) {
   }
   
   history.unshift(post); // Masukkan di antrean terdepan
+  
+  // [FIX K-3] Batasi history maks 100 item agar localStorage tidak QuotaExceededError
+  if (history.length > 100) {
+    history.length = 100;
+  }
   
   // Save to localStorage
   try {
@@ -749,6 +754,12 @@ export async function loadRelatedVideos(post) {
     // Jalankan semua query secara paralel untuk efisiensi tinggi
     const results = await Promise.allSettled(promises);
     
+    // [FIX K-5] Guard: if user navigated away before promises settled, abort render
+    const relatedListNow = document.getElementById('related-videos-list');
+    if (!relatedListNow || window.missavJState.currentPath !== window.missavJState.currentPath) {
+      return;
+    }
+
     // Gabungkan hasil dari semua query yang berhasil
     let allPosts = [];
     results.forEach((res, idx) => {
@@ -756,6 +767,9 @@ export async function loadRelatedVideos(post) {
         allPosts = allPosts.concat(res.value.posts);
       }
     });
+
+    // Abort jika container sudah tidak ada di DOM (user berpindah halaman)
+    if (!document.getElementById('related-videos-list')) return;
 
     // Filter out video yang sedang ditonton
     let filteredPosts = allPosts.filter(p => String(p.id) !== String(post.id));

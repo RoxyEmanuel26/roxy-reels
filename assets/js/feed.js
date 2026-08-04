@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.35';
-import ui from './ui.js?v=2.8.35';
-import filter from './filter.js?v=2.8.35';
-import i18n from './i18n.js?v=2.8.35';
+import api from './api.js?v=2.8.37';
+import ui from './ui.js?v=2.8.37';
+import filter from './filter.js?v=2.8.37';
+import i18n from './i18n.js?v=2.8.37';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -465,7 +465,14 @@ async function fetchAndRenderFeed(isInitial = false) {
         </div>
       `;
     } else {
-      currentPage--;
+      // [FIX P-4] Di randomMode, currentPage dipilih secara acak bukan berurutan.
+      // Melakukan currentPage-- akan menyebabkan inkonsistensi state.
+      // Yang benar: kembalikan page yang gagal ke pool usedPages agar bisa dicoba lagi.
+      if (randomMode) {
+        usedPages.delete(currentPage);
+      } else {
+        currentPage--;
+      }
     }
   } finally {
     isLoading = false;

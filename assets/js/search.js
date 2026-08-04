@@ -4,11 +4,11 @@
  * perayapan infinite scroll, penyorotan kata kunci yang aman dari XSS, dan staggered delay.
  */
 
-import api from './api.js?v=2.8.35';
-import ui from './ui.js?v=2.8.35';
-import filter from './filter.js?v=2.8.35';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.35';
-import i18n from './i18n.js?v=2.8.35';
+import api from './api.js?v=2.8.37';
+import ui from './ui.js?v=2.8.37';
+import filter from './filter.js?v=2.8.37';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.37';
+import i18n from './i18n.js?v=2.8.37';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
@@ -148,26 +148,41 @@ export async function init(query = '') {
   bindHoverPreviews(grid);
 
   // 7. Expose live query trigger for app.js
-  window.missavJSearchTriggerLiveQuery = async (val) => {
+  // [FIX K-4] Implementasi debounce sesungguhnya: batalkan timer sebelumnya dan
+  // tunggu 400ms idle sebelum memicu fetch — mencegah N+1 request per keystroke.
+  window.missavJSearchTriggerLiveQuery = (val) => {
     if (window.missavJState.currentPath !== '/search') return;
 
+    // Batalkan timer debounce sebelumnya jika user masih mengetik
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      searchTimeout = null;
+    }
+
     if (val.length >= 2) {
-      currentQuery = val;
-      currentFilters.search = val;
-      currentPage = 1;
-      hasMore = true;
-      seenCodes = new Set();
-      seenTitles = new Set();
+      searchTimeout = setTimeout(async () => {
+        searchTimeout = null;
 
-      // Perbarui hash URL tanpa reload SPA router
-      const newHash = `#/search?q=${encodeURIComponent(val)}`;
-      history.replaceState(null, '', newHash);
+        // Guard: pastikan user masih di halaman search saat timer selesai
+        if (window.missavJState.currentPath !== '/search') return;
 
-      const grid = document.getElementById('search-video-grid');
-      if (grid) {
-        ui.showSkeletonsInElement(grid, 8);
-        await fetchAndRenderSearch(true);
-      }
+        currentQuery = val;
+        currentFilters.search = val;
+        currentPage = 1;
+        hasMore = true;
+        seenCodes = new Set();
+        seenTitles = new Set();
+
+        // Perbarui hash URL tanpa reload SPA router
+        const newHash = `#/search?q=${encodeURIComponent(val)}`;
+        history.replaceState(null, '', newHash);
+
+        const grid = document.getElementById('search-video-grid');
+        if (grid) {
+          ui.showSkeletonsInElement(grid, 8);
+          await fetchAndRenderSearch(true);
+        }
+      }, 400); // 400ms debounce — hanya eksekusi setelah 400ms berhenti mengetik
     }
   };
 }

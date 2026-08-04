@@ -79,8 +79,18 @@ module.exports = async (req, res) => {
     const title = post.title;
     const fullTitle = code ? `[${code}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
     
-    // Create clean description
-    const description = `Nonton video JAV ${code ? code + ' ' : ''}${title} gratis dengan streaming kualitas premium di MISSAV-J.`;
+    // Multi-language description templates (matches catchall.js DESC_TEMPLATES)
+    const descTemplates = {
+      'en': (code, title) => `Watch ${code ? code + ' ' : ''}${title} free with premium quality streaming on MISSAV-J.`,
+      'ja': (code, title) => `${code ? code + ' ' : ''}${title}を高品質ストリーミングで無料視聴 — MISSAV-J。`,
+      'zh-TW': (code, title) => `免費觀看 ${code ? code + ' ' : ''}${title}，MISSAV-J 提供頂級串流品質。`,
+      'zh-CN': (code, title) => `免费观看 ${code ? code + ' ' : ''}${title}，MISSAV-J 提供顶级流媒体品质。`,
+      'ko': (code, title) => `${code ? code + ' ' : ''}${title}을(를) MISSAV-J에서 무료로 고화질 스트리밍으로 시청하세요.`,
+      'id': (code, title) => `Nonton video JAV ${code ? code + ' ' : ''}${title} gratis dengan streaming kualitas premium di MISSAV-J.`,
+    };
+    const descFn = descTemplates[lang] || descTemplates['en'];
+    const description = descFn(code, title);
+
     
     // Ensure absolute image URL
     let imageUrl = post.thumbnail || '/assets/images/logo.webp';

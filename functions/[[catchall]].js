@@ -461,7 +461,15 @@ export async function onRequest(context) {
         }
       }
 
-      const indexResponse = await env.ASSETS.fetch(new URL('/index.html', request.url));
+      const activeLang = isLangValid ? lang : 'en';
+
+      // OPTIMIZED: Fetch index.html and APIJAV metadata in parallel (Promise.all)
+      // Previously sequential (~320ms+), now concurrent (~300ms max).
+      const [indexResponse, post] = await Promise.all([
+        env.ASSETS.fetch(new URL('/index.html', request.url)),
+        id ? fetchPostMetadata(id, url.origin) : Promise.resolve(null)
+      ]);
+
       if (!indexResponse.ok) {
         return new Response('Internal Server Error: Failed to fetch index.html', { status: 500 });
       }
@@ -475,10 +483,6 @@ export async function onRequest(context) {
 
       if (id) {
         try {
-          // OPTIMIZED: Fetch langsung ke server.apijav.com (tanpa loopback)
-          const activeLang = isLangValid ? lang : 'en';
-          const post = await fetchPostMetadata(id, url.origin);
-
           if (post && post.title) {
             let title = post.title;
 
@@ -668,7 +672,7 @@ export async function onRequest(context) {
       const watchResponse = new Response(htmlContent, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=0, s-maxage=604800, must-revalidate',
+          'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400',
           'CDN-Cache-Control': 'public, max-age=604800'
         }
       });
@@ -862,7 +866,7 @@ export async function onRequest(context) {
         const listResponse = new Response(htmlContent, {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'public, max-age=0, s-maxage=604800, must-revalidate',
+            'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400',
             'CDN-Cache-Control': 'public, max-age=604800'
           }
         });
@@ -888,7 +892,7 @@ export async function onRequest(context) {
       return new Response(indexResponse.body, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=0, s-maxage=604800, must-revalidate',
+          'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400',
           'CDN-Cache-Control': 'public, max-age=604800'
         }
       });

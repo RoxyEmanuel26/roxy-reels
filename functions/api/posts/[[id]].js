@@ -345,7 +345,7 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400'
+      'Cache-Control': 'public, s-maxage=604800, stale-while-revalidate=86400'
     };
 
     if (total) responseHeaders['X-WP-Total'] = total;
