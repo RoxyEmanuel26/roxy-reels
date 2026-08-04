@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.41';
-import ui from './ui.js?v=2.8.41';
-import filter from './filter.js?v=2.8.41';
-import i18n from './i18n.js?v=2.8.41';
+import api from './api.js?v=2.8.42';
+import ui from './ui.js?v=2.8.42';
+import filter from './filter.js?v=2.8.42';
+import i18n from './i18n.js?v=2.8.42';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -458,11 +458,13 @@ async function fetchAndRenderFeed(isInitial = false) {
       const retryText = i18n.t('retry_btn') || 'Try Again';
 
       grid.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center;">
-          <div class="empty-icon">⚠️</div>
-          <h3 style="margin-bottom: 0.5rem;">${errorTitle}</h3>
-          <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">${error.message || errorDesc}</p>
-          <button onclick="window.location.reload()" class="btn-primary" style="padding: 0.6rem 1.5rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.875rem;">🔄 ${retryText}</button>
+        <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem; text-align: center;">
+          <img src="/assets/logo_maintenance.webp" alt="Maintenance" style="max-width: 150px; margin-bottom: 1.5rem; opacity: 0.9;">
+          <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem; font-weight: 600;">Server Maintenance</h3>
+          <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.6; max-width: 500px; margin-left: auto; margin-right: auto;">
+            We are currently upgrading our core video servers to provide you with a faster and better experience.<br>Please check back again in a few hours.
+          </p>
+          <button onclick="window.location.reload()" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; transition: opacity 0.2s;">🔄 Refresh Page</button>
         </div>
       `;
     } else {
