@@ -133,7 +133,7 @@ const ui = {
         </p>
         <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
           <button id="error-retry-btn" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; transition: opacity 0.2s;">🔄 ${maintBtn}</button>
-          <a href="https://nicevx.com/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.75rem 2rem; border-radius: 8px; background: #2A2A2A; color: white; border: 1px solid #444; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; text-decoration: none; transition: background 0.2s;">🎥 ${maintAltBtn}</a>
+          <a href="https://nicevx.com/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.85rem 2rem; border-radius: 8px; background: #10b981; color: white; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; letter-spacing: 0.5px; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4); transition: transform 0.2s, background 0.2s;">🎥 ${maintAltBtn}</a>
         </div>
       </div>
     `;

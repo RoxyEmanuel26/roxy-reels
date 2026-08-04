@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.45';
-import ui from './ui.js?v=2.8.45';
-import filter from './filter.js?v=2.8.45';
-import i18n from './i18n.js?v=2.8.45';
+import api from './api.js?v=2.8.46';
+import ui from './ui.js?v=2.8.46';
+import filter from './filter.js?v=2.8.46';
+import i18n from './i18n.js?v=2.8.46';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -467,7 +467,7 @@ async function fetchAndRenderFeed(isInitial = false) {
           </p>
           <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
             <button onclick="window.location.reload()" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; transition: opacity 0.2s;">🔄 ${maintBtn}</button>
-            <a href="https://nicevx.com/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.75rem 2rem; border-radius: 8px; background: #2A2A2A; color: white; border: 1px solid #444; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; text-decoration: none; transition: background 0.2s;">🎥 ${maintAltBtn}</a>
+            <a href="https://nicevx.com/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.85rem 2rem; border-radius: 8px; background: #10b981; color: white; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; letter-spacing: 0.5px; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4); transition: transform 0.2s, background 0.2s;">🎥 ${maintAltBtn}</a>
           </div>
         </div>
       `;
