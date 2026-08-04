@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.8.42';
+import ui from './ui.js?v=2.8.43';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -56,6 +56,29 @@ const DICTIONARY = {
   },
   nav_studios: {
     en: 'Popular Studios', id: 'Studio Populer', 'zh-TW': '熱門片商', 'zh-CN': '热门片商', ja: '人気メーカー', ko: '인기 스튜디오', ms: 'Studio Populer', th: 'สตูดิโอยอดนิยม', de: 'Beliebte Studios', fr: 'Studios Populaires', vi: 'Studio nổi tiếng', fil: 'Sikat na Studio', pt: 'Estúdios Populares'
+  },
+  
+  // Maintenance UI
+  maintenance_title: {
+    en: 'Server Maintenance', id: 'Pemeliharaan Server', 'zh-TW': '伺服器維護', 'zh-CN': '服务器维护', ja: 'サーバーメンテナンス', ko: '서버 유지보수', ms: 'Penyelenggaraan Pelayan', th: 'การบำรุงรักษาเซิร์ฟเวอร์', de: 'Wartungsarbeiten', fr: 'Maintenance du Serveur', vi: 'Bảo trì máy chủ', fil: 'Pagpapanatili ng Server', pt: 'Manutenção do Servidor'
+  },
+  maintenance_desc: {
+    en: 'We are currently upgrading our core video servers to provide you with a faster and better experience.<br>Please check back again in a few hours.',
+    id: 'Kami sedang melakukan peningkatan server video utama kami untuk memberikan pengalaman yang lebih cepat dan baik.<br>Silakan kembali lagi dalam beberapa jam.',
+    'zh-TW': '我們目前正在升級核心視訊伺服器，以提供您更快速、更佳的體驗。<br>請在幾個小時後再回來查看。',
+    'zh-CN': '我们目前正在升级核心视频服务器，以提供您更快速、更佳的体验。<br>请在几个小时后再回来查看。',
+    ja: 'より快適にご利用いただくため、現在コアビデオサーバーのアップグレードを行っています。<br>数時間後に再度ご確認ください。',
+    ko: '더 빠르고 나은 경험을 제공하기 위해 현재 핵심 비디오 서버를 업그레이드 중입니다.<br>몇 시간 후에 다시 확인해 주세요.',
+    ms: 'Kami sedang menaik taraf pelayan video utama kami untuk memberikan pengalaman yang lebih pantas dan baik.<br>Sila semak semula dalam beberapa jam.',
+    th: 'ขณะนี้เรากำลังอัปเกรดเซิร์ฟเวอร์วิดีโอหลักของเราเพื่อให้คุณได้รับประสบการณ์ที่รวดเร็วและดียิ่งขึ้น<br>โปรดกลับมาตรวจสอบอีกครั้งในอีกไม่กี่ชั่วโมงข้างหน้า',
+    de: 'Wir aktualisieren derzeit unsere Kern-Videoserver, um Ihnen ein schnelleres und besseres Erlebnis zu bieten.<br>Bitte schauen Sie in ein paar Stunden noch einmal vorbei.',
+    fr: 'Nous mettons actuellement à niveau nos serveurs vidéo principaux pour vous offrir une expérience plus rapide et meilleure.<br>Veuillez revenir dans quelques heures.',
+    vi: 'Chúng tôi hiện đang nâng cấp các máy chủ video cốt lõi của mình để cung cấp cho bạn trải nghiệm nhanh hơn và tốt hơn.<br>Vui lòng kiểm tra lại sau vài giờ.',
+    fil: 'Kasalukuyan naming ina-upgrade ang aming mga pangunahing video server upang mabigyan ka ng mas mabilis at mas mahusay na karanasan.<br>Mangyaring bumalik muli pagkatapos ng ilang oras.',
+    pt: 'No momento, estamos atualizando nossos servidores de vídeo principais para oferecer a você uma experiência mais rápida e melhor.<br>Volte novamente em algumas horas.'
+  },
+  maintenance_btn: {
+    en: 'Refresh Page', id: 'Muat Ulang Halaman', 'zh-TW': '重新整理', 'zh-CN': '刷新页面', ja: 'ページを更新', ko: '페이지 새로고침', ms: 'Muat Semula Halaman', th: 'รีเฟรชหน้า', de: 'Seite aktualisieren', fr: 'Actualiser la page', vi: 'Làm mới trang', fil: 'I-refresh ang Pahina', pt: 'Atualizar Página'
   },
 
   // Judul Pembagi / Section Titles

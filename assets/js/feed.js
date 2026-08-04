@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.42';
-import ui from './ui.js?v=2.8.42';
-import filter from './filter.js?v=2.8.42';
-import i18n from './i18n.js?v=2.8.42';
+import api from './api.js?v=2.8.43';
+import ui from './ui.js?v=2.8.43';
+import filter from './filter.js?v=2.8.43';
+import i18n from './i18n.js?v=2.8.43';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -453,18 +453,18 @@ async function fetchAndRenderFeed(isInitial = false) {
     if (!grid) return;
     if (isInitial) {
       hasMore = false;
-      const errorTitle = i18n.t('error_load_video') || 'Failed to Load Video';
-      const errorDesc = i18n.t('error_connection') || 'Failed to connect to the server. Please check your internet connection.';
-      const retryText = i18n.t('retry_btn') || 'Try Again';
+      const maintTitle = i18n.t('maintenance_title') || 'Server Maintenance';
+      const maintDesc = i18n.t('maintenance_desc') || 'We are currently upgrading our core video servers to provide you with a faster and better experience.<br>Please check back again in a few hours.';
+      const maintBtn = i18n.t('maintenance_btn') || 'Refresh Page';
 
       grid.innerHTML = `
         <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem; text-align: center;">
           <img src="/assets/logo_maintenance.webp" alt="Maintenance" style="max-width: 150px; margin-bottom: 1.5rem; opacity: 0.9;">
-          <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem; font-weight: 600;">Server Maintenance</h3>
+          <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem; font-weight: 600;">${maintTitle}</h3>
           <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.6; max-width: 500px; margin-left: auto; margin-right: auto;">
-            We are currently upgrading our core video servers to provide you with a faster and better experience.<br>Please check back again in a few hours.
+            ${maintDesc}
           </p>
-          <button onclick="window.location.reload()" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; transition: opacity 0.2s;">🔄 Refresh Page</button>
+          <button onclick="window.location.reload()" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; transition: opacity 0.2s;">🔄 ${maintBtn}</button>
         </div>
       `;
     } else {
