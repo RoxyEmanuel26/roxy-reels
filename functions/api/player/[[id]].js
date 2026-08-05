@@ -3,7 +3,12 @@
  * Menjembatani front-end dengan REST API player apiJAV.
  */
 
-const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+// API Primary & Fallback — jika API 1 (server.apijav.com) mati, otomatis coba API 2 (apijav.kantotph.com)
+const API_BASES = [
+  'https://server.apijav.com/wp-json/myvideo/v1',
+  'https://apijav.kantotph.com/wp-json/myvideo/v1'
+];
+
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -55,30 +60,52 @@ export async function onRequest(context) {
       });
     }
 
-    const targetUrl = `${TARGET_BASE}/player/${id}`;
-    const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
+    // Coba setiap API base secara berurutan (Primary → Fallback)
+    let data = null;
+    let lastError = null;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    for (let i = 0; i < API_BASES.length; i++) {
+      const base = API_BASES[i];
+      const currentUrl = `${base}/player/${id}`;
 
-    let response;
-    try {
-      response = await fetch(targetUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-Client-Site': 'https://www.missav-j.com',
-          'Referer': 'https://www.missav-j.com/',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        },
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-    } catch (err) {
-      clearTimeout(timeoutId);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const response = await fetch(currentUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Client-Site': 'https://www.missav-j.com',
+            'Referer': 'https://www.missav-j.com/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          data = await response.json();
+          if (i > 0) console.info(`[API Player] Fallback API base ${i+1} (${base}) succeeded for ID ${id}.`);
+          break; // Berhasil, hentikan loop
+        }
+
+        // Response tidak OK — catat dan coba fallback
+        lastError = new Error(`API base ${i+1} returned ${response.status}: ${response.statusText}`);
+        console.warn(`[API Player] ${lastError.message} for ID ${id}, trying next...`);
+
+      } catch (err) {
+        clearTimeout(timeoutId);
+        lastError = err;
+        console.warn(`[API Player] API base ${i+1} (${base}) failed for ID ${id}: ${err.message}, trying next...`);
+      }
+    }
+
+    if (!data) {
+      // Semua API base gagal
       return new Response(JSON.stringify({
         error: 'Gateway Timeout',
-        message: 'Player API upstream server did not respond in time.'
+        message: 'All player API servers did not respond. Server is under maintenance.'
       }), {
         status: 504,
         headers: {
@@ -87,21 +114,6 @@ export async function onRequest(context) {
         }
       });
     }
-
-    if (!response.ok) {
-      return new Response(JSON.stringify({
-        error: 'WordPress REST Player Error',
-        message: response.statusText
-      }), {
-        status: response.status,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json; charset=utf-8'
-        }
-      });
-    }
-
-    const data = await response.json();
 
     const responseHeaders = {
       ...corsHeaders,

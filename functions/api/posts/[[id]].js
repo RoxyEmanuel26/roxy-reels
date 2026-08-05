@@ -4,7 +4,13 @@
  * Terintegrasi dengan database cloud Supabase untuk menyimpan terjemahan.
  */
 
-const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+// API Primary & Fallback — jika API 1 (server.apijav.com) mati, otomatis coba API 2 (apijav.kantotph.com)
+const API_BASES = [
+  'https://server.apijav.com/wp-json/myvideo/v1',
+  'https://apijav.kantotph.com/wp-json/myvideo/v1'
+];
+const TARGET_BASE = API_BASES[0]; // tetap dipakai oleh fetchPage (Other Studio)
+
 
 function slugify(text) {
   if (!text) return '';
@@ -233,15 +239,62 @@ export async function onRequest(context) {
       const pagesToFetch = [startPage, startPage + 1, startPage + 2, startPage + 3];
 
       const fetchPage = async (pageNum) => {
-        const pageUrl = new URL(targetUrl.toString());
-        pageUrl.searchParams.set('per_page', String(perPageNum));
-        pageUrl.searchParams.set('page', String(pageNum));
-        
+        for (let i = 0; i < API_BASES.length; i++) {
+          const base = API_BASES[i];
+          // Rebuild pageUrl menggunakan base yang sedang dicoba
+          const pageUrl = new URL(targetUrl.toString().replace(API_BASES[0], base));
+          pageUrl.searchParams.set('per_page', String(perPageNum));
+          pageUrl.searchParams.set('page', String(pageNum));
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+          try {
+            const response = await fetch(pageUrl.toString(), {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'X-Client-Site': 'https://www.missav-j.com',
+                'Referer': 'https://www.missav-j.com/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+              },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (response.ok) return await response.json();
+            // Jika response tidak OK, coba fallback berikutnya
+            console.warn(`[fetchPage] API base ${i+1} (${base}) returned ${response.status} for page ${pageNum}, trying next...`);
+          } catch (err) {
+            clearTimeout(timeoutId);
+            console.warn(`[fetchPage] API base ${i+1} (${base}) failed for page ${pageNum}:`, err.message);
+          }
+        }
+        // Semua API base gagal
+        console.error(`Failed to fetch page ${pageNum} for Other Studio from all API bases.`);
+        return [];
+      };
+
+      const results = await Promise.all(pagesToFetch.map(p => fetchPage(p)));
+      const allPosts = results.flat();
+
+      data = allPosts.filter(post => post && post.id && !post.studio);
+      total = '120';
+      totalPages = '10';
+    } else {
+      // Coba setiap API base secara berurutan (Primary → Fallback)
+      let lastError = null;
+      let succeeded = false;
+
+      for (let i = 0; i < API_BASES.length; i++) {
+        const base = API_BASES[i];
+        // Ganti base URL pada targetUrl yang sudah di-build
+        const currentTargetUrl = new URL(targetUrl.toString().replace(API_BASES[0], base));
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         try {
-          const response = await fetch(pageUrl.toString(), {
+          const response = await fetch(currentTargetUrl.toString(), {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
@@ -252,43 +305,32 @@ export async function onRequest(context) {
             signal: controller.signal
           });
           clearTimeout(timeoutId);
-          if (!response.ok) return [];
-          return await response.json();
+
+          if (response.ok) {
+            data = await response.json();
+            total = response.headers.get('X-WP-Total');
+            totalPages = response.headers.get('X-WP-TotalPages');
+            succeeded = true;
+            if (i > 0) console.info(`[API Posts] Fallback API base ${i+1} (${base}) succeeded.`);
+            break; // Berhasil, hentikan loop
+          }
+
+          // Response tidak OK — catat dan coba fallback
+          lastError = new Error(`API base ${i+1} (${base}) returned ${response.status}: ${response.statusText}`);
+          console.warn(`[API Posts] ${lastError.message}, trying next...`);
+
         } catch (err) {
           clearTimeout(timeoutId);
-          console.error(`Failed to fetch page ${pageNum} for Other Studio:`, err);
-          return [];
+          lastError = err;
+          console.warn(`[API Posts] API base ${i+1} (${base}) failed: ${err.message}, trying next...`);
         }
-      };
+      }
 
-      const results = await Promise.all(pagesToFetch.map(p => fetchPage(p)));
-      const allPosts = results.flat();
-
-      data = allPosts.filter(post => post && post.id && !post.studio);
-      total = '120';
-      totalPages = '10';
-    } else {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-      let response;
-      try {
-        response = await fetch(targetUrl.toString(), {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'X-Client-Site': 'https://www.missav-j.com',
-            'Referer': 'https://www.missav-j.com/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-          },
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-      } catch (err) {
-        clearTimeout(timeoutId);
+      if (!succeeded) {
+        // Semua API base gagal — kembalikan error ke client agar UI Maintenance muncul
         return new Response(JSON.stringify({
           error: 'Gateway Timeout',
-          message: 'Upstream API server did not respond in time.'
+          message: 'All upstream API servers did not respond. Server is under maintenance.'
         }), {
           status: 504,
           headers: {
@@ -297,23 +339,6 @@ export async function onRequest(context) {
           }
         });
       }
-
-      if (!response.ok) {
-        return new Response(JSON.stringify({
-          error: 'WordPress REST API Error',
-          message: response.statusText
-        }), {
-          status: response.status,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json; charset=utf-8'
-          }
-        });
-      }
-
-      data = await response.json();
-      total = response.headers.get('X-WP-Total');
-      totalPages = response.headers.get('X-WP-TotalPages');
     }
 
     if (data) {
