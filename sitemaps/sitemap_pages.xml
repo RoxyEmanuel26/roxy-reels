@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.missav-j.com/en</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.00</priority>
     <xhtml:link rel="alternate" hreflang="zh-TW" href="https://www.missav-j.com/zh-TW" />
@@ -22,7 +22,7 @@
   </url>
   <url>
     <loc>https://www.missav-j.com/en/trending</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
     <xhtml:link rel="alternate" hreflang="zh-TW" href="https://www.missav-j.com/zh-TW/trending" />
@@ -42,7 +42,7 @@
   </url>
   <url>
     <loc>https://www.missav-j.com/en/recent</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
     <xhtml:link rel="alternate" hreflang="zh-TW" href="https://www.missav-j.com/zh-TW/recent" />
@@ -62,7 +62,7 @@
   </url>
   <url>
     <loc>https://www.missav-j.com/en/actors</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
     <xhtml:link rel="alternate" hreflang="zh-TW" href="https://www.missav-j.com/zh-TW/actors" />
@@ -82,7 +82,7 @@
   </url>
   <url>
     <loc>https://www.missav-j.com/en/categories</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
     <xhtml:link rel="alternate" hreflang="zh-TW" href="https://www.missav-j.com/zh-TW/categories" />
@@ -102,7 +102,7 @@
   </url>
   <url>
     <loc>https://www.missav-j.com/en/studios</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
     <xhtml:link rel="alternate" hreflang="zh-TW" href="https://www.missav-j.com/zh-TW/studios" />
@@ -122,7 +122,7 @@
   </url>
   <url>
     <loc>https://www.missav-j.com/en/popular-actors</loc>
-    <lastmod>2026-07-21</lastmod>
+    <lastmod>2026-08-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
     <xhtml:link rel="alternate" hreflang="zh-TW" href="https://www.missav-j.com/zh-TW/popular-actors" />
