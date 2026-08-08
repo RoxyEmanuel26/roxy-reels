@@ -5,8 +5,7 @@
  */
 
 const API_ENDPOINTS = [
-  'https://server.apijav.com/wp-json/myvideo/v1',
-  'https://apijav.kantotph.com/wp-json/myvideo/v1'
+  'https://server.apijav.com/wp-json/myvideo/v1'
 ];
 
 function slugify(text) {

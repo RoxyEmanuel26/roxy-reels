@@ -6,8 +6,7 @@ import ACTORS from '../../api/actors.json';
 import CATEGORIES from '../../api/categories.json';
 
 const API_ENDPOINTS = [
-  'https://server.apijav.com/wp-json/myvideo/v1',
-  'https://apijav.kantotph.com/wp-json/myvideo/v1'
+  'https://server.apijav.com/wp-json/myvideo/v1'
 ];
 
 const LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
