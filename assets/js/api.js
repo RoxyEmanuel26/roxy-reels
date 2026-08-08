@@ -15,7 +15,7 @@ const apiCache = new Map();
 // In-flight request deduplication map
 const fetchPromises = new Map();
 
-async function fetchWithTimeout(url, options = {}, timeout = 5000) {
+async function fetchWithTimeout(url, options = {}, timeout = 15000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   
