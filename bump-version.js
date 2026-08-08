@@ -13,22 +13,17 @@ console.log(`🚀 Memperbarui seluruh versi cache menjadi: v${newVersion}...`);
 
 const filesToUpdate = [
   'index.html',
-  'sw.js',
-  'assets/js/actors.js',
-  'assets/js/ads.js',
-  'assets/js/analytics.js',
-  'assets/js/app.js',
-  'assets/js/categories.js',
-  'assets/js/feed.js',
-  'assets/js/filter.js',
-  'assets/js/i18n.js',
-  'assets/js/player.js',
-  'assets/js/popular_actors.js',
-  'assets/js/recent.js',
-  'assets/js/search.js',
-  'assets/js/studios.js',
-  'assets/js/trending.js'
+  'sw.js'
 ];
+
+// Otomatis membaca semua file JavaScript di dalam folder assets/js
+const jsDir = path.join(__dirname, 'assets', 'js');
+if (fs.existsSync(jsDir)) {
+  const jsFiles = fs.readdirSync(jsDir).filter(file => file.endsWith('.js'));
+  jsFiles.forEach(file => {
+    filesToUpdate.push(`assets/js/${file}`);
+  });
+}
 
 let totalReplaced = 0;
 
