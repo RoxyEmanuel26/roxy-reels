@@ -3,34 +3,9 @@
 # Default crawler rules
 User-agent: *
 Allow: /
+
 Disallow: /api/
 Disallow: /functions/
-
-# AI Search Bots — allow citation & indexing
-User-agent: GPTBot
-Allow: /
-Disallow: /api/
-Disallow: /assets/js/
-Disallow: /assets/css/
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-# Training-only crawlers — block
-User-agent: CCBot
-Disallow: /
 
 # Sitemaps
 Sitemap: https://www.missav-j.com/sitemaps/sitemap_index.xml
