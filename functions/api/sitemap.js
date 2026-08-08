@@ -5,9 +5,7 @@
 import ACTORS from '../../api/actors.json';
 import CATEGORIES from '../../api/categories.json';
 
-const API_ENDPOINTS = [
-  'https://server.apijav.com/wp-json/myvideo/v1'
-];
+const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
 
 const LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
 // Map internal language keys to valid ISO 639-1 hreflang codes.
@@ -223,18 +221,15 @@ async function generateSitemapIndex(domain) {
 
   let totalPosts = 113191;
   let headRes = null;
-  for (const baseUrl of API_ENDPOINTS) {
-    try {
-      const res = await fetch(`${baseUrl}/posts?per_page=1`, {
-        headers: { 'X-Client-Site': 'https://www.missav-j.com' }
-      });
-      if (res.ok) {
-        headRes = res;
-        break; // found working endpoint
-      }
-    } catch (err) {
-      console.warn(`[Sitemap Fallback] Head check ${baseUrl} failed:`, err);
+  try {
+    const res = await fetch(`${TARGET_BASE}/posts?per_page=1`, {
+      headers: { 'X-Client-Site': 'https://www.missav-j.com' }
+    });
+    if (res.ok) {
+      headRes = res;
     }
+  } catch (err) {
+    console.warn(`[Sitemap] Head check failed:`, err);
   }
 
   if (headRes && headRes.ok) {
@@ -287,18 +282,15 @@ async function generateSitemapIndex(domain) {
 
 async function generateVideoSitemap(lang, page, domain, supabaseUrl, supabaseKey) {
   let postsRes = null;
-  for (const baseUrl of API_ENDPOINTS) {
-    try {
-      const res = await fetch(`${baseUrl}/posts?per_page=1000&page=${page}`, {
-        headers: { 'X-Client-Site': 'https://www.missav-j.com' }
-      });
-      if (res.ok) {
-        postsRes = res;
-        break;
-      }
-    } catch (err) {
-      console.warn(`[Sitemap Fallback] Fetch page ${page} from ${baseUrl} failed:`, err);
+  try {
+    const res = await fetch(`${TARGET_BASE}/posts?per_page=1000&page=${page}`, {
+      headers: { 'X-Client-Site': 'https://www.missav-j.com' }
+    });
+    if (res.ok) {
+      postsRes = res;
     }
+  } catch (err) {
+    console.warn(`[Sitemap] Fetch page ${page} failed:`, err);
   }
 
   if (!postsRes || !postsRes.ok) {
