@@ -5,7 +5,10 @@
 import ACTORS from '../../api/actors.json';
 import CATEGORIES from '../../api/categories.json';
 
-const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1/posts';
+const API_ENDPOINTS = [
+  'https://server.apijav.com/wp-json/myvideo/v1',
+  'https://apijav.kantotph.com/wp-json/myvideo/v1'
+];
 
 const LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
 // Map internal language keys to valid ISO 639-1 hreflang codes.
@@ -220,18 +223,28 @@ async function generateSitemapIndex(domain) {
   const today = new Date().toISOString().split('T')[0];
 
   let totalPosts = 113191;
-  try {
-    const headRes = await fetch(`${TARGET_BASE}?per_page=1`, {
-      headers: { 'X-Client-Site': 'https://www.missav-j.com' }
-    });
-    if (headRes.ok) {
-      const totalHeader = headRes.headers.get('X-WP-Total');
-      if (totalHeader) {
-        totalPosts = parseInt(totalHeader, 10);
+  let headRes = null;
+  for (const baseUrl of API_ENDPOINTS) {
+    try {
+      const res = await fetch(`${baseUrl}/posts?per_page=1`, {
+        headers: { 'X-Client-Site': 'https://www.missav-j.com' }
+      });
+      if (res.ok) {
+        headRes = res;
+        break; // found working endpoint
       }
+    } catch (err) {
+      console.warn(`[Sitemap Fallback] Head check ${baseUrl} failed:`, err);
     }
-  } catch (err) {
-    console.error('Failed to fetch total posts count from apiJAV:', err);
+  }
+
+  if (headRes && headRes.ok) {
+    const totalHeader = headRes.headers.get('X-WP-Total');
+    if (totalHeader) {
+      totalPosts = parseInt(totalHeader, 10);
+    }
+  } else {
+    console.error('Failed to fetch total posts count from all endpoints.');
   }
 
   const videoPagesCount = Math.ceil(totalPosts / 1000);
@@ -274,12 +287,25 @@ async function generateSitemapIndex(domain) {
 }
 
 async function generateVideoSitemap(lang, page, domain, supabaseUrl, supabaseKey) {
-  const postsRes = await fetch(`${TARGET_BASE}?per_page=1000&page=${page}`, {
-    headers: { 'X-Client-Site': 'https://www.missav-j.com' }
-  });
+  let postsRes = null;
+  for (const baseUrl of API_ENDPOINTS) {
+    try {
+      const res = await fetch(`${baseUrl}/posts?per_page=1000&page=${page}`, {
+        headers: { 'X-Client-Site': 'https://www.missav-j.com' }
+      });
+      if (res.ok) {
+        postsRes = res;
+        break;
+      }
+    } catch (err) {
+      console.warn(`[Sitemap Fallback] Fetch page ${page} from ${baseUrl} failed:`, err);
+    }
+  }
 
-  if (!postsRes.ok) {
-    return { status: postsRes.status, body: `Failed to fetch posts from apiJAV: ${postsRes.statusText}` };
+  if (!postsRes || !postsRes.ok) {
+    const status = postsRes ? postsRes.status : 504;
+    const text = postsRes ? postsRes.statusText : 'All endpoints failed';
+    return { status, body: `Failed to fetch posts from upstream API: ${text}` };
   }
 
   const posts = await postsRes.json();

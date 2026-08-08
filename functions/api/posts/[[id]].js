@@ -4,7 +4,10 @@
  * Terintegrasi dengan database cloud Supabase untuk menyimpan terjemahan.
  */
 
-const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const API_ENDPOINTS = [
+  'https://server.apijav.com/wp-json/myvideo/v1',
+  'https://apijav.kantotph.com/wp-json/myvideo/v1'
+];
 
 function slugify(text) {
   if (!text) return '';
@@ -205,19 +208,22 @@ export async function onRequest(context) {
 
     const lang = url.searchParams.get('lang') || 'en';
 
-    let targetUrl;
-    if (id) {
-      targetUrl = new URL(`${TARGET_BASE}/posts/${id}`);
-    } else {
-      targetUrl = new URL(`${TARGET_BASE}/posts`);
-    }
+    const getTargetUrl = (baseUrl) => {
+      let targetUrl;
+      if (id) {
+        targetUrl = new URL(`${baseUrl}/posts/${id}`);
+      } else {
+        targetUrl = new URL(`${baseUrl}/posts`);
+      }
+      return targetUrl;
+    };
 
     const isOtherStudio = url.searchParams.get('studio') === 'Other' || url.searchParams.get('studio') === 'Unknown Studio';
 
     url.searchParams.forEach((value, key) => {
       if (id && key === 'id') return;
       if (isOtherStudio && key === 'studio') return;
-      targetUrl.searchParams.append(key, value);
+      // parameters will be appended during fetch
     });
 
     let data;
@@ -226,22 +232,14 @@ export async function onRequest(context) {
 
     const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
 
-    if (isOtherStudio) {
-      const requestedPage = parseInt(url.searchParams.get('page') || '1', 10) || 1;
-      const perPageNum = 100;
-      const startPage = (requestedPage - 1) * 4 + 1;
-      const pagesToFetch = [startPage, startPage + 1, startPage + 2, startPage + 3];
-
-      const fetchPage = async (pageNum) => {
-        const pageUrl = new URL(targetUrl.toString());
-        pageUrl.searchParams.set('per_page', String(perPageNum));
-        pageUrl.searchParams.set('page', String(pageNum));
-        
+    // Helper for robust fetch with fallback
+    const fetchWithFallback = async (pageUrlFn) => {
+      for (const baseUrl of API_ENDPOINTS) {
+        const finalUrl = pageUrlFn(baseUrl);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s per endpoint
         try {
-          const response = await fetch(pageUrl.toString(), {
+          const response = await fetch(finalUrl.toString(), {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
@@ -252,13 +250,43 @@ export async function onRequest(context) {
             signal: controller.signal
           });
           clearTimeout(timeoutId);
-          if (!response.ok) return [];
-          return await response.json();
+          if (response.ok) {
+            return response;
+          } else {
+            console.warn(`[Fallback] ${baseUrl} returned ${response.status}. Trying next...`);
+          }
         } catch (err) {
           clearTimeout(timeoutId);
-          console.error(`Failed to fetch page ${pageNum} for Other Studio:`, err);
-          return [];
+          console.warn(`[Fallback] ${baseUrl} failed/timeout. Trying next...`);
         }
+      }
+      return null;
+    };
+
+    if (isOtherStudio) {
+      const requestedPage = parseInt(url.searchParams.get('page') || '1', 10) || 1;
+      const perPageNum = 100;
+      const startPage = (requestedPage - 1) * 4 + 1;
+      const pagesToFetch = [startPage, startPage + 1, startPage + 2, startPage + 3];
+
+      const fetchPage = async (pageNum) => {
+        const buildUrl = (baseUrl) => {
+          const pageUrl = getTargetUrl(baseUrl);
+          url.searchParams.forEach((value, key) => {
+            if (key !== 'studio' && key !== 'id') {
+              pageUrl.searchParams.append(key, value);
+            }
+          });
+          pageUrl.searchParams.set('per_page', String(perPageNum));
+          pageUrl.searchParams.set('page', String(pageNum));
+          return pageUrl;
+        };
+
+        const response = await fetchWithFallback(buildUrl);
+        if (response) {
+          return await response.json();
+        }
+        return [];
       };
 
       const results = await Promise.all(pagesToFetch.map(p => fetchPage(p)));
@@ -268,42 +296,23 @@ export async function onRequest(context) {
       total = '120';
       totalPages = '10';
     } else {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-      let response;
-      try {
-        response = await fetch(targetUrl.toString(), {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'X-Client-Site': 'https://www.missav-j.com',
-            'Referer': 'https://www.missav-j.com/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-          },
-          signal: controller.signal
+      const buildUrl = (baseUrl) => {
+        const pageUrl = getTargetUrl(baseUrl);
+        url.searchParams.forEach((value, key) => {
+          if (id && key === 'id') return;
+          pageUrl.searchParams.append(key, value);
         });
-        clearTimeout(timeoutId);
-      } catch (err) {
-        clearTimeout(timeoutId);
+        return pageUrl;
+      };
+
+      const response = await fetchWithFallback(buildUrl);
+
+      if (!response) {
         return new Response(JSON.stringify({
-          error: 'Gateway Timeout',
-          message: 'Upstream API server did not respond in time.'
+          error: 'Gateway Timeout / Service Unavailable',
+          message: 'All upstream API endpoints failed or timed out.'
         }), {
           status: 504,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json; charset=utf-8'
-          }
-        });
-      }
-
-      if (!response.ok) {
-        return new Response(JSON.stringify({
-          error: 'WordPress REST API Error',
-          message: response.statusText
-        }), {
-          status: response.status,
           headers: {
             ...corsHeaders,
             'Content-Type': 'application/json; charset=utf-8'

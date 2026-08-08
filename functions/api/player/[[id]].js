@@ -3,7 +3,10 @@
  * Menjembatani front-end dengan REST API player apiJAV.
  */
 
-const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const API_ENDPOINTS = [
+  'https://server.apijav.com/wp-json/myvideo/v1',
+  'https://apijav.kantotph.com/wp-json/myvideo/v1'
+];
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -55,45 +58,45 @@ export async function onRequest(context) {
       });
     }
 
-    const targetUrl = `${TARGET_BASE}/player/${id}`;
     const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    let response = null;
+    
+    for (const baseUrl of API_ENDPOINTS) {
+      const targetUrl = `${baseUrl}/player/${id}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    let response;
-    try {
-      response = await fetch(targetUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-Client-Site': 'https://www.missav-j.com',
-          'Referer': 'https://www.missav-j.com/',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        },
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-    } catch (err) {
-      clearTimeout(timeoutId);
-      return new Response(JSON.stringify({
-        error: 'Gateway Timeout',
-        message: 'Player API upstream server did not respond in time.'
-      }), {
-        status: 504,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json; charset=utf-8'
+      try {
+        const res = await fetch(targetUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Client-Site': clientSite,
+            'Referer': 'https://www.missav-j.com/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          response = res;
+          break; // success, stop trying fallbacks
+        } else {
+          console.warn(`[Player Fallback] ${baseUrl} returned ${res.status}. Trying next...`);
         }
-      });
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.warn(`[Player Fallback] ${baseUrl} failed/timeout. Trying next...`);
+      }
     }
 
-    if (!response.ok) {
+    if (!response) {
       return new Response(JSON.stringify({
-        error: 'WordPress REST Player Error',
-        message: response.statusText
+        error: 'Gateway Timeout / Service Unavailable',
+        message: 'All Player API upstream servers failed or timed out.'
       }), {
-        status: response.status,
+        status: 504,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json; charset=utf-8'
