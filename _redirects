@@ -1,0 +1,7 @@
+# Cloudflare Pages Redirect Rules
+# Redirect root URL ke /en/ dengan HTTP 301 (permanen) agar Googlebot
+# tidak pernah melihat halaman kosong saat SPA sedang loading JavaScript.
+# Tanpa ini, Googlebot melihat root "/" mengembalikan 200 OK dengan konten
+# kosong (karena JS-only redirect) → Soft 404.
+
+/  /en/  301
