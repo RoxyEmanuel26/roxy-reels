@@ -466,6 +466,12 @@ export async function onRequest(context) {
   // URL yang sudah punya prefix (/ko/, /en/, /watch/...) TIDAK disentuh —
   // ini mencegah redirect-loop dan tidak merusak link sharing.
   if (request.method === 'GET' && (pathname === '/' || pathname === '')) {
+    // Deteksi apakah request berasal dari search engine bot / crawler.
+    // Bot mendapat 301 (permanent) agar Google mengindeks /en/ — bukan root / yang kosong.
+    // User biasa tetap mendapat 302 (temporary) agar geo-detect bisa berubah di masa depan.
+    const userAgent = request.headers.get('User-Agent') || '';
+    const isBot = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|facebot|ia_archiver|AhrefsBot|SemrushBot|MJ12bot|Applebot/i.test(userAgent);
+
     // Cek preferensi tersimpan di cookie (prioritas utama — user sudah pernah pilih)
     const cookieLang = getCookieLang(request);
     let targetLang;
@@ -482,20 +488,29 @@ export async function onRequest(context) {
       targetLang = detectLangFromCountry(country);
     }
 
-    // Bangun URL tujuan: missav-j.com/{lang}/
-    const redirectUrl = `${url.origin}/${targetLang}/${url.search}`;
+    // Bot: selalu arahkan ke /en/ dengan 301 agar Google mengindeks /en/ sebagai URL kanonik.
+    // Googlebot crawl dari US sehingga targetLang sudah 'en', tapi kita eksplisitkan untuk keamanan.
+    const finalLang = isBot ? 'en' : targetLang;
+    const redirectUrl = `${url.origin}/${finalLang}/${url.search}`;
+    const redirectStatus = isBot ? 301 : 302;
+
+    const redirectHeaders = {
+      'Location': redirectUrl,
+      // JANGAN cache redirect di CDN — setiap user bisa dari negara berbeda
+      'Cache-Control': 'no-store, no-cache',
+      'Vary': 'CF-IPCountry, Cookie',
+    };
+
+    // Jangan set cookie untuk bot — tidak perlu dan bisa mengotori log
+    if (!isBot) {
+      // Simpan preferensi bahasa ke cookie 30 hari (2592000 detik)
+      // agar kunjungan berikutnya langsung pakai bahasa yang sama tanpa geo-detect
+      redirectHeaders['Set-Cookie'] = `missav_lang=${targetLang}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`;
+    }
 
     return new Response(null, {
-      status: 302, // Temporary redirect — izinkan cache browser di-expire
-      headers: {
-        'Location': redirectUrl,
-        // Simpan preferensi bahasa ke cookie 30 hari (2592000 detik)
-        // agar kunjungan berikutnya langsung pakai bahasa yang sama tanpa geo-detect
-        'Set-Cookie': `missav_lang=${targetLang}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`,
-        // JANGAN cache redirect di CDN — setiap user bisa dari negara berbeda
-        'Cache-Control': 'no-store, no-cache',
-        'Vary': 'CF-IPCountry, Cookie',
-      },
+      status: redirectStatus,
+      headers: redirectHeaders,
     });
   }
   // ─────────────────────────────────────────────────────────────────────────
