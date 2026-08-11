@@ -33,7 +33,9 @@ function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
     return `<link rel="alternate" hreflang="${code}" href="${escapeHtml(urlOrigin + path + urlSearch)}" />`;
   });
   
-  tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(urlOrigin + cleanPath + urlSearch)}" />`);
+  // x-default → English URL (bukan root / yang hanya redirect, melainkan /en/ yang berisi konten)
+  const xDefaultPath = cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
+  tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(urlOrigin + xDefaultPath + urlSearch)}" />`);
   return tags.join('\n  ');
 }
 
@@ -732,7 +734,7 @@ export async function onRequest(context) {
                     "@type": "ListItem",
                     "position": 1,
                     "name": "Home",
-                    "item": "https://www.missav-j.com"
+                    "item": `${url.origin}/en/`
                   },
                   {
                     "@type": "ListItem",
@@ -903,7 +905,7 @@ export async function onRequest(context) {
               "@type": "ListItem",
               "position": 1,
               "name": "Home",
-              "item": "https://www.missav-j.com"
+              "item": `${url.origin}/en/`
             },
             {
               "@type": "ListItem",
@@ -954,7 +956,7 @@ export async function onRequest(context) {
 
         // Inject fallback h1 text (+ crawlable actor directory on /actors)
         const seoFallbackContent = `
-          <div class="seo-fallback" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0);">
+          <div class="seo-fallback" style="display: contents;">
             <h1>${escapeHtml(pageTitle)}</h1>
             <p>${escapeHtml(pageDesc)}</p>
             ${actorLinksHtml}
