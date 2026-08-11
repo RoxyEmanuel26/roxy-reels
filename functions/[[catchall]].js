@@ -25,10 +25,10 @@ function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
   
   const tags = allLangs.map(lang => {
     const code = hreflangCode(lang);
-    let path = cleanPath;
-    if (lang !== 'en') {
-      path = cleanPath === '/' ? `/${lang}` : `/${lang}${cleanPath}`;
-    }
+    // SEMUA bahasa termasuk 'en' mendapat prefix URL yang benar.
+    // Bug sebelumnya: 'en' tidak diberi prefix → hreflang en menunjuk ke
+    // /watch/abc (tidak ada) bukannya /en/watch/abc → penyebab 1.006 "Duplikat".
+    const path = cleanPath === '/' ? `/${lang}/` : `/${lang}${cleanPath}`;
     // Use escapeHtml to safely encode ampersands (&) and quotes from urlSearch
     return `<link rel="alternate" hreflang="${code}" href="${escapeHtml(urlOrigin + path + urlSearch)}" />`;
   });

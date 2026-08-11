@@ -4,11 +4,11 @@
  * perayapan infinite scroll, penyorotan kata kunci yang aman dari XSS, dan staggered delay.
  */
 
-import api from './api.js?v=2.8.54';
-import ui from './ui.js?v=2.8.54';
-import filter from './filter.js?v=2.8.54';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.54';
-import i18n from './i18n.js?v=2.8.54';
+import api from './api.js?v=2.8.55';
+import ui from './ui.js?v=2.8.55';
+import filter from './filter.js?v=2.8.55';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.55';
+import i18n from './i18n.js?v=2.8.55';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
