@@ -38,13 +38,10 @@
   <meta name="twitter:title" id="twitter-title" content="MISSAV-J | Premium JAV Streaming">
   <meta name="twitter:description" id="twitter-description" content="Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses in high quality.">
   <meta name="twitter:image" id="twitter-image" content="https://www.missav-j.com/assets/images/logo.webp">
-  <meta property="og:video" id="og-video" content="">
-  <meta property="og:video:type" content="text/html">
-  <meta property="og:video:width" content="1280">
-  <meta property="og:video:height" content="720">
-  <meta name="twitter:player" id="twitter-player" content="">
-  <meta name="twitter:player:width" content="1280">
-  <meta name="twitter:player:height" content="720">
+
+  <!-- og:video dan twitter:player hanya di-inject oleh Worker saat halaman Watch -->
+  <!-- Tidak ada static placeholder di sini agar tidak ada empty content="" yang error -->
+
 
   <!-- JSON-LD Structured Data (dynamically updated by app.js) -->
   <script type="application/ld+json" id="json-ld-data">
@@ -69,14 +66,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://glamournakedemployee.com">
   <link rel="dns-prefetch" href="https://glamournakedemployee.com">
+  <!-- Preconnect ke API server utama untuk mempercepat LCP (first video data fetch) -->
+  <link rel="preconnect" href="https://server.apijav.com" crossorigin>
+  <link rel="dns-prefetch" href="https://server.apijav.com">
+
 
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 
   <!-- Premium Modular Stylesheets -->
-  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.57">
-  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.57">
-  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.57">
-  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.57">
+  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.58">
+  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.58">
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.58">
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.58">
 
 </head>
 <body>
@@ -288,7 +289,7 @@
 
 
   <!-- Modular SPA Script Bootstrap -->
-  <script type="module" src="/assets/js/app.js?v=2.8.57"></script>
+  <script type="module" src="/assets/js/app.js?v=2.8.58"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>
