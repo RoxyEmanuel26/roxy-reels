@@ -613,21 +613,36 @@ export async function onRequest(context) {
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
             const description = descFn(code, title, actorsStr, studioStr);
 
-            let imageUrl = post.thumbnail || '/assets/images/logo.webp';
-            
-            // Bypass API image proxy for Googlebot to prevent 403 Forbidden on thumbnails
+            let imageUrl = post.thumbnail || '';
+
+            // Langkah 1: Bypass proxy apijav.php → ekstrak URL gambar aslinya
             if (imageUrl.includes('apijav.php?url=')) {
               try {
                 const urlObj = new URL(imageUrl);
                 const actualUrl = urlObj.searchParams.get('url');
-                if (actualUrl) imageUrl = actualUrl;
+                // Hanya replace jika actualUrl benar-benar valid (bukan string kosong)
+                if (actualUrl && actualUrl.startsWith('http')) imageUrl = actualUrl;
               } catch (e) {}
             }
 
+            // Langkah 2: Normalisasi protocol-relative URL
             if (imageUrl && imageUrl.startsWith('//')) {
               imageUrl = `https:${imageUrl}`;
-            } else if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
-              imageUrl = `${url.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+            }
+
+            // Langkah 3: thumbnailUrlForSchema → route MELALUI /api/image proxy kita
+            // KRITIS untuk SEO: Googlebot selalu bisa akses domain missav-j.com kita.
+            // CDN eksternal (dmm.co.jp, dll.) sering menerapkan hotlink protection yang
+            // memblokir Googlebot → 'URL thumbnail tidak tersedia' di GSC Video.
+            // Dengan proxy /api/image, thumbnail selalu HTTP 200 untuk Googlebot.
+            const thumbnailUrlForSchema = (imageUrl && imageUrl.startsWith('http'))
+              ? `${url.origin}/api/image?url=${encodeURIComponent(imageUrl)}`
+              : `${url.origin}/assets/images/logo.webp`;
+
+            // imageUrl untuk OG/Twitter: gunakan URL asli (bukan proxy) agar
+            // social media preview tetap bekerja dengan benar
+            if (!imageUrl || !imageUrl.startsWith('http')) {
+              imageUrl = `${url.origin}/assets/images/logo.webp`;
             }
 
             const pageUrl = `${url.origin}${url.pathname}${url.search}`;
@@ -694,8 +709,10 @@ export async function onRequest(context) {
                 "@type": "VideoObject",
                 "name": title,
                 "description": description,
-                // Array thumbnailUrl: Google merekomendasikan multiple resolusi untuk video rich results
-                "thumbnailUrl": [imageUrl],
+                // Array thumbnailUrl: gunakan URL proxy kita (/api/image) agar Googlebot
+                // selalu bisa akses thumbnail (domain kita sendiri, tidak di-block CDN).
+                // imageUrl (URL CDN asli) sebagai elemen kedua untuk kompatibilitas.
+                "thumbnailUrl": [thumbnailUrlForSchema, imageUrl].filter(Boolean),
                 "uploadDate": uploadDate,
                 // url: URL halaman canonical kita — accessible oleh Googlebot (domain kita sendiri)
                 "url": pageUrl,

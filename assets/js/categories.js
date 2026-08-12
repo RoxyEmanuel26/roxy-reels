@@ -4,9 +4,9 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js?v=2.8.56';
-import i18n from './i18n.js?v=2.8.56';
-import { ALL_CATEGORIES } from './categories_data.js?v=2.8.56';
+import ui from './ui.js?v=2.8.57';
+import i18n from './i18n.js?v=2.8.57';
+import { ALL_CATEGORIES } from './categories_data.js?v=2.8.57';
 
 /**
  * Render category grid cards based on filtered data

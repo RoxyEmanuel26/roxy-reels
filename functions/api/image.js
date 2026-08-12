@@ -22,14 +22,21 @@ export async function onRequest(context) {
     }
   }
 
-  // Daftar domain yang diizinkan untuk menghindari penyalahgunaan open proxy
+  // Daftar domain yang diizinkan untuk menghindari penyalahgunaan open proxy.
+  // Mencakup semua CDN yang digunakan oleh server.apijav.com untuk thumbnail.
   const allowedDomains = [
     'fourhoi.com',
     'image.apijav.com',
     'server.apijav.com',
     'server.appjav.com',
     'surrit.com',
-    'media.surrit.com'
+    'media.surrit.com',
+    // Japanese JAV CDN providers (thumbnails sering dari domain ini)
+    'dmm.co.jp',
+    'dmm.com',
+    'pics.dmm.co.jp',
+    'cc3001.dmm.co.jp',
+    'storage.googleapis.com'
   ];
 
   let parsedTarget;
