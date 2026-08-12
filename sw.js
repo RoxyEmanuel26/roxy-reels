@@ -1,18 +1,18 @@
-const CACHE_NAME = 'missavj-cache-v2.8.55';
+const CACHE_NAME = 'missavj-cache-v2.8.56';
 const ASSETS_TO_CACHE = [
-  '/assets/css/components.css?v=2.8.55',
-  '/assets/css/base.css?v=2.8.55',
-  '/assets/css/layout.css?v=2.8.55',
-  '/assets/css/player.css?v=2.8.55',
-  '/assets/js/app.js?v=2.8.55',
-  '/assets/js/api.js?v=2.8.55',
-  '/assets/js/feed.js?v=2.8.55',
-  '/assets/js/i18n.js?v=2.8.55',
-  '/assets/js/player.js?v=2.8.55',
-  '/assets/js/ui.js?v=2.8.55',
-  '/assets/js/ads.js?v=2.8.55',
-  '/assets/js/analytics.js?v=2.8.55',
-  '/assets/js/referral.js?v=2.8.55',
+  '/assets/css/components.css?v=2.8.56',
+  '/assets/css/base.css?v=2.8.56',
+  '/assets/css/layout.css?v=2.8.56',
+  '/assets/css/player.css?v=2.8.56',
+  '/assets/js/app.js?v=2.8.56',
+  '/assets/js/api.js?v=2.8.56',
+  '/assets/js/feed.js?v=2.8.56',
+  '/assets/js/i18n.js?v=2.8.56',
+  '/assets/js/player.js?v=2.8.56',
+  '/assets/js/ui.js?v=2.8.56',
+  '/assets/js/ads.js?v=2.8.56',
+  '/assets/js/analytics.js?v=2.8.56',
+  '/assets/js/referral.js?v=2.8.56',
   '/assets/images/logo.webp',
   '/favicon.svg'
 ];

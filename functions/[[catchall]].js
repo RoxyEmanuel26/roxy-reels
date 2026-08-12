@@ -694,8 +694,12 @@ export async function onRequest(context) {
                 "@type": "VideoObject",
                 "name": title,
                 "description": description,
-                "thumbnailUrl": imageUrl,
+                // Array thumbnailUrl: Google merekomendasikan multiple resolusi untuk video rich results
+                "thumbnailUrl": [imageUrl],
                 "uploadDate": uploadDate,
+                // url: URL halaman canonical kita — accessible oleh Googlebot (domain kita sendiri)
+                "url": pageUrl,
+                // embedUrl: URL embed player dari server — Google coba akses ini untuk verifikasi video
                 "embedUrl": cleanEmbedUrl,
                 "publisher": {
                   "@type": "Organization",
@@ -703,7 +707,9 @@ export async function onRequest(context) {
                   "url": "https://www.missav-j.com",
                   "logo": {
                     "@type": "ImageObject",
-                    "url": "https://www.missav-j.com/assets/images/logo.webp"
+                    "url": "https://www.missav-j.com/assets/images/logo.webp",
+                    "width": 192,
+                    "height": 192
                   }
                 },
                 "inLanguage": "ja"
@@ -754,13 +760,22 @@ export async function onRequest(context) {
                 () => `<script type="application/ld+json" id="json-ld-data">${JSON.stringify(structuredData, null, 2).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')}</script>`
               );
 
-              // Inject iframe into raw HTML for first-wave crawler indexing
+              // Inject visible content + iframe for first-wave crawler indexing.
+              // PENTING: h1 dan p HARUS visible (tidak disembunyikan via CSS).
+              // Google menghukum 'width:1px/height:1px' sebagai cloaking (kebijakan webmaster).
               const seoFallbackContent = `
-        <div class="seo-fallback" style="width: 100%; max-width: 1200px; margin: 0 auto;">
-          <h1 style="position: absolute; width: 1px; height: 1px; overflow: hidden;">${escapeHtml(fullTitle)}</h1>
-          <p style="position: absolute; width: 1px; height: 1px; overflow: hidden;">${escapeHtml(description)}</p>
+        <div class="seo-fallback" style="display: contents;">
+          <h1>${escapeHtml(fullTitle)}</h1>
+          <p>${escapeHtml(description)}</p>
           <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000;">
-            <iframe src="${escapeHtml(cleanEmbedUrl)}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+            <iframe
+              src="${escapeHtml(cleanEmbedUrl)}"
+              title="${escapeHtml(fullTitle)}"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+              allowfullscreen
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
           </div>
         </div>
               `;
