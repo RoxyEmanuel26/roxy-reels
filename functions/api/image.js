@@ -36,7 +36,11 @@ export async function onRequest(context) {
     'dmm.com',
     'pics.dmm.co.jp',
     'cc3001.dmm.co.jp',
-    'storage.googleapis.com'
+    'storage.googleapis.com',
+    // New CDN domains from API
+    'fourhoi.mrstcdn.store',
+    'mrstcdn.store',
+    'mrstcdn.com'
   ];
 
   let parsedTarget;
