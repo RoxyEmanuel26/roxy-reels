@@ -322,27 +322,57 @@ export async function onRequest(context) {
 
     if (data) {
       if (id && !Array.isArray(data)) {
-        const translations = await getOrTranslatePost(data, lang, SUPABASE_URL, SUPABASE_KEY, false);
-        if (lang && lang !== 'en' && translations[lang]) {
-          data.title = translations[lang];
-        }
-        data.localized_slugs = generateLocalizedSlugs(data.code, data.title, translations);
-      } else if (Array.isArray(data)) {
-        const ids = data.map(p => p.id);
-        const translationsMap = await getBatchTranslationsFromDb(ids, SUPABASE_URL, SUPABASE_KEY);
-        
-        const translatePromises = data.map(async (post) => {
-          let translations = translationsMap[post.id];
-          if (!translations) {
-            translations = await getOrTranslatePost(post, lang, SUPABASE_URL, SUPABASE_KEY, false);
+        // Single post: apply translation with a strict 5-second timeout cap
+        const translationTimeout = new Promise(resolve => setTimeout(() => resolve(null), 5000));
+        const translationResult = await Promise.race([
+          getOrTranslatePost(data, lang, SUPABASE_URL, SUPABASE_KEY, false).catch(() => null),
+          translationTimeout
+        ]);
+        if (translationResult) {
+          if (lang && lang !== 'en' && translationResult[lang]) {
+            data.title = translationResult[lang];
           }
+          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, translationResult);
+        } else {
+          // Timeout — return with English title, generate slugs from English title
+          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {});
+        }
+      } else if (Array.isArray(data)) {
+        // LIST: Only apply CACHED translations (fast Supabase lookup, max 6s timeout)
+        // Never block the response for real-time translation of new posts.
+        // Background translation will populate the cache for subsequent requests.
+        const ids = data.map(p => p.id);
+        const translationsMap = await getBatchTranslationsFromDb(ids, SUPABASE_URL, SUPABASE_KEY).catch(() => ({}));
+        
+        data.forEach(post => {
+          const translations = translationsMap[post.id] || {};
           if (lang && lang !== 'en' && translations[lang]) {
             post.title = translations[lang];
           }
           post.localized_slugs = generateLocalizedSlugs(post.code, post.title, translations);
         });
-        
-        await Promise.all(translatePromises);
+
+        // Trigger background translation for posts missing translations (non-blocking)
+        // This runs AFTER the response is sent, so it never delays the user.
+        if (SUPABASE_URL && SUPABASE_KEY) {
+          const postsNeedingTranslation = data.filter(p => {
+            const t = translationsMap[p.id];
+            return !t || (lang && lang !== 'en' && !t[lang]);
+          });
+          if (postsNeedingTranslation.length > 0) {
+            const bgTranslate = async () => {
+              // Process in small batches with concurrency=3 to avoid rate-limiting
+              const CONCURRENCY = 3;
+              for (let i = 0; i < postsNeedingTranslation.length; i += CONCURRENCY) {
+                const batch = postsNeedingTranslation.slice(i, i + CONCURRENCY);
+                await Promise.allSettled(
+                  batch.map(post => getOrTranslatePost(post, lang, SUPABASE_URL, SUPABASE_KEY, false).catch(() => null))
+                );
+              }
+            };
+            context.waitUntil(bgTranslate());
+          }
+        }
       }
     }
 

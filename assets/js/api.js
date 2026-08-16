@@ -65,7 +65,8 @@ const api = {
       
       const fetchPromise = (async () => {
         let lastError;
-        for (let attempt = 1; attempt <= 1; attempt++) {
+        const MAX_ATTEMPTS = 3;
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
           try {
             const res = await fetchWithTimeout(url);
             
@@ -89,10 +90,10 @@ const api = {
             return result;
           } catch (err) {
             lastError = err;
-            console.warn(`[API getPosts] Attempt ${attempt} failed:`, err.message);
-            if (attempt < 1) {
-              // Wait 1.5 seconds before retrying
-              await new Promise(resolve => setTimeout(resolve, 1500));
+            console.warn(`[API getPosts] Attempt ${attempt}/${MAX_ATTEMPTS} failed:`, err.message);
+            if (attempt < MAX_ATTEMPTS) {
+              // Exponential backoff: 1.5s, 3s sebelum mencoba ulang
+              await new Promise(resolve => setTimeout(resolve, attempt * 1500));
             }
           }
         }
