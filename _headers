@@ -2,25 +2,26 @@
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
-  X-XSS-Protection: 1; mode=block
-  # Referrer-Policy diubah ke no-referrer-when-downgrade agar Adsterra bisa membaca
-  # URL halaman lengkap saat bidding RTB, sehingga CPM iklan jauh lebih tinggi.
-  # strict-origin-when-cross-origin menyebabkan CPM turun drastis karena Adsterra
-  # tidak tahu konten halaman yang ditonton pengunjung.
+  # FIX: X-XSS-Protection: 1 deprecated & can cause side-channel in old browsers. Set to 0, rely on CSP.
+  X-XSS-Protection: 0
+  # Referrer-Policy: no-referrer-when-downgrade agar Adsterra bisa membaca URL lengkap saat RTB bidding
   Referrer-Policy: no-referrer-when-downgrade
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, OPTIONS
   Access-Control-Allow-Headers: Content-Type, X-API-Key, X-Client-Site
   # Permissions-Policy untuk mengizinkan autoplay dan fullscreen di player
   Permissions-Policy: autoplay=(*), fullscreen=(*)
-  # Cache-Control DIHAPUS dari /* karena setiap Worker/Pages Function
-  # sudah menyetel header Cache-Control sendiri per-response secara tepat.
-  # Membiarkan global override di sini menyebabkan konflik.
+  # FIX: X-Frame-Options prevents clickjacking / iframe embedding by third parties
+  X-Frame-Options: SAMEORIGIN
+  # FIX: Content-Security-Policy — baseline protection against XSS and unauthorized script injection
+  # 'unsafe-inline' & 'unsafe-eval' diperlukan untuk Adsterra, JSON-LD, dan inline event handlers
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:; style-src 'self' 'unsafe-inline' https:; img-src 'self' https: data: blob:; media-src 'self' https: blob:; connect-src 'self' https:; frame-src 'self' https:; base-uri 'self'; form-action 'self';
 
 # === RFC 8288 Link Headers — AI Agent Discovery (Homepage) ===
 # Cache-Control: no-store di sini WAJIB untuk geo-redirect:
 # Tanpa ini, Cloudflare CDN bisa meng-cache redirect /ko/ untuk user Korea
 # dan melayani redirect yang sama ke user dari negara lain.
+# FIX: Merged duplicate '/' blocks into one canonical definition.
 /
   Link: </.well-known/api-catalog>; rel="api-catalog"
   Link: </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"
@@ -55,10 +56,10 @@
   CDN-Cache-Control: public, max-age=86400
   Content-Type: application/xml; charset=utf-8
 
-# === API Endpoints — Cache 1 minggu di CDN (sesuai Worker functions) ===
-/api/*
-  Cache-Control: public, s-maxage=604800, stale-while-revalidate=86400
-  CDN-Cache-Control: public, max-age=604800
+# FIX: Hapus rule global /api/* yang meng-cache SEMUA endpoint API selama 7 hari.
+# Ini sangat berbahaya: jika ada endpoint dinamis (search, user session, dll.)
+# response akan di-cache publik antar pengguna (cache poisoning / privacy leak).
+# Masing-masing function di functions/api/* sudah mengatur Cache-Control sendiri.
 
 # === Robots.txt, Ads.txt & Service Worker ===
 /robots.txt
@@ -72,6 +73,4 @@
 # Script Popunder & Social Bar Adsterra ada di dalam file ini.
 # Jika di-cache, script iklan tidak dimuat ulang saat reload → Popunder MENGHILANG.
 /index.html
-  Cache-Control: no-cache, no-store, must-revalidate
-/
   Cache-Control: no-cache, no-store, must-revalidate

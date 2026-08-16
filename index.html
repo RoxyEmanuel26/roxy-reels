@@ -14,7 +14,6 @@
   <meta name="google-site-verification" content="p399rUdcNUuJI12wyyhrNzfnJKheRQHy106DN-YWJsg" />
   <meta name="6a97888e-site-verification" content="a1be0a661f577bbd2c3eb82350a10d97">
   <meta name="yandex-verification" content="69f8d52e19749e09" />
-  <script src="https://analytics.ahrefs.com/analytics.js" data-key="Bfc18Qs5dsUAGxCfhkU8TQ" async></script>
   <meta http-equiv="Delegate-CH" content="Sec-CH-UA https://s.magsrv.com; Sec-CH-UA-Mobile https://s.magsrv.com; Sec-CH-UA-Arch https://s.magsrv.com; Sec-CH-UA-Model https://s.magsrv.com; Sec-CH-UA-Platform https://s.magsrv.com; Sec-CH-UA-Platform-Version https://s.magsrv.com; Sec-CH-UA-Bitness https://s.magsrv.com; Sec-CH-UA-Full-Version-List https://s.magsrv.com; Sec-CH-UA-Full-Version https://s.magsrv.com;">
   
   <!-- SEO Meta Tags -->
@@ -31,6 +30,10 @@
   <meta property="og:title" id="og-title" content="MISSAV-J | Premium JAV Streaming">
   <meta property="og:description" id="og-description" content="Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses in high quality.">
   <meta property="og:image" id="og-image" content="https://www.missav-j.com/assets/images/logo.webp">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/webp">
+  <meta property="og:image:alt" content="MISSAV-J — Premium JAV Streaming">
   <meta property="og:locale" id="og-locale" content="en_US">
   
   <!-- Twitter Card -->
@@ -49,48 +52,59 @@
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "MISSAV-J",
-    "url": "https://www.missav-j.com",
+    "alternateName": "MISSAV-J Premium JAV Streaming",
+    "url": "https://www.missav-j.com/en/",
+    "description": "Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses in high quality.",
+    "inLanguage": "en",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://www.missav-j.com/en/search?q={search_term_string}"
-      },
+      "target": "https://www.missav-j.com/en/search?q={search_term_string}",
       "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "MISSAV-J",
+      "url": "https://www.missav-j.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.missav-j.com/assets/images/logo.webp",
+        "width": 192,
+        "height": 192
+      }
     }
   }
   </script>
 
-  <!-- Preconnect ke CDN utama untuk mempercepat loading thumbnail -->
+  <!-- Preconnect ke domain kritis terlebih dahulu (prioritas tertinggi) -->
+  <!-- 1. Google Fonts — font blocking CSS loader -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- 2. API server utama — LCP first video data fetch -->
+  <link rel="preconnect" href="https://server.apijav.com" crossorigin>
+  <link rel="dns-prefetch" href="https://server.apijav.com">
+  <!-- 3. Thumbnail CDNs -->
   <link rel="preconnect" href="https://fourhoi.com">
   <link rel="dns-prefetch" href="https://fourhoi.com">
   <link rel="preconnect" href="https://fourhoi.mrstcdn.store">
   <link rel="dns-prefetch" href="https://fourhoi.mrstcdn.store">
   <link rel="preconnect" href="https://image.apijav.com">
   <link rel="dns-prefetch" href="https://image.apijav.com">
-  <!-- Preconnect ke API server utama untuk mempercepat LCP (first video data fetch) -->
-  <link rel="preconnect" href="https://server.apijav.com" crossorigin>
-  <link rel="dns-prefetch" href="https://server.apijav.com">
-
-
-  <!-- Google Fonts - Roboto & Playfair Display -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://glamournakedemployee.com">
+  <!-- FIX: Ad network downgraded dari preconnect ke dns-prefetch saja.
+       preconnect untuk ad server memprioritaskan koneksi TLS ke server iklan
+       SEBELUM Google Fonts & API server selesai, menghambat FCP/LCP. -->
   <link rel="dns-prefetch" href="https://glamournakedemployee.com">
-  <!-- Preconnect ke API server utama untuk mempercepat LCP (first video data fetch) -->
-  <link rel="preconnect" href="https://server.apijav.com" crossorigin>
-  <link rel="dns-prefetch" href="https://server.apijav.com">
-
 
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 
   <!-- Premium Modular Stylesheets -->
-  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.62">
-  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.62">
-  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.62">
-  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.62">
+  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.63">
+  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.63">
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.63">
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.63">
 
+  <!-- FIX: Analytics & non-critical scripts SETELAH semua meta SEO dan stylesheet -->
+  <!-- Sebelumnya di baris 17 (sebelum <title>), sehingga mendahului 1024 byte pertama head -->
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="Bfc18Qs5dsUAGxCfhkU8TQ" async></script>
 </head>
 <body>
 
@@ -301,7 +315,7 @@
 
 
   <!-- Modular SPA Script Bootstrap -->
-  <script type="module" src="/assets/js/app.js?v=2.8.62"></script>
+  <script type="module" src="/assets/js/app.js?v=2.8.63"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>

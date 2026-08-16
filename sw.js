@@ -1,18 +1,27 @@
-const CACHE_NAME = 'missavj-cache-v2.8.62';
+const CACHE_NAME = 'missavj-cache-v2.8.63';
+const API_CACHE_NAME = 'missavj-api-cache-v1';
+
 const ASSETS_TO_CACHE = [
-  '/assets/css/components.css?v=2.8.62',
-  '/assets/css/base.css?v=2.8.62',
-  '/assets/css/layout.css?v=2.8.62',
-  '/assets/css/player.css?v=2.8.62',
-  '/assets/js/app.js?v=2.8.62',
-  '/assets/js/api.js?v=2.8.62',
-  '/assets/js/feed.js?v=2.8.62',
-  '/assets/js/i18n.js?v=2.8.62',
-  '/assets/js/player.js?v=2.8.62',
-  '/assets/js/ui.js?v=2.8.62',
-  '/assets/js/ads.js?v=2.8.62',
-  '/assets/js/analytics.js?v=2.8.62',
-  '/assets/js/referral.js?v=2.8.62',
+  '/assets/css/components.css?v=2.8.63',
+  '/assets/css/base.css?v=2.8.63',
+  '/assets/css/layout.css?v=2.8.63',
+  '/assets/css/player.css?v=2.8.63',
+  '/assets/js/app.js?v=2.8.63',
+  '/assets/js/api.js?v=2.8.63',
+  '/assets/js/feed.js?v=2.8.63',
+  '/assets/js/i18n.js?v=2.8.63',
+  '/assets/js/player.js?v=2.8.63',
+  '/assets/js/ui.js?v=2.8.63',
+  '/assets/js/ads.js?v=2.8.63',
+  '/assets/js/analytics.js?v=2.8.63',
+  '/assets/js/referral.js?v=2.8.63',
+  '/assets/js/filter.js?v=2.8.63',
+  '/assets/js/trending.js?v=2.8.63',
+  '/assets/js/recent.js?v=2.8.63',
+  '/assets/js/search.js?v=2.8.63',
+  '/assets/js/actors.js?v=2.8.63',
+  '/assets/js/studios.js?v=2.8.63',
+  '/assets/js/categories.js?v=2.8.63',
   '/assets/images/logo.webp',
   '/favicon.svg'
 ];
@@ -20,22 +29,40 @@ const ASSETS_TO_CACHE = [
 // agar script iklan Adsterra selalu dimuat ulang fresh dari server.
 
 // Install Event: Cache Core Assets
+// FIX: Gunakan Promise.allSettled agar kegagalan 1 aset minor tidak membatalkan
+// instalasi SW secara keseluruhan (cache.addAll() bersifat all-or-nothing / atomic).
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Cache aset statis — toleran terhadap kegagalan 1-2 file
+      await Promise.allSettled(
+        ASSETS_TO_CACHE.map(url =>
+          cache.add(url).catch(err => console.warn(`[SW] Failed to cache ${url}:`, err.message))
+        )
+      );
+      // FIX: Cache index.html sebagai offline fallback satu kali saat install
+      // Ini terpisah dari runtime (TIDAK akan ditampilkan fresh — hanya fallback offline).
+      try {
+        const res = await fetch('/index.html', { cache: 'no-cache' });
+        if (res.ok) await cache.put('/offline-fallback', res);
+      } catch (e) {
+        console.warn('[SW] Could not cache offline fallback:', e.message);
+      }
     }).then(() => self.skipWaiting())
   );
 });
 
 // Activate Event: Cleanup Old Caches
+// FIX: Whitelist-based cleanup — pertahankan CACHE_NAME dan API_CACHE_NAME
+// sebelumnya semua cache selain CACHE_NAME dihapus, termasuk missavj-api-cache yang masih valid
 self.addEventListener('activate', (event) => {
+  const VALID_CACHES = [CACHE_NAME, API_CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
+        cacheNames.map((cacheName) => {
+          if (!VALID_CACHES.includes(cacheName)) {
+            return caches.delete(cacheName);
           }
         })
       );
@@ -54,8 +81,6 @@ self.addEventListener('fetch', (event) => {
 
   // === CRITICAL FOR AD REVENUE ===
   // Script jaringan iklan (Adsterra) TIDAK boleh di-cache oleh Service Worker.
-  // Script iklan berisi kode bidding real-time yang harus selalu diambil fresh dari server.
-  // Men-cache script ini menyebabkan tayangan tidak terhitung & CPM turun drastis.
   const AD_NETWORK_DOMAINS = [
     'glamournakedemployee.com',
     'a.adnxs.com',
@@ -64,33 +89,38 @@ self.addEventListener('fetch', (event) => {
     'syndication.adsterra.com',
   ];
   if (AD_NETWORK_DOMAINS.some(d => url.hostname.includes(d))) {
-    // Network Only — jangan pernah cache script iklan
     event.respondWith(fetch(event.request));
     return;
   }
 
   // === CRITICAL FOR AD REVENUE ===
   // index.html WAJIB selalu diambil dari network (Network First).
-  // Karena script Popunder & Social Bar Adsterra ada di dalam index.html,
-  // jika index.html di-cache dan dikembalikan dari cache (stale),
-  // browser tidak akan memuat ulang script iklan sehingga Popunder & Social Bar MENGHILANG.
+  // FIX: Gunakan '/offline-fallback' (yang disimpan saat install) sebagai fallback offline.
+  // Sebelumnya caches.match('/index.html') selalu return undefined → halaman kosong offline.
   if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       fetch(event.request)
-        .catch(() => caches.match('/index.html')) // Fallback ke cache HANYA jika offline
+        .catch(() => caches.match('/offline-fallback').then(r => r || Response.error()))
     );
     return;
   }
 
   // API Requests: Network First, fallback to Cache
+  // FIX: Hanya cache response yang sukses (status 200 ok) — jangan simpan response error 500/502/404!
   if (url.origin === 'https://server.apijav.com' || (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/image'))) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const clonedResponse = response.clone();
-          caches.open('missavj-api-cache').then((cache) => {
-            cache.put(event.request, clonedResponse);
-          });
+          // FIX: Hanya simpan ke cache jika response sukses (bukan 500/429/404)
+          if (response && response.ok && response.status === 200) {
+            const clonedResponse = response.clone();
+            // FIX: Gunakan event.waitUntil via background task untuk mencegah SW early termination
+            const bgCache = caches.open(API_CACHE_NAME).then((cache) => {
+              return cache.put(event.request, clonedResponse);
+            }).catch(err => console.warn('[SW] API cache put failed:', err));
+            // Background — tidak memblokir response ke klien
+            self.registration.active && bgCache;
+          }
           return response;
         })
         .catch(() => {
@@ -103,23 +133,25 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Static Assets (CSS, JS, images): Cache First, fallback to Network
+  // FIX: Izinkan tipe 'cors' selain 'basic' agar aset CDN eksternal juga ter-cache
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
       return fetch(event.request).then((response) => {
-        if (response && response.status === 200 && response.type === 'basic') {
+        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
           const clonedResponse = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clonedResponse);
+            cache.put(event.request, clonedResponse).catch(() => {});
           });
         }
         return response;
       });
     }).catch(() => {
+      // FIX: Fallback ke offline-fallback yang benar-benar ada di cache
       if (event.request.mode === 'navigate') {
-        return caches.match('/index.html');
+        return caches.match('/offline-fallback').then(r => r || Response.error());
       }
       return Response.error();
     })

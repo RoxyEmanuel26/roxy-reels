@@ -15,27 +15,42 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 const HREFLANG_CODE_MAP = { fil: 'tl' };
 const hreflangCode = (langKey) => HREFLANG_CODE_MAP[langKey] || langKey;
 
+// FIX: Deduplicate lang arrays — semua bahasa direferensikan dari VALID_LANGS agar
+// tidak terjadi desinkronisasi saat bahasa baru ditambahkan.
+const LANG_STRIP_REGEX = new RegExp(`^\/(${VALID_LANGS.join('|').replace(/[-]/g, '\\-')})(?=\/|$)`);
+
+// FIX: Hapus tracking query params dari URL sebelum dimasukkan ke tag hreflang.
+// Google Search Console menandai hreflang error jika URL alternate mengandung
+// parameter seperti ?utm_source=... atau ?fbclid=... karena tidak konsisten dengan canonical.
+function cleanSearchForHreflang(search) {
+  if (!search) return '';
+  const TRACKING_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', '_ga', 'ref', 'cb'];
+  const params = new URLSearchParams(search);
+  TRACKING_PARAMS.forEach(k => params.delete(k));
+  const str = params.toString();
+  return str ? `?${str}` : '';
+}
+
 function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
   // Strip ANY lang prefix (including 'en') so we get the bare route path
   // e.g. /en/trending → /trending, /ko/watch/abc → /watch/abc
-  let cleanPath = urlPathname.replace(/^\/(en|id|ja|ko|zh-TW|zh-CN|ms|th|de|fr|vi|fil|pt)(?=\/|$)/, '');
+  let cleanPath = urlPathname.replace(LANG_STRIP_REGEX, '');
   if (cleanPath === '') cleanPath = '/';
   
-  const allLangs = ['en', 'id', 'ja', 'ko', 'zh-TW', 'zh-CN', 'ms', 'th', 'de', 'fr', 'vi', 'fil', 'pt'];
+  // FIX: Strip tracking params from search before including in hreflang URLs
+  const cleanSearch = cleanSearchForHreflang(urlSearch);
   
-  const tags = allLangs.map(lang => {
+  const tags = VALID_LANGS.map(lang => {
     const code = hreflangCode(lang);
     // SEMUA bahasa termasuk 'en' mendapat prefix URL yang benar.
-    // Bug sebelumnya: 'en' tidak diberi prefix → hreflang en menunjuk ke
-    // /watch/abc (tidak ada) bukannya /en/watch/abc → penyebab 1.006 "Duplikat".
     const path = cleanPath === '/' ? `/${lang}/` : `/${lang}${cleanPath}`;
     // Use escapeHtml to safely encode ampersands (&) and quotes from urlSearch
-    return `<link rel="alternate" hreflang="${code}" href="${escapeHtml(urlOrigin + path + urlSearch)}" />`;
+    return `<link rel="alternate" hreflang="${code}" href="${escapeHtml(urlOrigin + path + cleanSearch)}" />`;
   });
   
   // x-default → English URL (bukan root / yang hanya redirect, melainkan /en/ yang berisi konten)
   const xDefaultPath = cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
-  tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(urlOrigin + xDefaultPath + urlSearch)}" />`);
+  tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(urlOrigin + xDefaultPath + cleanSearch)}" />`);
   return tags.join('\n  ');
 }
 

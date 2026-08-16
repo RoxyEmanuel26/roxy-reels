@@ -2,10 +2,40 @@
  * MISSAV-J — Cloudflare Pages Image Proxy (/api/image)
  * Memproksi gambar thumbnail dari server eksternal (fourhoi.com, image.apijav.com)
  * untuk menghindari pemblokiran DNS (Internet Positif) dan AdBlocker di sisi browser klien.
+ *
+ * Security hardening v2.8.63:
+ * - Content-Type strict whitelist (no HTML/SVG XSS)
+ * - redirect: 'manual' to prevent whitelist bypass via redirect chains
+ * - HTTPS enforcement
+ * - CORS OPTIONS preflight handling
+ * - Streaming response body (no arrayBuffer() buffering)
+ * - Generic error messages (no information disclosure)
  */
+
+// Tipe MIME yang diizinkan: hanya gambar raster yang aman
+const SAFE_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
 
 export async function onRequest(context) {
   const { request } = context;
+
+  // === CORS Preflight ===
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '86400'
+      }
+    });
+  }
+
+  // Hanya izinkan GET
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
+
   const urlParams = new URL(request.url).searchParams;
   let targetUrl = urlParams.get('url');
 
@@ -36,7 +66,7 @@ export async function onRequest(context) {
     'dmm.com',
     'pics.dmm.co.jp',
     'cc3001.dmm.co.jp',
-    'storage.googleapis.com',
+    // Note: storage.googleapis.com DIHAPUS — terlalu luas, bisa digunakan SSRF
     // New CDN domains from API
     'fourhoi.mrstcdn.store',
     'mrstcdn.store',
@@ -50,8 +80,13 @@ export async function onRequest(context) {
     return new Response('Invalid URL', { status: 400 });
   }
 
+  // Enforce HTTPS only — cegah eksploitasi via HTTP
+  if (parsedTarget.protocol !== 'https:') {
+    return new Response('HTTPS required', { status: 400 });
+  }
+
   // Cocokkan domain utama atau sub-domain
-  const isAllowed = allowedDomains.some(domain => 
+  const isAllowed = allowedDomains.some(domain =>
     parsedTarget.hostname === domain || parsedTarget.hostname.endsWith('.' + domain)
   );
 
@@ -62,7 +97,7 @@ export async function onRequest(context) {
   // Terapkan Cloudflare Cache untuk menghemat bandwidth upstream
   const cache = caches.default;
   const cacheKey = request;
-  
+
   try {
     const cachedResponse = await cache.match(cacheKey);
     if (cachedResponse) {
@@ -84,36 +119,63 @@ export async function onRequest(context) {
     const response = await fetch(targetUrl, {
       method: 'GET',
       headers,
-      signal: controller.signal
+      signal: controller.signal,
+      // SECURITY: 'manual' mencegah whitelist bypass via redirect ke domain lain
+      redirect: 'manual'
     });
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      return new Response(`Failed to fetch image: Upstream returned ${response.status}`, { status: response.status });
+    // Tangani redirect secara eksplisit — jangan ikuti redirect otomatis
+    if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+      return new Response('Redirect not allowed', { status: 403 });
     }
 
-    const contentType = response.headers.get('Content-Type') || 'image/jpeg';
-    
+    if (!response.ok) {
+      return new Response(`Upstream error`, { status: response.status });
+    }
+
+    // SECURITY: Strict Content-Type whitelist — cegah XSS via HTML/SVG proxy
+    const rawContentType = (response.headers.get('Content-Type') || '').toLowerCase().split(';')[0].trim();
+    const safeContentType = SAFE_IMAGE_TYPES.find(t => rawContentType === t || rawContentType.startsWith(t));
+    const finalContentType = safeContentType || 'image/jpeg';
+
     // Set headers respons dengan cache jangka panjang (1 tahun)
     const responseHeaders = new Headers({
-      'Content-Type': contentType,
+      'Content-Type': finalContentType,
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Disposition': 'inline',
       'Cache-Control': 'public, max-age=31536000, immutable',
       'Access-Control-Allow-Origin': '*'
     });
 
+    // PERFORMANCE: Stream response body langsung (bukan arrayBuffer() yang buffering ke RAM)
+    if (response.body) {
+      const [streamForClient, streamForCache] = response.body.tee();
+      const finalResponse = new Response(streamForClient, {
+        status: 200,
+        headers: responseHeaders
+      });
+      // Cache secara asinkron setelah response terkirim ke klien
+      context.waitUntil(
+        cache.put(cacheKey, new Response(streamForCache, { status: 200, headers: responseHeaders }))
+          .catch(err => console.error('Cache put error:', err))
+      );
+      return finalResponse;
+    }
+
+    // Fallback jika streaming tidak tersedia
     const responseBody = await response.arrayBuffer();
     const finalResponse = new Response(responseBody, {
       status: 200,
       headers: responseHeaders
     });
-
-    // Simpan ke Cloudflare cache secara asinkron
-    context.waitUntil(cache.put(cacheKey, finalResponse.clone()));
-
+    context.waitUntil(cache.put(cacheKey, finalResponse.clone()).catch(() => {}));
     return finalResponse;
+
   } catch (e) {
     clearTimeout(timeoutId);
     console.error('Image proxy fetch error:', e);
-    return new Response(`Proxy Error: ${e.message}`, { status: 502 });
+    // Generic error — jangan bocorkan detail internal
+    return new Response('Proxy Error: Unable to fetch image', { status: 502 });
   }
 }
