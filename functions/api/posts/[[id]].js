@@ -247,7 +247,9 @@ export async function onRequest(context) {
               'Accept': 'application/json',
               'X-Client-Site': 'https://www.missav-j.com',
               'Referer': 'https://www.missav-j.com/',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+              'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'X-Forwarded-For': request.headers.get('cf-connecting-ip') || '',
+              'CF-Connecting-IP': request.headers.get('cf-connecting-ip') || ''
             },
             signal: controller.signal
           });
@@ -279,7 +281,9 @@ export async function onRequest(context) {
             'Accept': 'application/json',
             'X-Client-Site': 'https://www.missav-j.com',
             'Referer': 'https://www.missav-j.com/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'X-Forwarded-For': request.headers.get('cf-connecting-ip') || '',
+            'CF-Connecting-IP': request.headers.get('cf-connecting-ip') || ''
           },
           signal: controller.signal
         });
