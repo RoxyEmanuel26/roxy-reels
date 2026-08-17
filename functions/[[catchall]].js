@@ -642,19 +642,28 @@ export async function onRequest(context) {
               } catch (e) {}
             }
 
-            // Langkah 2: Normalisasi protocol-relative URL
-            if (imageUrl && imageUrl.startsWith('//')) {
-              imageUrl = `https:${imageUrl}`;
+            // Langkah 2: Normalisasi protocol-relative URL dan force HTTPS
+            if (imageUrl) {
+              if (imageUrl.startsWith('//')) {
+                imageUrl = `https:${imageUrl}`;
+              } else if (imageUrl.startsWith('http://')) {
+                imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
+              }
             }
 
-            // Gunakan proxy /api/image secara universal untuk Schema, OG, dan Twitter.
-            // KRITIS: CDN eksternal (dmm.co.jp, dll.) memblokir Twitterbot/Discordbot/Googlebot via hotlink protection.
-            // Dengan menggunakan proxy internal kita, kita membypass pemblokiran tersebut karena proxy memalsukan Referer dan User-Agent.
-            const proxiedImageUrl = (imageUrl && imageUrl.startsWith('http'))
-              ? `https://www.missav-j.com/api/image?url=${encodeURIComponent(imageUrl)}&ext=.jpg`
-              : 'https://www.missav-j.com/assets/images/logo.webp';
+            // Gunakan proxy clean URL /img/ untuk Schema, OG, dan Twitter.
+            // Twitter scraper sering gagal membaca parameter query (?url=...), jadi kita encode base64 ke path.
+            let proxiedImageUrl = 'https://www.missav-j.com/assets/images/logo.webp';
+            if (imageUrl && imageUrl.startsWith('http')) {
+              try {
+                // Gunakan base64url encoding (replace + with -, / with _)
+                const base64Url = btoa(imageUrl).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                proxiedImageUrl = `https://www.missav-j.com/img/${base64Url}.jpg`;
+              } catch (e) {
+                // Fallback jika btoa gagal
+              }
+            }
 
-            // Hapus re-assignment imageUrl ke URL aslinya
             imageUrl = proxiedImageUrl;
 
             const pageUrl = `${url.origin}${url.pathname}${url.search}`;
