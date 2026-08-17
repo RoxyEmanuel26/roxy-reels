@@ -1,27 +1,27 @@
-const CACHE_NAME = 'missavj-cache-v2.8.67';
+const CACHE_NAME = 'missavj-cache-v2.8.68';
 const API_CACHE_NAME = 'missavj-api-cache-v1';
 
 const ASSETS_TO_CACHE = [
-  '/assets/css/components.css?v=2.8.67',
-  '/assets/css/base.css?v=2.8.67',
-  '/assets/css/layout.css?v=2.8.67',
-  '/assets/css/player.css?v=2.8.67',
-  '/assets/js/app.js?v=2.8.67',
-  '/assets/js/api.js?v=2.8.67',
-  '/assets/js/feed.js?v=2.8.67',
-  '/assets/js/i18n.js?v=2.8.67',
-  '/assets/js/player.js?v=2.8.67',
-  '/assets/js/ui.js?v=2.8.67',
-  '/assets/js/ads.js?v=2.8.67',
-  '/assets/js/analytics.js?v=2.8.67',
-  '/assets/js/referral.js?v=2.8.67',
-  '/assets/js/filter.js?v=2.8.67',
-  '/assets/js/trending.js?v=2.8.67',
-  '/assets/js/recent.js?v=2.8.67',
-  '/assets/js/search.js?v=2.8.67',
-  '/assets/js/actors.js?v=2.8.67',
-  '/assets/js/studios.js?v=2.8.67',
-  '/assets/js/categories.js?v=2.8.67',
+  '/assets/css/components.css?v=2.8.68',
+  '/assets/css/base.css?v=2.8.68',
+  '/assets/css/layout.css?v=2.8.68',
+  '/assets/css/player.css?v=2.8.68',
+  '/assets/js/app.js?v=2.8.68',
+  '/assets/js/api.js?v=2.8.68',
+  '/assets/js/feed.js?v=2.8.68',
+  '/assets/js/i18n.js?v=2.8.68',
+  '/assets/js/player.js?v=2.8.68',
+  '/assets/js/ui.js?v=2.8.68',
+  '/assets/js/ads.js?v=2.8.68',
+  '/assets/js/analytics.js?v=2.8.68',
+  '/assets/js/referral.js?v=2.8.68',
+  '/assets/js/filter.js?v=2.8.68',
+  '/assets/js/trending.js?v=2.8.68',
+  '/assets/js/recent.js?v=2.8.68',
+  '/assets/js/search.js?v=2.8.68',
+  '/assets/js/actors.js?v=2.8.68',
+  '/assets/js/studios.js?v=2.8.68',
+  '/assets/js/categories.js?v=2.8.68',
   '/assets/images/logo.webp',
   '/favicon.svg'
 ];
@@ -111,12 +111,18 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // FIX: Hanya simpan ke cache jika response sukses (bukan 500/429/404)
           if (response && response.ok && response.status === 200) {
             const clonedResponse = response.clone();
             // FIX: Gunakan event.waitUntil via background task untuk mencegah SW early termination
-            const bgCache = caches.open(API_CACHE_NAME).then((cache) => {
-              return cache.put(event.request, clonedResponse);
+            const bgCache = caches.open(API_CACHE_NAME).then(async (cache) => {
+              await cache.put(event.request, clonedResponse);
+              // CACHE PRUNING: Batasi maksimum 50 request API di cache agar memori tidak penuh (OOM)
+              const keys = await cache.keys();
+              if (keys.length > 50) {
+                // Hapus entri terlama (index 0) hingga tersisa 50
+                const deletePromises = keys.slice(0, keys.length - 50).map(key => cache.delete(key));
+                await Promise.all(deletePromises);
+              }
             }).catch(err => console.warn('[SW] API cache put failed:', err));
             // Background — tidak memblokir response ke klien
             self.registration.active && bgCache;

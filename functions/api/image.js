@@ -85,6 +85,12 @@ export async function onRequest(context) {
     return new Response('HTTPS required', { status: 400 });
   }
 
+  // Strict SSRF Protection: Blokir penggunaan port selain 443
+  // Mencegah eksploitasi proxy untuk memindai port internal (SSRF)
+  if (parsedTarget.port !== '' && parsedTarget.port !== '443') {
+    return new Response('Invalid port', { status: 400 });
+  }
+
   // Cocokkan domain utama atau sub-domain
   const isAllowed = allowedDomains.some(domain =>
     parsedTarget.hostname === domain || parsedTarget.hostname.endsWith('.' + domain)
