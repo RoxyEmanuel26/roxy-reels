@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.72';
-import ui from './ui.js?v=2.8.72';
-import filter from './filter.js?v=2.8.72';
-import i18n from './i18n.js?v=2.8.72';
+import api from './api.js?v=2.8.73';
+import ui from './ui.js?v=2.8.73';
+import filter from './filter.js?v=2.8.73';
+import i18n from './i18n.js?v=2.8.73';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -322,20 +322,13 @@ async function fetchAndRenderFeed(isInitial = false) {
   isLoading = true;
   
   try {
-    // In random mode on initial load, probe the API to discover totalPages,
-    // then pick a truly random starting page
+    // OPTIMIZATION: Di Random Mode pada saat load pertama, kita langsung acak angka antara 1-50.
+    // Menghindari probe API (hemat 1 request/roundtrip) & mencegah kueri OFFSET ribuan yang membebani MySQL.
     let fetchPage = currentPage;
     if (randomMode && isInitial) {
-      try {
-        const probe = await api.getPosts({ page: 1, per_page: 1, ...currentFilters });
-        if (probe.totalPages > 1) {
-          totalPages = probe.totalPages;
-          fetchPage = Math.floor(Math.random() * totalPages) + 1;
-          currentPage = fetchPage;
-        }
-      } catch (e) {
-        // Probe failed — proceed with page 1 normally
-      }
+      // 50 halaman = 1200 video. Sangat cukup untuk divariasikan tanpa menyiksa database.
+      fetchPage = Math.floor(Math.random() * 50) + 1;
+      currentPage = fetchPage;
     }
     usedPages.add(fetchPage);
 
