@@ -12,6 +12,18 @@ function getActiveLang() {
 
 // In-memory cache to prevent redundant API network requests
 const apiCache = new Map();
+const MAX_CACHE_SIZE = 1000;
+
+// Helper to safely set cache and prevent memory leaks on infinite scrolling
+function setCache(key, value) {
+  if (apiCache.size >= MAX_CACHE_SIZE) {
+    // Hapus 20% entri terlama untuk memberikan ruang
+    const keysToDelete = Array.from(apiCache.keys()).slice(0, Math.floor(MAX_CACHE_SIZE * 0.2));
+    keysToDelete.forEach(k => apiCache.delete(k));
+  }
+  apiCache.set(key, value);
+}
+
 // In-flight request deduplication map
 const fetchPromises = new Map();
 
@@ -85,7 +97,16 @@ const api = {
               totalPages: totalPages || (posts.totalPages ? parseInt(posts.totalPages, 10) : 1)
             };
             
-            apiCache.set(url, result);
+            // Populate individual post cache for instant navigation!
+            if (result.posts && result.posts.length > 0) {
+              result.posts.forEach(p => {
+                if (p && p.id) {
+                  setCache(`post:${p.id}:${lang}`, p);
+                }
+              });
+            }
+            
+            setCache(url, result);
             fetchPromises.delete(url);
             return result;
           } catch (err) {
@@ -124,7 +145,7 @@ const api = {
       const url = `/api/posts?id=${id}&lang=${lang}`;
       
       if (window.__SSR_POST__ && String(window.__SSR_POST__.id) === String(id)) {
-        apiCache.set(cacheKey, window.__SSR_POST__);
+        setCache(cacheKey, window.__SSR_POST__);
         delete window.__SSR_POST__;
       }
 
@@ -144,7 +165,7 @@ const api = {
         }
         
         const post = await res.json();
-        apiCache.set(cacheKey, post);
+        setCache(cacheKey, post);
         fetchPromises.delete(cacheKey);
         return post;
       })();
@@ -186,7 +207,7 @@ const api = {
         }
         
         const player = await res.json();
-        apiCache.set(cacheKey, player);
+        setCache(cacheKey, player);
         fetchPromises.delete(cacheKey);
         return player;
       })();

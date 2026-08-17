@@ -636,7 +636,9 @@ export async function onRequest(context) {
                 const urlObj = new URL(imageUrl);
                 const actualUrl = urlObj.searchParams.get('url');
                 // Hanya replace jika actualUrl benar-benar valid (bukan string kosong)
-                if (actualUrl && actualUrl.startsWith('http')) imageUrl = actualUrl;
+                if (actualUrl && (actualUrl.startsWith('http') || actualUrl.startsWith('//'))) {
+                  imageUrl = actualUrl;
+                }
               } catch (e) {}
             }
 
@@ -645,20 +647,15 @@ export async function onRequest(context) {
               imageUrl = `https:${imageUrl}`;
             }
 
-            // Langkah 3: thumbnailUrlForSchema → route MELALUI /api/image proxy kita
-            // KRITIS untuk SEO: Googlebot selalu bisa akses domain missav-j.com kita.
-            // CDN eksternal (dmm.co.jp, dll.) sering menerapkan hotlink protection yang
-            // memblokir Googlebot → 'URL thumbnail tidak tersedia' di GSC Video.
-            // Dengan proxy /api/image, thumbnail selalu HTTP 200 untuk Googlebot.
-            const thumbnailUrlForSchema = (imageUrl && imageUrl.startsWith('http'))
+            // Gunakan proxy /api/image secara universal untuk Schema, OG, dan Twitter.
+            // KRITIS: CDN eksternal (dmm.co.jp, dll.) memblokir Twitterbot/Discordbot/Googlebot via hotlink protection.
+            // Dengan menggunakan proxy internal kita, kita membypass pemblokiran tersebut karena proxy memalsukan Referer dan User-Agent.
+            const proxiedImageUrl = (imageUrl && imageUrl.startsWith('http'))
               ? `${url.origin}/api/image?url=${encodeURIComponent(imageUrl)}`
               : `${url.origin}/assets/images/logo.webp`;
 
-            // imageUrl untuk OG/Twitter: gunakan URL asli (bukan proxy) agar
-            // social media preview tetap bekerja dengan benar
-            if (!imageUrl || !imageUrl.startsWith('http')) {
-              imageUrl = `${url.origin}/assets/images/logo.webp`;
-            }
+            // Hapus re-assignment imageUrl ke URL aslinya
+            imageUrl = proxiedImageUrl;
 
             const pageUrl = `${url.origin}${url.pathname}${url.search}`;
 
@@ -726,8 +723,7 @@ export async function onRequest(context) {
                 "description": description,
                 // Array thumbnailUrl: gunakan URL proxy kita (/api/image) agar Googlebot
                 // selalu bisa akses thumbnail (domain kita sendiri, tidak di-block CDN).
-                // imageUrl (URL CDN asli) sebagai elemen kedua untuk kompatibilitas.
-                "thumbnailUrl": [thumbnailUrlForSchema, imageUrl].filter(Boolean),
+                "thumbnailUrl": [proxiedImageUrl],
                 "uploadDate": uploadDate,
                 // url: URL halaman canonical kita — accessible oleh Googlebot (domain kita sendiri)
                 "url": pageUrl,

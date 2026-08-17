@@ -32,8 +32,26 @@ const ui = {
    */
   getProxiedThumbnail(url) {
     if (!url) return '';
-    // Gunakan wsrv.nl untuk resize otomatis ke 320x180 & WebP
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=320&h=180&output=webp&fit=cover`;
+    let finalUrl = url;
+
+    // Bypass proxy apijav lama jika ada (extract URL aslinya)
+    if (finalUrl.includes('apijav.php?url=')) {
+      try {
+        const urlObj = new URL(finalUrl);
+        const actualUrl = urlObj.searchParams.get('url');
+        if (actualUrl && (actualUrl.startsWith('http') || actualUrl.startsWith('//'))) {
+          finalUrl = actualUrl;
+        }
+      } catch (e) {}
+    }
+
+    // Normalisasi protocol-relative URL (sangat penting agar worker /api/image tidak mengiranya base64)
+    if (finalUrl.startsWith('//')) {
+      finalUrl = `https:${finalUrl}`;
+    }
+
+    // Gunakan Cloudflare Worker Image Proxy internal yang cepat dan anti blokir
+    return `/api/image?url=${encodeURIComponent(finalUrl)}`;
   },
 
   /**

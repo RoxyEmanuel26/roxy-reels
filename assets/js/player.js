@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.63';
-import ui from './ui.js?v=2.8.63';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.63';
-import i18n from './i18n.js?v=2.8.63';
-import ReferralSystem from './referral.js?v=2.8.63';
-import { Analytics } from './analytics.js?v=2.8.63';
+import api from './api.js?v=2.8.64';
+import ui from './ui.js?v=2.8.64';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.64';
+import i18n from './i18n.js?v=2.8.64';
+import ReferralSystem from './referral.js?v=2.8.64';
+import { Analytics } from './analytics.js?v=2.8.64';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -208,40 +208,82 @@ export async function init(id) {
       ui.showToast(i18n.t('maximize_player_toast'));
     } else {
       // Fresh load of a new video
-      const [fetchedPost, player] = await Promise.all([
-        api.getPost(id).catch(err => {
-          console.warn('[API Warning] Failed to load post details, trying fallback...', err);
-          return null;
-        }),
-        api.getPlayer(id).catch(err => {
-          console.warn('[API Warning] Failed to load player endpoint, trying fallback...', err);
-          return null;
-        })
-      ]);
+      // 1. Fetch metadata first (usually instant from cache)
+      const fetchedPost = await api.getPost(id).catch(err => {
+        console.warn('[API Warning] Failed to load post details, trying fallback...', err);
+        return null;
+      });
       
-      if (!fetchedPost && !player) {
-        throw new Error(i18n.t('error_failed_fetch_video_player'));
+      // 2. Start fetching player embed in the background (DO NOT await it yet)
+      const playerPromise = api.getPlayer(id).catch(err => {
+        console.warn('[API Warning] Failed to load player endpoint, trying fallback...', err);
+        return null;
+      });
+      
+      if (!fetchedPost) {
+        // Jika post gagal, coba tunggu player info (mungkin server sedang lelah)
+        const p = await playerPromise;
+        if (!p) throw new Error(i18n.t('error_failed_fetch_video_player'));
+        post = { id, title: 'Video Stream', views: 0, thumbnail: '', iframe_html: p.iframe_html };
+      } else {
+        post = fetchedPost;
       }
       
-      post = fetchedPost || {
-        id,
-        title: 'Video Stream',
-        views: 0,
-        thumbnail: '',
-        iframe_html: player ? player.iframe_html : ''
-      };
+      // [FIX] Guard: jika pengguna navigasi ke video lain saat fetch sedang berjalan, batalkan render ini
+      const checkWatchId = typeof window.missavJGetCurrentWatchId === 'function'
+        ? window.missavJGetCurrentWatchId()
+        : new URLSearchParams(window.location.search).get('id');
+
+      if (window.missavJState.currentPath !== '/watch' || String(checkWatchId) !== String(id)) {
+        return; // Abort stale render
+      }
       
       window.missavJState.activeVideo = post;
       
       // Inject secure custom poster markup into the global player container
       const playerContainer = document.getElementById('player-container');
       if (playerContainer) {
-        const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
         
         // Deteksi apakah pengakses adalah bot pencari (seperti Googlebot)
         const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent);
         
-        const loadRealVideo = () => {
+        let isVideoLoading = false;
+        const loadRealVideo = async (playBtn = null) => {
+          if (isVideoLoading) return;
+          isVideoLoading = true;
+          
+          let originalPlayBtnHtml = '';
+          if (playBtn) {
+            originalPlayBtnHtml = playBtn.innerHTML;
+            // Tampilkan spinner pada tombol play saat menunggu iframe di-fetch
+            playBtn.innerHTML = '<div class="spinner" style="width: 24px; height: 24px; border-width: 3px; margin: 0 auto; border-top-color: white; border-right-color: rgba(255,255,255,0.3); border-bottom-color: rgba(255,255,255,0.3); border-left-color: rgba(255,255,255,0.3);"></div>';
+            playBtn.style.pointerEvents = 'none'; // Cegah klik ganda
+          }
+
+          let player;
+          try {
+             player = await playerPromise;
+          } catch(e) {
+             console.error('Player promise failed', e);
+          }
+
+          // [FIX] Guard 2: Pastikan pengguna belum pindah video setelah tombol Play ditekan
+          if (window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) !== String(id)) {
+             return;
+          }
+
+          const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
+          
+          if (!iframeMarkup) {
+            if (playBtn) {
+               playBtn.innerHTML = originalPlayBtnHtml;
+               playBtn.style.pointerEvents = 'auto';
+            }
+            isVideoLoading = false;
+            ui.showError(i18n.t('error_failed_fetch_video_player'), playerContainer);
+            return;
+          }
+
           if (isBot) {
             const inlinePlaceholder = document.querySelector('.player-container-placeholder');
             if (inlinePlaceholder) {
@@ -264,6 +306,8 @@ export async function init(id) {
             };
             iframe.addEventListener('load', hideShimmer);
             setTimeout(hideShimmer, 3000); // fallback timer
+          } else {
+             Analytics.trackVideoPlay(id, post.code || '', post.title || '', post.duration || '');
           }
         };
 
@@ -302,21 +346,15 @@ export async function init(id) {
           if (playBtn) {
             playBtn.addEventListener('click', (e) => {
               e.stopPropagation();
-              loadRealVideo();
+              loadRealVideo(playBtn);
             });
           }
         }
       }
       
-      const currentWatchId = typeof window.missavJGetCurrentWatchId === 'function'
-        ? window.missavJGetCurrentWatchId()
-        : new URLSearchParams(window.location.search).get('id');
-
-      if (window.missavJState.currentPath === '/watch' && String(currentWatchId) === String(id)) {
-        document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
-        renderPostMeta(post, id);
-        loadRelatedVideos(post);
-      }
+      document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
+      renderPostMeta(post, id);
+      loadRelatedVideos(post);
     }
 
     // 4. Catat Riwayat Tontonan Sesi (In-memory, hindari duplikasi rujukan)
