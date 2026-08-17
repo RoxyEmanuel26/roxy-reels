@@ -20,8 +20,8 @@ export async function onRequest(context) {
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
-    // Ambil 1000 video terbaru
-    const apiUrl = `${TARGET_BASE}/posts?per_page=1000&orderby=date&order=DESC`;
+    // Ambil 250 video terbaru (menghindari timeout dari server.apijav.com)
+    const apiUrl = `${TARGET_BASE}/posts?per_page=250&orderby=date&order=DESC`;
     const res = await fetch(apiUrl, {
       headers: {
         'Accept': 'application/json',
