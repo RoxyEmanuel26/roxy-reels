@@ -120,15 +120,9 @@ export async function onRequest(context) {
       method: 'GET',
       headers,
       signal: controller.signal,
-      // SECURITY: 'manual' mencegah whitelist bypass via redirect ke domain lain
-      redirect: 'manual'
+      redirect: 'follow'
     });
     clearTimeout(timeoutId);
-
-    // Tangani redirect secara eksplisit — jangan ikuti redirect otomatis
-    if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
-      return new Response('Redirect not allowed', { status: 403 });
-    }
 
     if (!response.ok) {
       return new Response(`Upstream error`, { status: response.status });
