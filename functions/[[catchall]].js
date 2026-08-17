@@ -628,7 +628,7 @@ export async function onRequest(context) {
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
             const description = descFn(code, title, actorsStr, studioStr);
 
-            let imageUrl = post.thumbnail || '';
+            let imageUrl = post.thumbnail || 'https://www.missav-j.com/assets/images/logo.webp';
 
             // Langkah 1: Bypass proxy apijav.php → ekstrak URL gambar aslinya
             if (imageUrl.includes('apijav.php?url=')) {
@@ -643,28 +643,15 @@ export async function onRequest(context) {
             }
 
             // Langkah 2: Normalisasi protocol-relative URL dan force HTTPS
-            if (imageUrl) {
-              if (imageUrl.startsWith('//')) {
-                imageUrl = `https:${imageUrl}`;
-              } else if (imageUrl.startsWith('http://')) {
-                imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
-              }
+            // Twitter (Open Graph) mewajibkan absolute URL (https://)
+            // Telegram secara otomatis mendeteksi, namun Twitter menolak mentah-mentah `//url.com`.
+            if (imageUrl.startsWith('//')) {
+              imageUrl = `https:${imageUrl}`;
+            } else if (imageUrl.startsWith('http://')) {
+              imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
             }
 
-            // Gunakan proxy clean URL /img/ untuk Schema, OG, dan Twitter.
-            // Twitter scraper sering gagal membaca parameter query (?url=...), jadi kita encode base64 ke path.
-            let proxiedImageUrl = 'https://www.missav-j.com/assets/images/logo.webp';
-            if (imageUrl && imageUrl.startsWith('http')) {
-              try {
-                // Gunakan base64url encoding (replace + with -, / with _)
-                const base64Url = btoa(imageUrl).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-                proxiedImageUrl = `https://www.missav-j.com/img/${base64Url}.jpg`;
-              } catch (e) {
-                // Fallback jika btoa gagal
-              }
-            }
-
-            imageUrl = proxiedImageUrl;
+            // TIDAK ADA PROXY LAGI. Gunakan URL CDN asli (seperti Telegram bot).
 
             const pageUrl = `${url.origin}${url.pathname}${url.search}`;
 
