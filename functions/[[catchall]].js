@@ -815,15 +815,28 @@ export async function onRequest(context) {
         }
       }
 
+      let cacheControl = 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400';
+      let cdnCacheControl = 'public, max-age=604800';
+      let shouldCache = true;
+
+      // Jika fetch API gagal/timeout untuk halaman Watch, JANGAN cache halaman fallback.
+      // Jika di-cache, bot media sosial akan terus melihat fallback (logo webp) selama 7 hari.
+      if (id && (!post || !post.title)) {
+        cacheControl = 'no-store, no-cache, must-revalidate, max-age=0';
+        cdnCacheControl = 'no-store';
+        shouldCache = false;
+        console.warn(`[SSR Warning] API fetch failed for ${id}. Bypassing cache to prevent poisoning.`);
+      }
+
       const watchResponse = new Response(htmlContent, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400',
-          'CDN-Cache-Control': 'public, max-age=604800'
+          'Cache-Control': cacheControl,
+          'CDN-Cache-Control': cdnCacheControl
         }
       });
 
-      if (cache && isCacheableRoute) {
+      if (cache && isCacheableRoute && shouldCache) {
         context.waitUntil(cache.put(request, watchResponse.clone()));
       }
 
