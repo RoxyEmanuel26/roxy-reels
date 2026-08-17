@@ -1,13 +1,15 @@
-# RTK Antigravity rules
+# Project Structure & Output Folders
 .agents/
 /program/
+/scratch/
+/graphify-out/
+.wrangler/
+.well-known/
 
 # Environment Variables & Secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
 # Node.js
 node_modules/
@@ -16,15 +18,37 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Vercel Cache / Build outputs
-.vercel
+# Frameworks / Cache / Build outputs
 .vercel/
+.cache/
 dist/
 out/
 build/
+
+# Sitemap states
 sitemaps/*.state
 sitemap_index.xml.state
 
-# Graphify Output
-graphify-out/
+# Logs
+*.log
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
