@@ -651,8 +651,8 @@ export async function onRequest(context) {
             // KRITIS: CDN eksternal (dmm.co.jp, dll.) memblokir Twitterbot/Discordbot/Googlebot via hotlink protection.
             // Dengan menggunakan proxy internal kita, kita membypass pemblokiran tersebut karena proxy memalsukan Referer dan User-Agent.
             const proxiedImageUrl = (imageUrl && imageUrl.startsWith('http'))
-              ? `${url.origin}/api/image?url=${encodeURIComponent(imageUrl)}`
-              : `${url.origin}/assets/images/logo.webp`;
+              ? `https://www.missav-j.com/api/image?url=${encodeURIComponent(imageUrl)}&ext=.jpg`
+              : 'https://www.missav-j.com/assets/images/logo.webp';
 
             // Hapus re-assignment imageUrl ke URL aslinya
             imageUrl = proxiedImageUrl;
