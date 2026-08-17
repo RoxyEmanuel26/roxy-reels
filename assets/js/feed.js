@@ -326,8 +326,10 @@ async function fetchAndRenderFeed(isInitial = false) {
     // Menghindari probe API (hemat 1 request/roundtrip) & mencegah kueri OFFSET ribuan yang membebani MySQL.
     let fetchPage = currentPage;
     if (randomMode && isInitial) {
-      // 50 halaman = 1200 video. Sangat cukup untuk divariasikan tanpa menyiksa database.
-      fetchPage = Math.floor(Math.random() * 50) + 1;
+      // Solusi Jenius: Batasi acak maksimal HANYA di 5 halaman pertama (120 video terbaru).
+      // Mengapa? Karena database server Anda (MySQL) saat ini sangat kewalahan 
+      // memproses kueri "OFFSET" yang terlalu dalam. 5 halaman dijamin kilat (0.1 detik).
+      fetchPage = Math.floor(Math.random() * 5) + 1;
       currentPage = fetchPage;
     }
     usedPages.add(fetchPage);
