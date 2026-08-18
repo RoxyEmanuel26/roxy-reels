@@ -20,18 +20,17 @@ export async function onRequest(context) {
 
   const isGet = request.method === 'GET';
   let cache = null;
+  let cachedResponse = null;
   if (isGet) {
     try {
       cache = caches.default;
-      const cachedResponse = await cache.match(request);
-      if (cachedResponse && cachedResponse.ok) {
-        return cachedResponse;
-      }
+      cachedResponse = await cache.match(request);
     } catch (e) {
       console.error('[Cache Player Match Error]', e);
     }
   }
 
+  const processUpstream = async () => {
   try {
     const url = new URL(request.url);
     
@@ -108,17 +107,14 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=0, s-maxage=604800, stale-while-revalidate=86400'
+      'Cache-Control': 'public, max-age=0, s-maxage=604800, stale-while-revalidate=86400',
+      'X-Cache-Time': Date.now().toString()
     };
 
     const responseToReturn = new Response(JSON.stringify(data), {
       status: 200,
       headers: responseHeaders
     });
-
-    if (cache && isGet) {
-      context.waitUntil(cache.put(request, responseToReturn.clone()));
-    }
 
     return responseToReturn;
 
@@ -135,4 +131,34 @@ export async function onRequest(context) {
       }
     });
   }
+  };
+
+  if (cachedResponse && cachedResponse.ok) {
+    const cacheTimeStr = cachedResponse.headers.get('X-Cache-Time');
+    const cacheTime = cacheTimeStr ? parseInt(cacheTimeStr, 10) : 0;
+    const age = Date.now() - cacheTime;
+    
+    // If cache is older than 5 minutes (300000 ms), update it in background (SWR)
+    if (age > 300000) {
+      context.waitUntil(
+        processUpstream().then(async (newResponse) => {
+          if (newResponse.ok && cache && isGet) {
+            await cache.put(request, newResponse.clone());
+          }
+        }).catch(err => console.error("SWR background update failed", err))
+      );
+    }
+    
+    // Return cache immediately
+    const finalResp = new Response(cachedResponse.body, cachedResponse);
+    finalResp.headers.set('X-Cache-Status', 'HIT-SWR');
+    return finalResp;
+  }
+
+  // Cache MISS: wait for upstream
+  const response = await processUpstream();
+  if (response.ok && cache && isGet) {
+    context.waitUntil(cache.put(request, response.clone()));
+  }
+  return response;
 }
