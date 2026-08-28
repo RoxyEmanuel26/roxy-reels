@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.75';
-import ui from './ui.js?v=2.8.75';
-import filter from './filter.js?v=2.8.75';
-import i18n from './i18n.js?v=2.8.75';
+import api from './api.js?v=2.8.76';
+import ui from './ui.js?v=2.8.76';
+import filter from './filter.js?v=2.8.76';
+import i18n from './i18n.js?v=2.8.76';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
