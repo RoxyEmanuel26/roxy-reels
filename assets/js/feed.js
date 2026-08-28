@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.76';
-import ui from './ui.js?v=2.8.76';
-import filter from './filter.js?v=2.8.76';
-import i18n from './i18n.js?v=2.8.76';
+import api from './api.js?v=2.8.77';
+import ui from './ui.js?v=2.8.77';
+import filter from './filter.js?v=2.8.77';
+import i18n from './i18n.js?v=2.8.77';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -36,6 +36,64 @@ function shuffleArray(arr) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+/**
+ * Smart Pool with Session Rotation — sistem acak cerdas untuk halaman Home.
+ *
+ * Pool berisi 20 halaman (= 480 video unik).
+ * sessionStorage mencatat urutan halaman yang sudah ditampilkan agar
+ * setiap kunjungan / refresh / tab baru selalu mendapat konten berbeda.
+ * Semua 20 halaman akan ter-cache di Cloudflare Edge setelah diakses
+ * pertama kali → selanjutnya served dari cache <10ms tanpa sentuh API.
+ */
+const RANDOM_POOL_SIZE = 20; // 20 halaman × 24 video = 480 video unik dalam rotasi
+const SESSION_KEY = 'missav_random_seq'; // Kunci sessionStorage
+
+/**
+ * Menghasilkan 1 nomor halaman acak dari pool 1–RANDOM_POOL_SIZE,
+ * dengan memastikan tidak berulang dalam sesi yang sama.
+ *
+ * Cara kerja:
+ * 1. Baca urutan halaman yang sudah dipakai dari sessionStorage.
+ * 2. Kumpulkan halaman yang BELUM dipakai dalam sesi ini.
+ * 3. Acak salah satunya, simpan kembali ke sessionStorage, lalu kembalikan.
+ * 4. Jika semua 20 halaman sudah habis → reset (mulai siklus baru).
+ *
+ * @returns {number} Nomor halaman antara 1 dan RANDOM_POOL_SIZE
+ */
+function pickSessionRotatedPage() {
+  let usedInSession = [];
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (raw) usedInSession = JSON.parse(raw);
+    if (!Array.isArray(usedInSession)) usedInSession = [];
+  } catch (_) {
+    usedInSession = [];
+  }
+
+  // Kumpulkan halaman yang belum pernah muncul di sesi ini
+  const available = [];
+  for (let p = 1; p <= RANDOM_POOL_SIZE; p++) {
+    if (!usedInSession.includes(p)) available.push(p);
+  }
+
+  // Jika semua halaman sudah habis → reset siklus
+  if (available.length === 0) {
+    usedInSession = [];
+    for (let p = 1; p <= RANDOM_POOL_SIZE; p++) available.push(p);
+  }
+
+  // Pilih satu secara acak dari yang tersedia
+  const chosen = available[Math.floor(Math.random() * available.length)];
+
+  // Simpan kembali ke sessionStorage
+  usedInSession.push(chosen);
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(usedInSession));
+  } catch (_) { /* sessionStorage penuh / private mode — tidak apa-apa */ }
+
+  return chosen;
 }
 
 // Premium inline SVG fallback used when video thumbnail fails to load
@@ -322,14 +380,14 @@ async function fetchAndRenderFeed(isInitial = false) {
   isLoading = true;
   
   try {
-    // OPTIMIZATION: Di Random Mode pada saat load pertama, kita langsung acak angka antara 1-50.
-    // Menghindari probe API (hemat 1 request/roundtrip) & mencegah kueri OFFSET ribuan yang membebani MySQL.
+    // Smart Pool with Session Rotation: pada load pertama di Random Mode,
+    // pilih halaman dari pool 1–20 yang belum ditampilkan di sesi ini.
+    // → 20 halaman × 24 video = 480 video unik dalam rotasi.
+    // → sessionStorage memastikan tiap refresh/tab baru dapat konten berbeda.
+    // → Semua 20 halaman ter-cache Cloudflare Edge setelah warmup awal.
     let fetchPage = currentPage;
     if (randomMode && isInitial) {
-      // Solusi Jenius: Batasi acak maksimal HANYA di 5 halaman pertama (120 video terbaru).
-      // Mengapa? Karena database server Anda (MySQL) saat ini sangat kewalahan 
-      // memproses kueri "OFFSET" yang terlalu dalam. 5 halaman dijamin kilat (0.1 detik).
-      fetchPage = Math.floor(Math.random() * 5) + 1;
+      fetchPage = pickSessionRotatedPage();
       currentPage = fetchPage;
     }
     usedPages.add(fetchPage);
@@ -498,13 +556,16 @@ function setupInfiniteScroll() {
     if (entries[0].isIntersecting && !isLoading && hasMore) {
       if (loader) loader.classList.remove('hidden');
       
-      if (randomMode && totalPages > 1) {
-        // Pick a random unused page for infinite scroll
+      if (randomMode) {
+        // Infinite scroll: ambil halaman acak berikutnya dari pool 1–RANDOM_POOL_SIZE
+        // yang belum pernah ditampilkan dalam sesi scroll ini (usedPages).
+        // Batas RANDOM_POOL_SIZE menjaga agar semua halaman dalam jangkauan cache.
         const availablePages = [];
-        for (let p = 1; p <= totalPages; p++) {
+        for (let p = 1; p <= RANDOM_POOL_SIZE; p++) {
           if (!usedPages.has(p)) availablePages.push(p);
         }
         if (availablePages.length === 0) {
+          // Semua 20 halaman sudah ditampilkan dalam sesi scroll ini → selesai
           hasMore = false;
           if (loader) loader.classList.add('hidden');
           return;
