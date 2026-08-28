@@ -5,12 +5,12 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.74';
-import ui from './ui.js?v=2.8.74';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.74';
-import i18n from './i18n.js?v=2.8.74';
-import ReferralSystem from './referral.js?v=2.8.74';
-import { Analytics } from './analytics.js?v=2.8.74';
+import api from './api.js?v=2.8.75';
+import ui from './ui.js?v=2.8.75';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.75';
+import i18n from './i18n.js?v=2.8.75';
+import ReferralSystem from './referral.js?v=2.8.75';
+import { Analytics } from './analytics.js?v=2.8.75';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -688,56 +688,87 @@ function shuffleArray(arr) {
 /**
  * Menghitung skor relevansi video terkait dan menentukan alasan kecocokan utama.
  * Skor tertinggi = paling relevan. Alasan digunakan untuk badge visual.
+ *
+ * Faktor skor:
+ *  +120 per aktor yang sama
+ *  +90  seri kode yang sama (ABP-xxx)
+ *  +50  studio yang sama
+ *  +20  per tag yang sama
+ *  +8   per kategori yang sama
+ *  +10  video sangat baru (< 30 hari)
+ *  +5   video baru (< 90 hari)
+ *  +5   views > 50.000
+ *  +3   views > 10.000
+ *  +1   views > 1.000
  */
 function computeRelevanceScore(candidate, currentPost) {
   let score = 0;
   let matchReason = '';
 
-  const currentActors = (currentPost.actors || []).map(a => a.toLowerCase());
-  const currentTags = (currentPost.tags || []).map(t => t.toLowerCase());
-  const currentCategories = (currentPost.categories || []).map(c => c.toLowerCase());
-  const currentCode = (currentPost.code || '').toUpperCase();
+  const currentActors     = (currentPost.actors     || []).map(a => a.toLowerCase());
+  const currentTags       = (currentPost.tags        || []).map(t => t.toLowerCase());
+  const currentCategories = (currentPost.categories  || []).map(c => c.toLowerCase());
+  const currentCode       = (currentPost.code        || '').toUpperCase();
+  const currentStudio     = (currentPost.studio      || '').toLowerCase().trim();
   const currentSeriesPrefix = extractCodeSeriesPrefix(currentPost.code);
 
-  const candidateActors = (candidate.actors || []).map(a => a.toLowerCase());
-  const candidateTags = (candidate.tags || []).map(t => t.toLowerCase());
-  const candidateCategories = (candidate.categories || []).map(c => c.toLowerCase());
-  const candidateCode = (candidate.code || '').toUpperCase();
+  const candidateActors     = (candidate.actors     || []).map(a => a.toLowerCase());
+  const candidateTags       = (candidate.tags        || []).map(t => t.toLowerCase());
+  const candidateCategories = (candidate.categories  || []).map(c => c.toLowerCase());
+  const candidateCode       = (candidate.code        || '').toUpperCase();
+  const candidateStudio     = (candidate.studio      || '').toLowerCase().trim();
   const candidateSeriesPrefix = extractCodeSeriesPrefix(candidate.code);
 
-  // Skor tertinggi: Aktris yang sama (paling relevan bagi pengguna)
+  // ── Skor tertinggi: Aktris yang sama (paling relevan bagi pengguna) ──
   const sharedActors = currentActors.filter(a => candidateActors.includes(a));
   if (sharedActors.length > 0) {
-    score += 100 * sharedActors.length;
+    score += 120 * sharedActors.length;
     matchReason = 'actor';
   }
 
-  // Skor tinggi: Seri kode yang sama (contoh: ABP-123 & ABP-456)
-  if (currentSeriesPrefix && candidateSeriesPrefix && currentSeriesPrefix === candidateSeriesPrefix && currentCode !== candidateCode) {
-    score += 80;
+  // ── Skor tinggi: Seri kode yang sama (contoh: ABP-123 & ABP-456) ──
+  if (currentSeriesPrefix && candidateSeriesPrefix &&
+      currentSeriesPrefix === candidateSeriesPrefix &&
+      currentCode !== candidateCode) {
+    score += 90;
     if (!matchReason) matchReason = 'series';
   }
 
-  // Skor sedang: Tag yang sama
+  // ── Skor menengah-tinggi: Studio yang sama ──
+  if (currentStudio && candidateStudio &&
+      currentStudio !== 'unknown studio' && currentStudio !== 'other' &&
+      currentStudio === candidateStudio) {
+    score += 50;
+    if (!matchReason) matchReason = 'studio';
+  }
+
+  // ── Skor sedang: Tag yang sama ──
   const sharedTags = currentTags.filter(t => candidateTags.includes(t));
   if (sharedTags.length > 0) {
-    score += 15 * sharedTags.length;
+    score += 20 * sharedTags.length;
     if (!matchReason) matchReason = 'tag';
   }
 
-  // Skor rendah: Kategori yang sama
+  // ── Skor rendah: Kategori yang sama ──
   const sharedCats = currentCategories.filter(c => candidateCategories.includes(c));
   if (sharedCats.length > 0) {
-    score += 5 * sharedCats.length;
+    score += 8 * sharedCats.length;
     if (!matchReason) matchReason = 'category';
   }
 
-  // Bonus kecil untuk video populer (views tinggi)
-  if (candidate.views) {
-    const views = parseInt(candidate.views, 10) || 0;
-    if (views > 10000) score += 3;
-    else if (views > 1000) score += 1;
+  // ── Bonus kesegaran video (video baru lebih menarik) ──
+  if (candidate.date) {
+    const ageMs = Date.now() - new Date(candidate.date).getTime();
+    const ageDays = ageMs / (1000 * 60 * 60 * 24);
+    if (ageDays < 30)  score += 10;
+    else if (ageDays < 90) score += 5;
   }
+
+  // ── Bonus popularitas video (granular) ──
+  const views = parseInt(candidate.views, 10) || 0;
+  if (views > 50000)     score += 5;
+  else if (views > 10000) score += 3;
+  else if (views > 1000)  score += 1;
 
   return { score, matchReason };
 }
@@ -756,18 +787,23 @@ export async function loadRelatedVideos(post) {
     const promises = [];
     const queryLabels = []; // Label debug untuk setiap query
 
-    // ── Query 1: Pencarian berdasarkan Aktor Utama ──
+    // ── Query 1: Aktris Utama (actor[0]) ──
     if (post.actors && post.actors.length > 0) {
-      promises.push(api.getPosts({ actor: post.actors[0], per_page: 6 }));
-      queryLabels.push('actor:' + post.actors[0]);
+      promises.push(api.getPosts({ actor: post.actors[0], per_page: 8 }));
+      queryLabels.push('actor0:' + post.actors[0]);
     }
 
-    // ── Query 2: Pencarian berdasarkan Kode Video (exact) ──
+    // ── Query 2: Aktris Kedua (actor[1]) — jika ada ──
+    if (post.actors && post.actors.length > 1) {
+      promises.push(api.getPosts({ actor: post.actors[1], per_page: 6 }));
+      queryLabels.push('actor1:' + post.actors[1]);
+    }
+
+    // ── Query 3: Seri Kode (ABP → cari semua ABP-xxx) ──
     if (post.code && post.code.trim()) {
       const seriesPrefix = extractCodeSeriesPrefix(post.code);
       if (seriesPrefix) {
-        // Cari video dengan prefix seri yang sama (contoh: ABP → ABP-xxx)
-        promises.push(api.getPosts({ search: seriesPrefix, per_page: 6 }));
+        promises.push(api.getPosts({ search: seriesPrefix, per_page: 8 }));
         queryLabels.push('series:' + seriesPrefix);
       }
     } else {
@@ -779,16 +815,37 @@ export async function loadRelatedVideos(post) {
       }
     }
 
-    // ── Query 3: Pencarian berdasarkan Tag Utama ──
+    // ── Query 4: Tag Utama (tag[0]) ──
     if (post.tags && post.tags.length > 0) {
-      promises.push(api.getPosts({ tag: post.tags[0], per_page: 6 }));
-      queryLabels.push('tag:' + post.tags[0]);
+      promises.push(api.getPosts({ tag: post.tags[0], per_page: 8 }));
+      queryLabels.push('tag0:' + post.tags[0]);
     }
 
-    // ── Query 4: Pencarian berdasarkan Kategori Pertama ──
+    // ── Query 5: Tag Kedua (tag[1]) — jika ada ──
+    if (post.tags && post.tags.length > 1) {
+      promises.push(api.getPosts({ tag: post.tags[1], per_page: 6 }));
+      queryLabels.push('tag1:' + post.tags[1]);
+    }
+
+    // ── Query 6: Kategori Pertama (category[0]) ──
     if (post.categories && post.categories.length > 0) {
       promises.push(api.getPosts({ category: post.categories[0], per_page: 6 }));
       queryLabels.push('category:' + post.categories[0]);
+    }
+
+    // ── Query 7: Studio yang sama (konten studio sangat relevan) ──
+    if (post.studio && post.studio !== 'Unknown Studio' && post.studio !== 'Other') {
+      promises.push(api.getPosts({ studio: post.studio, per_page: 8 }));
+      queryLabels.push('studio:' + post.studio);
+    }
+
+    // ── Query 8: Kata kunci judul (fallback tambahan jika semua query kurang) ──
+    if (post.title && post.actors && post.actors.length === 0 && post.tags && post.tags.length === 0) {
+      const keywords = extractTitleKeywords(post.title);
+      if (keywords) {
+        promises.push(api.getPosts({ search: keywords, per_page: 6 }));
+        queryLabels.push('title-keywords:' + keywords);
+      }
     }
 
     // Jalankan semua query secara paralel untuk efisiensi tinggi
@@ -883,8 +940,8 @@ export async function loadRelatedVideos(post) {
       return;
     }
 
-    // Batasi maksimal 15 video rekomendasi
-    finalPosts = finalPosts.slice(0, 15);
+    // Batasi maksimal 20 video rekomendasi
+    finalPosts = finalPosts.slice(0, 20);
 
     relatedList.innerHTML = finalPosts
       .map((p, idx) => renderRelatedRowCard(p, idx))
@@ -950,6 +1007,7 @@ function renderRelatedRowCard(post, index) {
     const badgeConfig = {
       actor:    { icon: '🎭', key: 'match_same_actor',    cls: 'match-actor' },
       series:   { icon: '📀', key: 'match_same_series',   cls: 'match-series' },
+      studio:   { icon: '🏢', key: 'match_same_studio',   cls: 'match-studio' },
       tag:      { icon: '🏷️', key: 'match_similar_tag',   cls: 'match-tag' },
       category: { icon: '📂', key: 'match_same_category', cls: 'match-category' },
     };

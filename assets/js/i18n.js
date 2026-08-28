@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.8.74';
+import ui from './ui.js?v=2.8.75';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -425,6 +425,9 @@ const DICTIONARY = {
   },
   match_same_series: {
     en: 'Same Series', id: 'Seri Sama', ja: '同じシリーズ', ko: '같은 시리즈', 'zh-TW': '同系列', 'zh-CN': '同系列', ms: 'Siri Sama', th: 'ซีรีส์เดียวกัน', de: 'Gleiche Serie', fr: 'Même Série', vi: 'Cùng series', fil: 'Parehong Serye', pt: 'Mesma Série'
+  },
+  match_same_studio: {
+    en: 'Same Studio', id: 'Studio Sama', ja: '同じスタジオ', ko: '같은 스튜디오', 'zh-TW': '同製作公司', 'zh-CN': '同制作公司', ms: 'Studio Sama', th: 'สตูดิโอเดียวกัน', de: 'Gleiches Studio', fr: 'Même Studio', vi: 'Cùng hãng', fil: 'Parehong Studio', pt: 'Mesmo Estúdio'
   },
   match_similar_tag: {
     en: 'Similar Tag', id: 'Tag Serupa', ja: '類似タグ', ko: '유사한 태그', 'zh-TW': '相似標籤', 'zh-CN': '相似标签', ms: 'Tag Serupa', th: 'แท็กที่คล้ายกัน', de: 'Ähnliches Tag', fr: 'Tag Similaire', vi: 'Tag tương tự', fil: 'Katulad na Tag', pt: 'Tag Similar'
