@@ -111,6 +111,13 @@ const ui = {
       document.body.appendChild(container);
     }
 
+    // Cegah duplikasi: Jangan tambahkan toast jika pesan yang sama persis sedang tampil
+    for (const child of container.children) {
+      if (child.textContent === message) {
+        return; // Toast dengan pesan ini sudah ada, abaikan
+      }
+    }
+
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message; // textContent aman secara default
