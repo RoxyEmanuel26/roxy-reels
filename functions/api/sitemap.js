@@ -371,8 +371,8 @@ export async function onRequest(context) {
     const SUPABASE_URL = env.SUPABASE_URL;
     const SUPABASE_KEY = env.SUPABASE_KEY;
 
-    const host = request.headers.get('host') || 'www.missav-j.com';
-    const domain = `https://${host}`;
+    const host = 'www.missav-j.com'; // Selalu gunakan www.missav-j.com untuk Canonical SEO
+    const domain = DOMAIN;
 
     const sendXml = (xml, statusCode = 200) => {
       return new Response(xml, {

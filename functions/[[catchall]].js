@@ -478,6 +478,13 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
+  // ── ENFORCE WWW DOMAIN FOR SEO ──────────────────────────────────────────
+  // Mencegah duplicate content (Google melihat missav-j.com dan www.missav-j.com sebagai 2 situs berbeda)
+  if (url.hostname === 'missav-j.com') {
+    url.hostname = 'www.missav-j.com';
+    return Response.redirect(url.toString(), 301);
+  }
+
   // ── GEO-REDIRECT ─────────────────────────────────────────────────────────
   // Hanya redirect saat user membuka root "/" tanpa prefix bahasa apapun.
   // URL yang sudah punya prefix (/ko/, /en/, /watch/...) TIDAK disentuh —
