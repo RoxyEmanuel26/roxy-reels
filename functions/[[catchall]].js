@@ -9,6 +9,13 @@
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
 const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
 
+// Social preview crawlers do not execute the client-side metadata updater. They
+// must receive complete, stable metadata in the first HTML response.
+const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot|TelegramBot|Discordbot|Slackbot|WhatsApp/i;
+const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|AhrefsBot|SemrushBot|MJ12bot|Applebot/i;
+const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
+const SSR_CACHE_VERSION = 'social-card-v2';
+
 // Map internal language keys to valid ISO 639-1 hreflang / html-lang codes.
 // Mirrors HREFLANG_CODE_MAP in assets/js/i18n.js and the sitemap emitters:
 // URL paths keep /fil/, but the lang attribute must be 'tl' (ISO 639-1 Tagalog).
@@ -338,8 +345,23 @@ function formatDuration(durationStr) {
  * Fetch metadata video langsung dari API eksternal (tanpa loopback).
  * Hanya mengambil data dasar yang dibutuhkan untuk OG tags.
  */
-async function fetchPostMetadata(id, origin) {
+async function fetchPostMetadata(id, origin, executionContext) {
   const apiUrl = `${TARGET_BASE}/posts/${id}`;
+  // Keep a first-party copy of valid metadata. This removes the upstream API
+  // from the critical path after the first successful request for a video.
+  const metadataCache = caches.default;
+  const cacheKey = new Request(`${origin}/__og-metadata/posts/${encodeURIComponent(id)}`);
+
+  try {
+    const cached = await metadataCache.match(cacheKey);
+    if (cached) {
+      const cachedData = await cached.json();
+      if (cachedData && cachedData.title) return cachedData;
+    }
+  } catch (err) {
+    console.warn('[OG Metadata Cache Read Error]', err);
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
 
@@ -355,11 +377,53 @@ async function fetchPostMetadata(id, origin) {
     });
     clearTimeout(timeoutId);
     if (!res.ok) return null;
-    return res.json();
+    const data = await res.json();
+    if (!data || !data.title) return null;
+
+    const cachedResponse = new Response(JSON.stringify(data), {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'public, max-age=604800'
+      }
+    });
+    const cacheWrite = metadataCache.put(cacheKey, cachedResponse);
+    if (executionContext && typeof executionContext.waitUntil === 'function') {
+      executionContext.waitUntil(cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err)));
+    } else {
+      await cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err));
+    }
+
+    return data;
   } catch (err) {
     clearTimeout(timeoutId);
     console.error('[OG Fetch Error]', err);
     return null;
+  }
+}
+
+/** Remove analytics-only parameters without disturbing meaningful query data. */
+function getCleanPublicUrl(inputUrl) {
+  const cleanUrl = new URL(inputUrl.toString());
+  for (const key of [...cleanUrl.searchParams.keys()]) {
+    if (TRACKING_PARAM_REGEX.test(key)) cleanUrl.searchParams.delete(key);
+  }
+  return cleanUrl;
+}
+
+/** Build a deterministic, first-party, query-free social image URL. */
+function getSocialImageUrl(sourceUrl, origin) {
+  if (!sourceUrl) return `${origin}/assets/images/logo.webp`;
+  try {
+    const normalized = new URL(sourceUrl);
+    if (normalized.protocol !== 'https:') return `${origin}/assets/images/logo.webp`;
+    // URL#toString percent-encodes non-ASCII characters, making btoa safe here.
+    const encoded = btoa(normalized.toString())
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+    return `${origin}/img/${encoded}.jpg`;
+  } catch (err) {
+    return `${origin}/assets/images/logo.webp`;
   }
 }
 
@@ -477,6 +541,9 @@ export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const pathname = url.pathname;
+  const userAgent = request.headers.get('User-Agent') || '';
+  const isSocialCrawler = SOCIAL_CRAWLER_REGEX.test(userAgent);
+  const isKnownCrawler = isSocialCrawler || SEARCH_CRAWLER_REGEX.test(userAgent);
 
   // ── ENFORCE WWW DOMAIN FOR SEO ──────────────────────────────────────────
   // Mencegah duplicate content (Google melihat missav-j.com dan www.missav-j.com sebagai 2 situs berbeda)
@@ -493,8 +560,7 @@ export async function onRequest(context) {
     // Deteksi apakah request berasal dari search engine bot / crawler.
     // Bot mendapat 301 (permanent) agar Google mengindeks /en/ — bukan root / yang kosong.
     // User biasa tetap mendapat 302 (temporary) agar geo-detect bisa berubah di masa depan.
-    const userAgent = request.headers.get('User-Agent') || '';
-    const isBot = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|facebot|ia_archiver|AhrefsBot|SemrushBot|MJ12bot|Applebot/i.test(userAgent);
+    const isBot = isKnownCrawler;
 
     // Cek preferensi tersimpan di cookie (prioritas utama — user sudah pernah pilih)
     const cookieLang = getCookieLang(request);
@@ -555,11 +621,32 @@ export async function onRequest(context) {
   const isLangRoot = pathname.match(langRegex);
   const isCacheableRoute = isGet && (isWatch || isList || isLangRoot);
 
+  // Collapse tracking variants to one stable URL for social-card caches. Human
+  // visitors keep the parameters so the client can still record referrals.
+  if (isGet && isWatch && isSocialCrawler) {
+    const cleanUrl = getCleanPublicUrl(url);
+    if (cleanUrl.toString() !== url.toString()) {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': cleanUrl.toString(),
+          'Cache-Control': 'public, max-age=86400'
+        }
+      });
+    }
+  }
+
   let cache = null;
+  let pageCacheKey = request;
+  if (isWatch) {
+    const versionedCacheUrl = getCleanPublicUrl(url);
+    versionedCacheUrl.searchParams.set('__ssr', SSR_CACHE_VERSION);
+    pageCacheKey = new Request(versionedCacheUrl.toString(), { method: 'GET' });
+  }
   if (isCacheableRoute) {
     try {
       cache = caches.default;
-      const cachedResponse = await cache.match(request);
+      const cachedResponse = await cache.match(pageCacheKey);
       if (cachedResponse) {
         return cachedResponse;
       }
@@ -592,7 +679,7 @@ export async function onRequest(context) {
       // Previously sequential (~320ms+), now concurrent (~300ms max).
       const [indexResponse, post] = await Promise.all([
         env.ASSETS.fetch(new URL('/index.html', request.url)),
-        id ? fetchPostMetadata(id, url.origin) : Promise.resolve(null)
+        id ? fetchPostMetadata(id, url.origin, context) : Promise.resolve(null)
       ]);
 
       if (!indexResponse.ok) {
@@ -605,6 +692,7 @@ export async function onRequest(context) {
       // never reaches non-JS crawlers -> "Hreflang and HTML lang mismatch".
       const watchHtmlLang = hreflangCode(isLangValid ? lang : 'en');
       htmlContent = htmlContent.replace(/<html lang="[^"]*"/i, `<html lang="${watchHtmlLang}"`);
+      let metadataReady = false;
 
       if (id) {
         try {
@@ -635,16 +723,16 @@ export async function onRequest(context) {
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
             const description = descFn(code, title, actorsStr, studioStr);
 
-            let imageUrl = post.thumbnail || 'https://www.missav-j.com/assets/images/logo.webp';
+            let sourceImageUrl = post.thumbnail || '';
 
             // Langkah 1: Bypass proxy apijav.php → ekstrak URL gambar aslinya
-            if (imageUrl.includes('apijav.php?url=')) {
+            if (sourceImageUrl.includes('apijav.php?url=')) {
               try {
-                const urlObj = new URL(imageUrl);
+                const urlObj = new URL(sourceImageUrl);
                 const actualUrl = urlObj.searchParams.get('url');
                 // Hanya replace jika actualUrl benar-benar valid (bukan string kosong)
                 if (actualUrl && (actualUrl.startsWith('http') || actualUrl.startsWith('//'))) {
-                  imageUrl = actualUrl;
+                  sourceImageUrl = actualUrl;
                 }
               } catch (e) {}
             }
@@ -652,15 +740,19 @@ export async function onRequest(context) {
             // Langkah 2: Normalisasi protocol-relative URL dan force HTTPS
             // Twitter (Open Graph) mewajibkan absolute URL (https://)
             // Telegram secara otomatis mendeteksi, namun Twitter menolak mentah-mentah `//url.com`.
-            if (imageUrl.startsWith('//')) {
-              imageUrl = `https:${imageUrl}`;
-            } else if (imageUrl.startsWith('http://')) {
-              imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
+            if (sourceImageUrl.startsWith('//')) {
+              sourceImageUrl = `https:${sourceImageUrl}`;
+            } else if (sourceImageUrl.startsWith('http://')) {
+              sourceImageUrl = sourceImageUrl.replace(/^http:\/\//i, 'https://');
             }
 
-            // TIDAK ADA PROXY LAGI. Gunakan URL CDN asli (seperti Telegram bot).
+            // Social crawlers fetch a stable URL on our own domain. The clean
+            // path avoids third-party hotlink rules and crawler issues with a
+            // nested image URL in a query string.
+            const proxiedImageUrl = getSocialImageUrl(sourceImageUrl, url.origin);
+            const imageUrl = proxiedImageUrl;
 
-            const pageUrl = `${url.origin}${url.pathname}${url.search}`;
+            const pageUrl = getCleanPublicUrl(url).toString();
 
             htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(fullTitle)}</title>`);
             htmlContent = htmlContent.replace(
@@ -688,6 +780,21 @@ export async function onRequest(context) {
               () => `<meta property="og:image" id="og-image" content="${escapeHtml(imageUrl)}"`
             );
             htmlContent = htmlContent.replace(
+              /<meta property="og:type" id="og-type" content="[^"]*"/i,
+              '<meta property="og:type" id="og-type" content="video.other"'
+            );
+            // Source thumbnails do not all share one size or MIME type. Remove
+            // the incorrect static declarations instead of lying to crawlers.
+            htmlContent = htmlContent.replace(/\s*<meta property="og:image:(?:width|height|type)"[^>]*>/gi, '');
+            htmlContent = htmlContent.replace(
+              /<meta property="og:image:alt" content="[^"]*"/i,
+              () => `<meta property="og:image:alt" content="${escapeHtml(fullTitle)}"`
+            );
+            htmlContent = htmlContent.replace(
+              /<meta name="twitter:card" id="twitter-card" content="[^"]*"/i,
+              '<meta name="twitter:card" id="twitter-card" content="summary_large_image"'
+            );
+            htmlContent = htmlContent.replace(
               /<meta name="twitter:title" id="twitter-title" content="[^"]*"/i,
               () => `<meta name="twitter:title" id="twitter-title" content="${escapeHtml(fullTitle)}"`
             );
@@ -699,6 +806,10 @@ export async function onRequest(context) {
               /<meta name="twitter:image" id="twitter-image" content="[^"]*"/i,
               () => `<meta name="twitter:image" id="twitter-image" content="${escapeHtml(imageUrl)}"`
             );
+            htmlContent = htmlContent.replace(
+              /<meta name="twitter:image:alt" id="twitter-image-alt" content="[^"]*"/i,
+              () => `<meta name="twitter:image:alt" id="twitter-image-alt" content="${escapeHtml(fullTitle)}"`
+            );
             
             const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
             htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
@@ -706,11 +817,11 @@ export async function onRequest(context) {
             if (htmlContent.includes('"@type": "WebSite"')) {
               const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`;
               const isoDuration = formatDuration(post.duration);
-              const actorsList = (post.actors || []).map(a => ({
+              const actorsList = (Array.isArray(post.actors) ? post.actors : []).map(a => ({
                 "@type": "Person",
                 "name": typeof a === 'string' ? a : (a.name || a)
               }));
-              const genreList = (post.categories || []).map(c => typeof c === 'string' ? c : (c.name || c));
+              const genreList = (Array.isArray(post.categories) ? post.categories : []).map(c => typeof c === 'string' ? c : (c.name || c));
 
               let uploadDate = new Date().toISOString();
               if (post.date) {
@@ -812,6 +923,7 @@ export async function onRequest(context) {
               `;
               htmlContent = htmlContent.replace(/<div class="seo-fallback"[^>]*>[\s\S]*?<\/div>/i, () => seoFallbackContent);
             }
+            metadataReady = true;
           }
         } catch (err) {
           console.error('[Watch OG Error]', err);
@@ -824,11 +936,25 @@ export async function onRequest(context) {
 
       // Jika fetch API gagal/timeout untuk halaman Watch, JANGAN cache halaman fallback.
       // Jika di-cache, bot media sosial akan terus melihat fallback (logo webp) selama 7 hari.
-      if (id && (!post || !post.title)) {
+      if (id && !metadataReady) {
         cacheControl = 'no-store, no-cache, must-revalidate, max-age=0';
         cdnCacheControl = 'no-store';
         shouldCache = false;
-        console.warn(`[SSR Warning] API fetch failed for ${id}. Bypassing cache to prevent poisoning.`);
+        console.warn(`[SSR Warning] Metadata unavailable or incomplete for ${id}. Bypassing cache to prevent poisoning.`);
+
+        // A 200 response containing homepage metadata is permanently misleading
+        // for social cards. Ask social crawlers to retry instead.
+        if (isSocialCrawler) {
+          return new Response('Video metadata temporarily unavailable', {
+            status: 503,
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'Cache-Control': cacheControl,
+              'CDN-Cache-Control': cdnCacheControl,
+              'Retry-After': '120'
+            }
+          });
+        }
       }
 
       const watchResponse = new Response(htmlContent, {
@@ -840,7 +966,7 @@ export async function onRequest(context) {
       });
 
       if (cache && isCacheableRoute && shouldCache) {
-        context.waitUntil(cache.put(request, watchResponse.clone()));
+        context.waitUntil(cache.put(pageCacheKey, watchResponse.clone()));
       }
 
       return watchResponse;

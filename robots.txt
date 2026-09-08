@@ -7,6 +7,7 @@ Allow: /
 # Izinkan Googlebot akses image proxy untuk thumbnail VideoObject schema.
 # PENTING: Allow harus SEBELUM Disallow /api/ agar rule ini berlaku.
 Allow: /api/image
+Allow: /img/
 
 # Blokir semua endpoint API lainnya (tidak perlu di-crawl oleh Google)
 Disallow: /api/

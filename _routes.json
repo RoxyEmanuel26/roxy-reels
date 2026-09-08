@@ -3,6 +3,7 @@
   "description": "Cloudflare Pages route exclusion — file statis tidak melewati Worker",
   "include": [
     "/api/*",
+    "/img/*",
     "/watch/*",
     "/*/watch/*",
     "/actor",
