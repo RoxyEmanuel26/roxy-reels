@@ -390,6 +390,30 @@ export async function onRequest(context) {
       headers: responseHeaders
     });
 
+    // A normal page visit commonly loads this endpoint before its share button
+    // is used. Store the small post payload under the same key consumed by the
+    // server-rendered social card so the first Twitterbot request is warm.
+    if (id && data && !Array.isArray(data) && data.title) {
+      try {
+        const socialMetadataKey = new Request(
+          `${url.origin}/__og-metadata/posts/${encodeURIComponent(id)}`,
+          { method: 'GET' }
+        );
+        const socialMetadataResponse = new Response(JSON.stringify(data), {
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'public, max-age=604800'
+          }
+        });
+        context.waitUntil(
+          caches.default.put(socialMetadataKey, socialMetadataResponse)
+            .catch(err => console.warn('[Social Metadata Prewarm Error]', err))
+        );
+      } catch (err) {
+        console.warn('[Social Metadata Prewarm Error]', err);
+      }
+    }
+
     return responseToReturn;
 
   } catch (error) {

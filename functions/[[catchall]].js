@@ -14,7 +14,7 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot|TelegramBot|Discordbot|Slackbot|WhatsApp/i;
 const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|AhrefsBot|SemrushBot|MJ12bot|Applebot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.82';
+const SSR_CACHE_VERSION = 'v2.8.83';
 
 // Map internal language keys to valid ISO 639-1 hreflang / html-lang codes.
 // Mirrors HREFLANG_CODE_MAP in assets/js/i18n.js and the sitemap emitters:
@@ -346,7 +346,7 @@ function formatDuration(durationStr) {
  * Prefer the upstream API, but fall back to our proven /api/posts route when
  * an upstream edge blocks or times out a direct Worker subrequest.
  */
-async function fetchPostMetadata(id, origin, executionContext) {
+async function fetchPostMetadata(id, origin, request, executionContext) {
   const metadataCache = caches.default;
   const cacheKey = new Request(`${origin}/__og-metadata/posts/${encodeURIComponent(id)}`);
 
@@ -360,34 +360,52 @@ async function fetchPostMetadata(id, origin, executionContext) {
     console.warn('[OG Metadata Cache Read Error]', err);
   }
 
+  // Match the headers used by the public /api/posts proxy. Some upstream
+  // providers evaluate the originating request and reject a bare Worker
+  // subrequest even though the same URL is healthy for a normal visitor.
   const requestHeaders = {
     'Accept': 'application/json',
     'X-Client-Site': 'https://www.missav-j.com',
     'Referer': 'https://www.missav-j.com/',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+    'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (compatible; MISSAV-J-SocialCard/1.0)'
   };
+  const clientIp = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '';
+  if (/^[0-9a-f:.]+$/i.test(clientIp)) {
+    requestHeaders['X-Forwarded-For'] = clientIp;
+    requestHeaders['CF-Connecting-IP'] = clientIp;
+  }
 
-  async function fetchJsonWithTimeout(endpoint, timeoutMs) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  async function fetchJsonSource(sourceName, endpoint, signal) {
     try {
-      const response = await fetch(endpoint, { headers: requestHeaders, signal: controller.signal });
-      if (!response.ok) return null;
+      const response = await fetch(endpoint, { headers: requestHeaders, signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      return data && data.title ? data : null;
+      if (!data || !data.title) throw new Error('Response is missing a title');
+      return data;
     } catch (err) {
-      console.warn(`[OG Metadata Source Error] ${endpoint}`, err);
-      return null;
-    } finally {
-      clearTimeout(timeoutId);
+      // Promise.any cancels the losing request after another source succeeds.
+      // That is expected control flow, not an operational warning.
+      if (err && err.name === 'AbortError') throw err;
+      console.warn(`[OG Metadata ${sourceName} Error] id=${id}`, err);
+      throw err;
     }
   }
 
-  let data = await fetchJsonWithTimeout(`${TARGET_BASE}/posts/${id}`, 6000);
-  if (!data) {
-    // This endpoint has its own validated Cloudflare cache and upstream retry
-    // behavior. The loopback costs one subrequest only on a direct-fetch miss.
-    data = await fetchJsonWithTimeout(`${origin}/api/posts?id=${encodeURIComponent(id)}`, 6000);
+  // Both sources are attempted at the same time. A cold social-card request
+  // must not spend 6 seconds waiting for one failure before trying its backup.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  let data = null;
+  try {
+    data = await Promise.any([
+      fetchJsonSource('upstream', `${TARGET_BASE}/posts/${id}`, controller.signal),
+      fetchJsonSource('first-party fallback', `${origin}/api/posts/${encodeURIComponent(id)}`, controller.signal)
+    ]);
+  } catch (err) {
+    console.error(`[OG Metadata Unavailable] id=${id}`, err);
+  } finally {
+    clearTimeout(timeoutId);
+    controller.abort();
   }
   if (!data) return null;
 
@@ -688,7 +706,7 @@ export async function onRequest(context) {
       // Previously sequential (~320ms+), now concurrent (~300ms max).
       const [indexResponse, post] = await Promise.all([
         env.ASSETS.fetch(new URL('/index.html', request.url)),
-        id ? fetchPostMetadata(id, url.origin, context) : Promise.resolve(null)
+        id ? fetchPostMetadata(id, url.origin, request, context) : Promise.resolve(null)
       ]);
 
       if (!indexResponse.ok) {
