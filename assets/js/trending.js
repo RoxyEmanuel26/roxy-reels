@@ -4,7 +4,7 @@
  * Menggunakan sistem feed utama secara modular.
  */
 
-import { init as initFeed } from './feed.js?v=2.8.80';
+import { init as initFeed } from './feed.js?v=2.8.81';
 
 /**
  * Inisialisasi Halaman Trending
