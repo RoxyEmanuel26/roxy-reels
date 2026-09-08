@@ -14,7 +14,7 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot|TelegramBot|Discordbot|Slackbot|WhatsApp/i;
 const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|AhrefsBot|SemrushBot|MJ12bot|Applebot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'social-card-v2';
+const SSR_CACHE_VERSION = 'v2.8.82';
 
 // Map internal language keys to valid ISO 639-1 hreflang / html-lang codes.
 // Mirrors HREFLANG_CODE_MAP in assets/js/i18n.js and the sitemap emitters:
@@ -649,12 +649,9 @@ export async function onRequest(context) {
   }
 
   let cache = null;
-  let pageCacheKey = request;
-  if (isWatch) {
-    const versionedCacheUrl = getCleanPublicUrl(url);
-    versionedCacheUrl.searchParams.set('__ssr', SSR_CACHE_VERSION);
-    pageCacheKey = new Request(versionedCacheUrl.toString(), { method: 'GET' });
-  }
+  const versionedCacheUrl = getCleanPublicUrl(url);
+  versionedCacheUrl.searchParams.set('__ssr', SSR_CACHE_VERSION);
+  const pageCacheKey = new Request(versionedCacheUrl.toString(), { method: 'GET' });
   if (isCacheableRoute) {
     try {
       cache = caches.default;
@@ -698,6 +695,7 @@ export async function onRequest(context) {
         return new Response('Internal Server Error: Failed to fetch index.html', { status: 500 });
       }
       let htmlContent = await indexResponse.text();
+      htmlContent = htmlContent.replace(/<div class="custom-sponsor-banner"[\s\S]*?<\/div>/gi, '');
 
       // Stamp <html lang> to match the route's language for crawlers. index.html
       // ships a static lang="id" default; without this the JS-only fix in app.js
@@ -1001,6 +999,7 @@ export async function onRequest(context) {
           return new Response('Internal Server Error: Failed to fetch index.html', { status: 500 });
         }
         let htmlContent = await indexResponse.text();
+        htmlContent = htmlContent.replace(/<div class="custom-sponsor-banner"[\s\S]*?<\/div>/gi, '');
 
         // Stamp <html lang> to match the route's language for crawlers (see note
         // in the watch branch above) -> fixes "Hreflang and HTML lang mismatch".
@@ -1172,7 +1171,7 @@ export async function onRequest(context) {
         });
 
         if (cache && isCacheableRoute) {
-          context.waitUntil(cache.put(request, listResponse.clone()));
+          context.waitUntil(cache.put(pageCacheKey, listResponse.clone()));
         }
 
         return listResponse;
