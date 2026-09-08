@@ -380,17 +380,24 @@ async function fetchPostMetadata(id, origin, executionContext) {
     const data = await res.json();
     if (!data || !data.title) return null;
 
-    const cachedResponse = new Response(JSON.stringify(data), {
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'public, max-age=604800'
+    // Cache persistence is an optimization, never a prerequisite for serving
+    // metadata that was fetched successfully. Some edge runtimes can reject a
+    // synthetic Cache API key; that must not turn valid API data into a 503.
+    try {
+      const cachedResponse = new Response(JSON.stringify(data), {
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=604800'
+        }
+      });
+      const cacheWrite = metadataCache.put(cacheKey, cachedResponse);
+      if (executionContext && typeof executionContext.waitUntil === 'function') {
+        executionContext.waitUntil(cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err)));
+      } else {
+        await cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err));
       }
-    });
-    const cacheWrite = metadataCache.put(cacheKey, cachedResponse);
-    if (executionContext && typeof executionContext.waitUntil === 'function') {
-      executionContext.waitUntil(cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err)));
-    } else {
-      await cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err));
+    } catch (err) {
+      console.warn('[OG Metadata Cache Write Error]', err);
     }
 
     return data;
