@@ -342,13 +342,11 @@ function formatDuration(durationStr) {
 }
 
 /**
- * Fetch metadata video langsung dari API eksternal (tanpa loopback).
- * Hanya mengambil data dasar yang dibutuhkan untuk OG tags.
+ * Fetch the small metadata payload required by server-rendered social cards.
+ * Prefer the upstream API, but fall back to our proven /api/posts route when
+ * an upstream edge blocks or times out a direct Worker subrequest.
  */
 async function fetchPostMetadata(id, origin, executionContext) {
-  const apiUrl = `${TARGET_BASE}/posts/${id}`;
-  // Keep a first-party copy of valid metadata. This removes the upstream API
-  // from the critical path after the first successful request for a video.
   const metadataCache = caches.default;
   const cacheKey = new Request(`${origin}/__og-metadata/posts/${encodeURIComponent(id)}`);
 
@@ -362,50 +360,57 @@ async function fetchPostMetadata(id, origin, executionContext) {
     console.warn('[OG Metadata Cache Read Error]', err);
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+  const requestHeaders = {
+    'Accept': 'application/json',
+    'X-Client-Site': 'https://www.missav-j.com',
+    'Referer': 'https://www.missav-j.com/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+  };
 
-  try {
-    const res = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'X-Client-Site': 'https://www.missav-j.com',
-        'Referer': 'https://www.missav-j.com/',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-      },
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || !data.title) return null;
-
-    // Cache persistence is an optimization, never a prerequisite for serving
-    // metadata that was fetched successfully. Some edge runtimes can reject a
-    // synthetic Cache API key; that must not turn valid API data into a 503.
+  async function fetchJsonWithTimeout(endpoint, timeoutMs) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const cachedResponse = new Response(JSON.stringify(data), {
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Cache-Control': 'public, max-age=604800'
-        }
-      });
-      const cacheWrite = metadataCache.put(cacheKey, cachedResponse);
-      if (executionContext && typeof executionContext.waitUntil === 'function') {
-        executionContext.waitUntil(cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err)));
-      } else {
-        await cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err));
-      }
+      const response = await fetch(endpoint, { headers: requestHeaders, signal: controller.signal });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data && data.title ? data : null;
     } catch (err) {
-      console.warn('[OG Metadata Cache Write Error]', err);
+      console.warn(`[OG Metadata Source Error] ${endpoint}`, err);
+      return null;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    return data;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    console.error('[OG Fetch Error]', err);
-    return null;
   }
+
+  let data = await fetchJsonWithTimeout(`${TARGET_BASE}/posts/${id}`, 6000);
+  if (!data) {
+    // This endpoint has its own validated Cloudflare cache and upstream retry
+    // behavior. The loopback costs one subrequest only on a direct-fetch miss.
+    data = await fetchJsonWithTimeout(`${origin}/api/posts?id=${encodeURIComponent(id)}`, 6000);
+  }
+  if (!data) return null;
+
+  // Cache persistence is an optimization, never a prerequisite for returning
+  // metadata that was fetched successfully.
+  try {
+    const cachedResponse = new Response(JSON.stringify(data), {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'public, max-age=604800'
+      }
+    });
+    const cacheWrite = metadataCache.put(cacheKey, cachedResponse);
+    if (executionContext && typeof executionContext.waitUntil === 'function') {
+      executionContext.waitUntil(cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err)));
+    } else {
+      await cacheWrite.catch(err => console.warn('[OG Metadata Cache Write Error]', err));
+    }
+  } catch (err) {
+    console.warn('[OG Metadata Cache Write Error]', err);
+  }
+
+  return data;
 }
 
 /** Remove analytics-only parameters without disturbing meaningful query data. */
