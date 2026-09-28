@@ -5,12 +5,13 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.83';
-import ui from './ui.js?v=2.8.83';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.83';
-import i18n from './i18n.js?v=2.8.83';
-import ReferralSystem from './referral.js?v=2.8.83';
-import { Analytics } from './analytics.js?v=2.8.83';
+import api from './api.js?v=2.8.84';
+import ui from './ui.js?v=2.8.84';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.84';
+import i18n from './i18n.js?v=2.8.84';
+import ReferralSystem from './referral.js?v=2.8.84';
+import { Analytics } from './analytics.js?v=2.8.84';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.84';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -636,36 +637,6 @@ function setupWatchLaterLogic(post) {
 }
 
 /**
- * Mengekstrak kata kunci bersih dari judul video untuk pencarian (menghindari tanda kurung & stop words umum)
- */
-function extractTitleKeywords(title) {
-  if (!title) return '';
-  // Hapus blok kurung siku [...] dan kurung biasa (...)
-  let clean = title.replace(/\[[^\]]*\]/g, ' ').replace(/\([^)]*\)/g, ' ');
-  // Hapus karakter khusus
-  clean = clean.replace(/[^a-zA-Z0-9\s]/g, ' ');
-  
-  // Daftar kata-kata tidak bermakna (stop words) untuk disaring
-  const stopWords = new Set([
-    'the', 'and', 'with', 'for', 'that', 'this', 'from', 'you', 'are', 'was', 'were', 
-    'has', 'have', 'had', 'she', 'her', 'him', 'his', 'they', 'them', 'who', 'whom', 
-    'which', 'what', 'why', 'how', 'slut', 'girl', 'beautiful', 'legs', 'breasts', 
-    'knee', 'highs', 'senior', 'junior', 'friends', 'gals', 'dan', 'yang', 'untuk', 
-    'dengan', 'dari', 'pada', 'atau', 'ini', 'itu', 'di', 'ke', 'terbaru', 'sub', 
-    'indo', 'uncensored', 'censored', 'video', 'full', 'part', 'episode', 'scene',
-    'new', 'hot', 'best', 'big', 'small', 'first', 'time', 'very', 'super', 'ultra',
-    'special', 'edition', 'collection', 'series', 'vol', 'chapter'
-  ]);
-  
-  const words = clean.split(/\s+/)
-    .map(w => w.trim())
-    .filter(w => w.length >= 3 && !stopWords.has(w.toLowerCase()));
-  
-  // Ambil maksimal 3 kata kunci penting pertama
-  return words.slice(0, 3).join(' ');
-}
-
-/**
  * Mengekstrak prefix seri kode video (contoh: ABP-123 → "ABP")
  */
 function extractCodeSeriesPrefix(code) {
@@ -774,19 +745,10 @@ function computeRelevanceScore(candidate, currentPost) {
 }
 
 /**
- * Smart Related Videos Engine — Progressive Two-Phase Loading
+ * Smart Related Videos Engine — Adaptive Single Query
  *
- * ┌─ FASE 1 (Instan, ≤2 query) ─────────────────────────────────────────┐
- * │  Tembak hanya 2 query paling relevan (actor + series).               │
- * │  Render hasilnya LANGSUNG ke layar tanpa menunggu apapun.            │
- * │  Beban ke API pihak ketiga: hanya 2 request per user.               │
- * └──────────────────────────────────────────────────────────────────────┘
- * ┌─ FASE 2 (Background, +2 detik delay) ───────────────────────────────┐
- * │  Setelah 2 detik, tembak sisa 5 query (actor[1], tag[0], tag[1],    │
- * │  category, studio) di background tanpa menghalangi pengunjung.       │
- * │  Gabungkan dengan hasil Fase 1, re-score, perbarui tampilan.         │
- * │  Beban tersebar dalam waktu → tidak bisa memblokir server API.      │
- * └──────────────────────────────────────────────────────────────────────┘
+ * Gunakan satu query aktris utama. Jika hasil unik kurang dari 12, jalankan
+ * tepat satu fallback seri kode atau kategori. Maksimum dua request per page.
  */
 export async function loadRelatedVideos(post) {
   const relatedList = document.getElementById('related-videos-list');
@@ -798,19 +760,6 @@ export async function loadRelatedVideos(post) {
   const isStillOnPage = () =>
     !!document.getElementById('related-videos-list') &&
     window.missavJState?.currentPath === initialPath;
-
-  // ── Helper: Jalankan array query dan kumpulkan semua post yang berhasil ──
-  const runQueries = async (queryList) => {
-    if (queryList.length === 0) return [];
-    const results = await Promise.allSettled(queryList);
-    let posts = [];
-    results.forEach(res => {
-      if (res.status === 'fulfilled' && res.value && Array.isArray(res.value.posts)) {
-        posts = posts.concat(res.value.posts);
-      }
-    });
-    return posts;
-  };
 
   // ── Helper: Deduplikasi berdasarkan ID, Code, dan Title ──
   const deduplicatePosts = (posts) => {
@@ -864,132 +813,43 @@ export async function loadRelatedVideos(post) {
     bindRelatedClicks(rl);
   };
 
-  let phase1RawPosts = []; // Simpan raw posts Fase 1 untuk digabung di Fase 2
-
   try {
-    // ═══════════════════════════════════════════════════════════════════
-    // FASE 1 — PRIORITAS TINGGI: Maks 2 query, render langsung ke layar
-    // Tujuan: Pengunjung melihat konten relevan SECEPAT MUNGKIN.
-    // Beban ke API: hanya 2 request per user di saat yang bersamaan.
-    // ═══════════════════════════════════════════════════════════════════
-    const phase1Queries = [];
-
-    // [P1-Q1] Aktris Utama — relevansi tertinggi
-    if (post.actors && post.actors.length > 0) {
-      phase1Queries.push(api.getPosts({ actor: post.actors[0], per_page: 8 }));
-    }
-
-    // [P1-Q2] Seri Kode — relevansi sangat tinggi (ABP-001 → cari ABP-xxx)
-    if (post.code && post.code.trim()) {
-      const seriesPrefix = extractCodeSeriesPrefix(post.code);
-      if (seriesPrefix) {
-        phase1Queries.push(api.getPosts({ search: seriesPrefix, per_page: 8 }));
+    let rawPosts = [];
+    const primaryQuery = getPrimaryRelatedQuery(post);
+    if (primaryQuery) {
+      try {
+        const primary = await api.getPosts(primaryQuery.params);
+        rawPosts = primary.posts || [];
+      } catch (err) {
+        console.warn('[Related] Primary query failed, trying adaptive fallback:', err);
       }
     }
 
-    // [P1-Fallback] Jika tidak ada aktor dan kode seri, gunakan kategori sementara
-    if (phase1Queries.length === 0) {
-      if (post.tags && post.tags.length > 0) {
-        phase1Queries.push(api.getPosts({ tag: post.tags[0], per_page: 8 }));
-      } else if (post.categories && post.categories.length > 0) {
-        phase1Queries.push(api.getPosts({ category: post.categories[0], per_page: 8 }));
-      }
-    }
-
-    phase1RawPosts = await runQueries(phase1Queries);
-
-    // Guard navigasi setelah await selesai
     if (!isStillOnPage()) return;
 
-    const phase1Final = scoreAndSort(deduplicatePosts(phase1RawPosts)).slice(0, 20);
-    if (phase1Final.length > 0) {
-      renderToDOM(phase1Final);
+    let uniquePosts = deduplicatePosts(rawPosts);
+    if (uniquePosts.length < MIN_RELATED_RESULTS) {
+      const fallbackParams = getFallbackRelatedQuery(post, primaryQuery?.kind || '');
+
+      if (fallbackParams) {
+        try {
+          const fallback = await api.getPosts(fallbackParams);
+          rawPosts = rawPosts.concat(fallback.posts || []);
+          uniquePosts = deduplicatePosts(rawPosts);
+        } catch (err) {
+          console.warn('[Related] Adaptive fallback failed:', err);
+        }
+      }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // FASE 2 — BACKGROUND: Sisa 5 query, dijalankan 2 detik kemudian
-    // Tujuan: Perkaya hasil dengan lebih banyak sinyal relevansi.
-    // Beban tersebar dalam waktu → tidak memblokir / tidak membanjiri
-    //         server API pihak ketiga secara bersamaan.
-    // ═══════════════════════════════════════════════════════════════════
-    setTimeout(async () => {
-      // Guard pertama: cek navigasi sebelum mulai
-      if (!isStillOnPage()) return;
+    if (!isStillOnPage()) return;
 
-      const phase2Queries = [];
-
-      // [P2-Q1] Aktris Kedua (jika ada)
-      if (post.actors && post.actors.length > 1) {
-        phase2Queries.push(api.getPosts({ actor: post.actors[1], per_page: 6 }));
-      }
-
-      // [P2-Q2] Tag Utama
-      if (post.tags && post.tags.length > 0) {
-        phase2Queries.push(api.getPosts({ tag: post.tags[0], per_page: 8 }));
-      }
-
-      // [P2-Q3] Tag Kedua (jika ada)
-      if (post.tags && post.tags.length > 1) {
-        phase2Queries.push(api.getPosts({ tag: post.tags[1], per_page: 6 }));
-      }
-
-      // [P2-Q4] Kategori Pertama
-      if (post.categories && post.categories.length > 0) {
-        phase2Queries.push(api.getPosts({ category: post.categories[0], per_page: 6 }));
-      }
-
-      // [P2-Q5] Studio yang sama
-      if (post.studio && post.studio !== 'Unknown Studio' && post.studio !== 'Other') {
-        phase2Queries.push(api.getPosts({ studio: post.studio, per_page: 8 }));
-      }
-
-      // [P2-Fallback] Jika Fase 2 kosong, coba kata kunci judul
-      if (phase2Queries.length === 0) {
-        const keywords = extractTitleKeywords(post.title);
-        if (keywords) {
-          phase2Queries.push(api.getPosts({ search: keywords, per_page: 6 }));
-        }
-      }
-
-      const phase2RawPosts = await runQueries(phase2Queries);
-
-      // Guard kedua: cek navigasi setelah semua query Fase 2 selesai
-      if (!isStillOnPage()) return;
-
-      // Gabung raw posts Fase 1 + Fase 2, lalu deduplicate & re-score bersama
-      const combinedRaw = [...phase1RawPosts, ...phase2RawPosts];
-      let combinedFinal = scoreAndSort(deduplicatePosts(combinedRaw));
-
-      // Fallback akhir: jika masih kosong, gunakan video populer dari kategori
-      if (combinedFinal.length === 0 && post.categories && post.categories[0]) {
-        try {
-          const fallbackData = await api.getPosts({
-            category: post.categories[0],
-            orderby: 'views',
-            order: 'DESC',
-            per_page: 12
-          });
-          if (!isStillOnPage()) return;
-          combinedFinal = (fallbackData.posts || [])
-            .filter(p => String(p.id) !== String(post.id))
-            .map(p => ({ ...p, _relevanceScore: 0, _matchReason: 'category' }));
-        } catch (err) {
-          console.warn('[Related] Fallback category failed:', err);
-        }
-      }
-
-      if (!isStillOnPage()) return;
-
-      if (combinedFinal.length === 0) {
-        const rl = document.getElementById('related-videos-list');
-        if (rl) rl.innerHTML = `<span class="text-faint text-center py-4">${i18n.t('no_related_videos')}</span>`;
-        return;
-      }
-
-      // Render hasil gabungan final (maks 20 video)
-      renderToDOM(combinedFinal.slice(0, 20));
-
-    }, 2000); // ← 2 detik jeda: menyebarkan beban ke API pihak ketiga
+    const finalPosts = scoreAndSort(uniquePosts).slice(0, 20);
+    if (finalPosts.length === 0) {
+      relatedList.innerHTML = `<span class="text-faint text-center py-4">${i18n.t('no_related_videos')}</span>`;
+      return;
+    }
+    renderToDOM(finalPosts);
 
   } catch (error) {
     console.error('[Related] Fetch Error:', error);

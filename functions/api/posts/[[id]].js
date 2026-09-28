@@ -5,6 +5,24 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const LIST_FRESH_TTL_SECONDS = 15 * 60;
+const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
+const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
+const inFlightRequests = new Map();
+
+function normalizeCacheRequest(request) {
+  const url = new URL(request.url);
+  url.hash = '';
+  url.searchParams.sort();
+  return new Request(url.toString(), { method: 'GET' });
+}
+
+function getCacheTtl(url, id) {
+  if (id) return DETAIL_TTL_SECONDS;
+  const hasFilter = ['actor', 'studio', 'category', 'tag', 'search']
+    .some(key => url.searchParams.has(key));
+  return hasFilter ? LIST_FILTER_TTL_SECONDS : LIST_FRESH_TTL_SECONDS;
+}
 
 function slugify(text) {
   if (!text) return '';
@@ -178,12 +196,17 @@ export async function onRequest(context) {
   }
 
   const isGet = request.method === 'GET';
+  const requestUrl = new URL(request.url);
+  const routeId = params.id && params.id.length > 0 ? params.id[0] : null;
+  const requestedId = routeId || requestUrl.searchParams.get('id');
+  const cacheTtl = getCacheTtl(requestUrl, requestedId);
+  const cacheKey = isGet ? normalizeCacheRequest(request) : null;
   let cache = null;
   let cachedResponse = null;
   if (isGet) {
     try {
       cache = caches.default;
-      cachedResponse = await cache.match(request);
+      cachedResponse = await cache.match(cacheKey);
     } catch (e) {
       console.error('[Cache Posts Match Error]', e);
     }
@@ -227,45 +250,38 @@ export async function onRequest(context) {
 
     if (isOtherStudio) {
       const requestedPage = parseInt(url.searchParams.get('page') || '1', 10) || 1;
-      const perPageNum = 100;
-      const startPage = (requestedPage - 1) * 4 + 1;
-      const pagesToFetch = [startPage, startPage + 1, startPage + 2, startPage + 3];
+      const requestedPerPage = Math.min(100, Math.max(1, parseInt(url.searchParams.get('per_page') || '24', 10) || 24));
+      const pageUrl = new URL(targetUrl.toString());
+      pageUrl.searchParams.set('per_page', '100');
+      pageUrl.searchParams.set('page', String(requestedPage));
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 14000);
 
-      const fetchPage = async (pageNum) => {
-        const pageUrl = new URL(targetUrl.toString());
-        pageUrl.searchParams.set('per_page', String(perPageNum));
-        pageUrl.searchParams.set('page', String(pageNum));
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 14000);
+      let response;
+      try {
+        response = await fetch(pageUrl.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Client-Site': 'https://www.missav-j.com',
+            'Referer': 'https://www.missav-j.com/',
+            'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'X-Forwarded-For': request.headers.get('cf-connecting-ip') || '',
+            'CF-Connecting-IP': request.headers.get('cf-connecting-ip') || ''
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.error(`Failed to fetch page ${requestedPage} for Other Studio:`, err);
+        response = null;
+      }
 
-        try {
-          const response = await fetch(pageUrl.toString(), {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'X-Client-Site': 'https://www.missav-j.com',
-              'Referer': 'https://www.missav-j.com/',
-              'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-              'X-Forwarded-For': request.headers.get('cf-connecting-ip') || '',
-              'CF-Connecting-IP': request.headers.get('cf-connecting-ip') || ''
-            },
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-          if (!response.ok) return [];
-          return await response.json();
-        } catch (err) {
-          clearTimeout(timeoutId);
-          console.error(`Failed to fetch page ${pageNum} for Other Studio:`, err);
-          return [];
-        }
-      };
-
-      const results = await Promise.all(pagesToFetch.map(p => fetchPage(p)));
-      const allPosts = results.flat();
-
-      data = allPosts.filter(post => post && post.id && !post.studio);
+      const allPosts = response && response.ok ? await response.json() : [];
+      data = allPosts
+        .filter(post => post && post.id && !post.studio)
+        .slice(0, requestedPerPage);
       total = '120';
       totalPages = '10';
     } else {
@@ -351,35 +367,14 @@ export async function onRequest(context) {
           post.localized_slugs = generateLocalizedSlugs(post.code, post.title, translations);
         });
 
-        // Trigger background translation for posts missing translations (non-blocking)
-        // This runs AFTER the response is sent, so it never delays the user.
-        if (SUPABASE_URL && SUPABASE_KEY) {
-          const postsNeedingTranslation = data.filter(p => {
-            const t = translationsMap[p.id];
-            return !t || (lang && lang !== 'en' && !t[lang]);
-          });
-          if (postsNeedingTranslation.length > 0) {
-            const bgTranslate = async () => {
-              // Process in small batches with concurrency=3 to avoid rate-limiting
-              const CONCURRENCY = 3;
-              for (let i = 0; i < postsNeedingTranslation.length; i += CONCURRENCY) {
-                const batch = postsNeedingTranslation.slice(i, i + CONCURRENCY);
-                await Promise.allSettled(
-                  batch.map(post => getOrTranslatePost(post, lang, SUPABASE_URL, SUPABASE_KEY, false).catch(() => null))
-                );
-              }
-            };
-            context.waitUntil(bgTranslate());
-          }
-        }
       }
     }
 
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=604800, stale-while-revalidate=86400',
-      'X-Cache-Time': Date.now().toString()
+      'Cache-Control': `public, max-age=0, s-maxage=${cacheTtl}`,
+      'X-Cache-Status': isGet ? 'MISS' : 'BYPASS'
     };
 
     if (total) responseHeaders['X-WP-Total'] = total;
@@ -432,31 +427,32 @@ export async function onRequest(context) {
   };
 
   if (cachedResponse && cachedResponse.ok) {
-    const cacheTimeStr = cachedResponse.headers.get('X-Cache-Time');
-    const cacheTime = cacheTimeStr ? parseInt(cacheTimeStr, 10) : 0;
-    const age = Date.now() - cacheTime;
-    
-    // If cache is older than 5 minutes (300000 ms), update it in background (SWR)
-    if (age > 300000) {
-      context.waitUntil(
-        processUpstream().then(async (newResponse) => {
-          if (newResponse.ok && cache && isGet) {
-            await cache.put(request, newResponse.clone());
-          }
-        }).catch(err => console.error("SWR background update failed", err))
-      );
-    }
-    
-    // Return cache immediately
     const finalResp = new Response(cachedResponse.body, cachedResponse);
-    finalResp.headers.set('X-Cache-Status', 'HIT-SWR');
+    finalResp.headers.set('X-Cache-Status', 'HIT');
     return finalResp;
   }
 
-  // Cache MISS: wait for upstream
-  const response = await processUpstream();
-  if (response.ok && cache && isGet) {
-    context.waitUntil(cache.put(request, response.clone()));
+  if (!isGet) {
+    const response = await processUpstream();
+    response.headers.set('X-Cache-Status', 'BYPASS');
+    return response;
   }
+
+  const inFlightKey = cacheKey.url;
+  let responsePromise = inFlightRequests.get(inFlightKey);
+  if (!responsePromise) {
+    responsePromise = processUpstream()
+      .then(response => {
+        if (response.ok && cache) {
+          context.waitUntil(cache.put(cacheKey, response.clone()));
+        }
+        return response;
+      })
+      .finally(() => inFlightRequests.delete(inFlightKey));
+    inFlightRequests.set(inFlightKey, responsePromise);
+  }
+
+  const response = (await responsePromise).clone();
+  response.headers.set('X-Cache-Status', 'MISS');
   return response;
 }

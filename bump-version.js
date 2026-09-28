@@ -23,11 +23,13 @@ const filesToUpdate = [
   'assets/js/filter.js',
   'assets/js/i18n.js',
   'assets/js/player.js',
+  'assets/js/related-strategy.js',
   'assets/js/popular_actors.js',
   'assets/js/recent.js',
   'assets/js/search.js',
   'assets/js/studios.js',
-  'assets/js/trending.js'
+  'assets/js/trending.js',
+  'functions/[[catchall]].js'
 ];
 
 let totalReplaced = 0;
@@ -45,7 +47,13 @@ filesToUpdate.forEach(filePath => {
     // 2. Khusus untuk sw.js, ganti nama CACHE_NAME
     // Regex: mencari pola CACHE_NAME = 'missavj-cache-v...'
     if (filePath === 'sw.js') {
-      newContent = newContent.replace(/CACHE_NAME\s*=\s*'missavj-cache-v\d+\.\d+\.\d+'/g, `CACHE_NAME = 'missavj-cache-v${newVersion}'`);
+      newContent = newContent.replace(/\bCACHE_NAME\s*=\s*'missavj-cache-v\d+\.\d+\.\d+'/g, `CACHE_NAME = 'missavj-cache-v${newVersion}'`);
+      newContent = newContent.replace(/\bAPI_CACHE_NAME\s*=\s*'missavj-api-cache-v\d+(?:\.\d+){0,2}'/g, `API_CACHE_NAME = 'missavj-api-cache-v${newVersion}'`);
+    }
+
+    // SSR page-cache version must move with browser asset/API caches.
+    if (filePath === 'functions/[[catchall]].js') {
+      newContent = newContent.replace(/SSR_CACHE_VERSION\s*=\s*'v\d+\.\d+\.\d+'/g, `SSR_CACHE_VERSION = 'v${newVersion}'`);
     }
 
     if (content !== newContent) {

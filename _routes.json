@@ -57,6 +57,10 @@
   "exclude": [
     "/assets/*",
     "/sitemaps/*",
+    "/history*",
+    "/*/history*",
+    "/watch-later*",
+    "/*/watch-later*",
     "/.well-known/*",
     "/robots.txt",
     "/llms.txt",

@@ -38,7 +38,9 @@ async function fetchWithTimeout(url, options = {}, timeout = 15000) {
   } catch (error) {
     clearTimeout(id);
     if (error.name === 'AbortError') {
-      throw new Error('Koneksi terputus: Server memakan waktu terlalu lama (Timeout)');
+      const timeoutError = new Error('Koneksi terputus: Server memakan waktu terlalu lama (Timeout)');
+      timeoutError.name = 'TimeoutError';
+      throw timeoutError;
     }
     throw error;
   }
@@ -77,13 +79,15 @@ const api = {
       
       const fetchPromise = (async () => {
         let lastError;
-        const MAX_ATTEMPTS = 3;
+        const MAX_ATTEMPTS = 2;
         for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
           try {
             const res = await fetchWithTimeout(url);
             
             if (!res.ok) {
-              throw new Error(`API Error ${res.status}: ${res.statusText}`);
+              const responseError = new Error(`API Error ${res.status}: ${res.statusText}`);
+              responseError.status = res.status;
+              throw responseError;
             }
             
             const posts = await res.json();
@@ -112,9 +116,13 @@ const api = {
           } catch (err) {
             lastError = err;
             console.warn(`[API getPosts] Attempt ${attempt}/${MAX_ATTEMPTS} failed:`, err.message);
+            const isRetryable = err.name === 'TimeoutError' || [502, 503, 504].includes(err.status);
+            if (!isRetryable) {
+              fetchPromises.delete(url);
+              throw err;
+            }
             if (attempt < MAX_ATTEMPTS) {
-              // Exponential backoff: 1.5s, 3s sebelum mencoba ulang
-              await new Promise(resolve => setTimeout(resolve, attempt * 1500));
+              await new Promise(resolve => setTimeout(resolve, 750));
             }
           }
         }

@@ -14,7 +14,7 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot|TelegramBot|Discordbot|Slackbot|WhatsApp/i;
 const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|AhrefsBot|SemrushBot|MJ12bot|Applebot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.83';
+const SSR_CACHE_VERSION = 'v2.8.84';
 
 // Map internal language keys to valid ISO 639-1 hreflang / html-lang codes.
 // Mirrors HREFLANG_CODE_MAP in assets/js/i18n.js and the sitemap emitters:
@@ -391,19 +391,47 @@ async function fetchPostMetadata(id, origin, request, executionContext) {
     }
   }
 
-  // Both sources are attempted at the same time. A cold social-card request
-  // must not spend 6 seconds waiting for one failure before trying its backup.
+  // Start the fallback only when the upstream is slow or fails. This keeps the
+  // cold-card reliability shield without paying for two subrequests every time.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
+  let hedgeTimer = null;
   let data = null;
   try {
+    const upstreamPromise = fetchJsonSource(
+      'upstream',
+      `${TARGET_BASE}/posts/${id}`,
+      controller.signal
+    );
+    let fallbackStarted = false;
+    let startFallback;
+    const fallbackPromise = new Promise((resolve, reject) => {
+      startFallback = () => {
+        if (fallbackStarted) return;
+        fallbackStarted = true;
+        fetchJsonSource(
+          'first-party fallback',
+          `${origin}/api/posts/${encodeURIComponent(id)}`,
+          controller.signal
+        ).then(resolve, reject);
+      };
+      hedgeTimer = setTimeout(startFallback, 250);
+    });
+
+    // A fast failure should not wait for the hedge delay.
+    upstreamPromise.catch(() => {
+      if (hedgeTimer) clearTimeout(hedgeTimer);
+      startFallback();
+    });
+
     data = await Promise.any([
-      fetchJsonSource('upstream', `${TARGET_BASE}/posts/${id}`, controller.signal),
-      fetchJsonSource('first-party fallback', `${origin}/api/posts/${encodeURIComponent(id)}`, controller.signal)
+      upstreamPromise,
+      fallbackPromise
     ]);
   } catch (err) {
     console.error(`[OG Metadata Unavailable] id=${id}`, err);
   } finally {
+    if (hedgeTimer) clearTimeout(hedgeTimer);
     clearTimeout(timeoutId);
     controller.abort();
   }

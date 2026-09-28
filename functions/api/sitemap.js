@@ -364,6 +364,26 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const isGet = request.method === 'GET';
+  const cache = isGet ? caches.default : null;
+  let cacheKey = null;
+  if (isGet) {
+    const cacheUrl = new URL(request.url);
+    cacheUrl.hash = '';
+    cacheUrl.searchParams.sort();
+    cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+    try {
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        const hitResponse = new Response(cached.body, cached);
+        hitResponse.headers.set('X-Cache-Status', 'HIT');
+        return hitResponse;
+      }
+    } catch (err) {
+      console.warn('[Sitemap Cache Read Error]', err);
+    }
+  }
+
   try {
     const url = new URL(request.url);
     const file = url.searchParams.get('file');
@@ -375,14 +395,22 @@ export async function onRequest(context) {
     const domain = DOMAIN;
 
     const sendXml = (xml, statusCode = 200) => {
-      return new Response(xml, {
+      const response = new Response(xml, {
         status: statusCode,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/xml; charset=utf-8',
-          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200'
+          'Cache-Control': 'public, max-age=0, s-maxage=86400',
+          'X-Cache-Status': isGet ? 'MISS' : 'BYPASS'
         }
       });
+      if (statusCode === 200 && cache && cacheKey) {
+        context.waitUntil(
+          cache.put(cacheKey, response.clone())
+            .catch(err => console.warn('[Sitemap Cache Write Error]', err))
+        );
+      }
+      return response;
     };
 
     if (!file || file === 'sitemap_index.xml' || file === 'sitemap.xml') {

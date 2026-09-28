@@ -1,27 +1,88 @@
-const CACHE_NAME = 'missavj-cache-v2.8.83';
-const API_CACHE_NAME = 'missavj-api-cache-v1';
+const CACHE_NAME = 'missavj-cache-v2.8.84';
+const API_CACHE_NAME = 'missavj-api-cache-v2.8.84';
+const API_CACHE_TIME_HEADER = 'X-SW-Cache-Time';
+const FIFTEEN_MINUTES = 15 * 60;
+const ONE_HOUR = 60 * 60;
+const ONE_DAY = 24 * 60 * 60;
+const SEVEN_DAYS = 7 * ONE_DAY;
+
+function getApiCacheTtl(url) {
+  if (url.pathname.startsWith('/api/player')) return ONE_HOUR;
+  if (!url.pathname.startsWith('/api/posts')) return 0;
+
+  const pathHasId = /^\/api\/posts\/[^/]+/.test(url.pathname);
+  if (pathHasId || url.searchParams.has('id')) return SEVEN_DAYS;
+
+  const hasFilter = ['actor', 'studio', 'category', 'tag', 'search']
+    .some(key => url.searchParams.has(key));
+  return hasFilter ? ONE_DAY : FIFTEEN_MINUTES;
+}
+
+function withCacheMetadata(response, timestamp = Date.now()) {
+  const headers = new Headers(response.headers);
+  headers.set(API_CACHE_TIME_HEADER, String(timestamp));
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function withSwCacheStatus(response, status) {
+  const headers = new Headers(response.headers);
+  headers.set('X-SW-Cache-Status', status);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+async function apiCacheFirst(event, ttlSeconds) {
+  const cache = await caches.open(API_CACHE_NAME);
+  const cached = await cache.match(event.request);
+  if (cached) {
+    const cachedAt = Number(cached.headers.get(API_CACHE_TIME_HEADER) || 0);
+    if (cachedAt > 0 && Date.now() - cachedAt < ttlSeconds * 1000) {
+      return withSwCacheStatus(cached, 'HIT');
+    }
+  }
+
+  try {
+    const response = await fetch(event.request);
+    if (response && response.ok && response.status === 200) {
+      const stamped = withCacheMetadata(response.clone());
+      event.waitUntil(cache.put(event.request, stamped));
+    }
+    return response;
+  } catch (error) {
+    if (cached) return withSwCacheStatus(cached, 'STALE');
+    throw error;
+  }
+}
 
 const ASSETS_TO_CACHE = [
-  '/assets/css/components.css?v=2.8.83',
-  '/assets/css/base.css?v=2.8.83',
-  '/assets/css/layout.css?v=2.8.83',
-  '/assets/css/player.css?v=2.8.83',
-  '/assets/js/app.js?v=2.8.83',
-  '/assets/js/api.js?v=2.8.83',
-  '/assets/js/feed.js?v=2.8.83',
-  '/assets/js/i18n.js?v=2.8.83',
-  '/assets/js/player.js?v=2.8.83',
-  '/assets/js/ui.js?v=2.8.83',
-  '/assets/js/ads.js?v=2.8.83',
-  '/assets/js/analytics.js?v=2.8.83',
-  '/assets/js/referral.js?v=2.8.83',
-  '/assets/js/filter.js?v=2.8.83',
-  '/assets/js/trending.js?v=2.8.83',
-  '/assets/js/recent.js?v=2.8.83',
-  '/assets/js/search.js?v=2.8.83',
-  '/assets/js/actors.js?v=2.8.83',
-  '/assets/js/studios.js?v=2.8.83',
-  '/assets/js/categories.js?v=2.8.83',
+  '/assets/css/components.css?v=2.8.84',
+  '/assets/css/base.css?v=2.8.84',
+  '/assets/css/layout.css?v=2.8.84',
+  '/assets/css/player.css?v=2.8.84',
+  '/assets/js/app.js?v=2.8.84',
+  '/assets/js/api.js?v=2.8.84',
+  '/assets/js/feed.js?v=2.8.84',
+  '/assets/js/i18n.js?v=2.8.84',
+  '/assets/js/player.js?v=2.8.84',
+  '/assets/js/related-strategy.js?v=2.8.84',
+  '/assets/js/ui.js?v=2.8.84',
+  '/assets/js/ads.js?v=2.8.84',
+  '/assets/js/analytics.js?v=2.8.84',
+  '/assets/js/referral.js?v=2.8.84',
+  '/assets/js/filter.js?v=2.8.84',
+  '/assets/js/trending.js?v=2.8.84',
+  '/assets/js/recent.js?v=2.8.84',
+  '/assets/js/search.js?v=2.8.84',
+  '/assets/js/actors.js?v=2.8.84',
+  '/assets/js/studios.js?v=2.8.84',
+  '/assets/js/categories.js?v=2.8.84',
   '/assets/images/logo.webp',
   '/favicon.svg'
 ];
@@ -105,20 +166,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API Requests: Network First, fallback to Cache
-  // FIX: Hanya cache response yang sukses (status 200 ok) — jangan simpan response error 500/502/404!
+  // High-volume API requests: bounded cache-first avoids a Worker invocation
+  // while the response is still fresh. Player uses a shorter TTL because its
+  // embed source can rotate.
+  const apiTtl = url.origin === self.location.origin ? getApiCacheTtl(url) : 0;
+  if (apiTtl > 0) {
+    event.respondWith(apiCacheFirst(event, apiTtl));
+    return;
+  }
+
+  // Other API requests: Network First, fallback to Cache.
   if (url.origin === 'https://server.apijav.com' || (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/image'))) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
           if (response && response.ok && response.status === 200) {
             const clonedResponse = response.clone();
-            // FIX: Gunakan event.waitUntil via background task untuk mencegah SW early termination
             const bgCache = caches.open(API_CACHE_NAME).then((cache) => {
-              return cache.put(event.request, clonedResponse);
+              return cache.put(event.request, withCacheMetadata(clonedResponse));
             }).catch(err => console.warn('[SW] API cache put failed:', err));
-            // Background — tidak memblokir response ke klien
-            self.registration.active && bgCache;
+            event.waitUntil(bgCache);
           }
           return response;
         })

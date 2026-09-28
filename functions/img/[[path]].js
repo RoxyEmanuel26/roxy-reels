@@ -122,15 +122,28 @@ export async function onRequest(context) {
       'Cache-Control': 'public, max-age=31536000, immutable',
       'Access-Control-Allow-Origin': '*'
     });
-    const body = await upstream.arrayBuffer();
-    const cacheResponse = new Response(body, { status: 200, headers: responseHeaders });
-    context.waitUntil(cache.put(cacheKey, cacheResponse.clone()).catch(err =>
-      console.warn('[Social Image Cache Write Error]', err)
-    ));
+    if (!upstream.body) {
+      return new Response('Upstream image body unavailable', {
+        status: 502,
+        headers: { 'Cache-Control': 'no-store' }
+      });
+    }
 
-    return request.method === 'HEAD'
-      ? new Response(null, { status: 200, headers: responseHeaders })
-      : cacheResponse;
+    if (request.method === 'HEAD') {
+      context.waitUntil(
+        cache.put(cacheKey, new Response(upstream.body, { status: 200, headers: responseHeaders }))
+          .catch(err => console.warn('[Social Image Cache Write Error]', err))
+      );
+      return new Response(null, { status: 200, headers: responseHeaders });
+    }
+
+    const [streamForClient, streamForCache] = upstream.body.tee();
+    const clientResponse = new Response(streamForClient, { status: 200, headers: responseHeaders });
+    context.waitUntil(
+      cache.put(cacheKey, new Response(streamForCache, { status: 200, headers: responseHeaders }))
+        .catch(err => console.warn('[Social Image Cache Write Error]', err))
+    );
+    return clientResponse;
   } catch (err) {
     clearTimeout(timeoutId);
     console.error('[Social Image Proxy Error]', err);

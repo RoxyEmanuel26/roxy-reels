@@ -4,6 +4,15 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const PLAYER_TTL_SECONDS = 60 * 60;
+const inFlightRequests = new Map();
+
+function normalizeCacheRequest(request) {
+  const url = new URL(request.url);
+  url.hash = '';
+  url.searchParams.sort();
+  return new Request(url.toString(), { method: 'GET' });
+}
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -19,12 +28,13 @@ export async function onRequest(context) {
   }
 
   const isGet = request.method === 'GET';
+  const cacheKey = isGet ? normalizeCacheRequest(request) : null;
   let cache = null;
   let cachedResponse = null;
   if (isGet) {
     try {
       cache = caches.default;
-      cachedResponse = await cache.match(request);
+      cachedResponse = await cache.match(cacheKey);
     } catch (e) {
       console.error('[Cache Player Match Error]', e);
     }
@@ -107,8 +117,8 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=0, s-maxage=604800, stale-while-revalidate=86400',
-      'X-Cache-Time': Date.now().toString()
+      'Cache-Control': `public, max-age=0, s-maxage=${PLAYER_TTL_SECONDS}`,
+      'X-Cache-Status': isGet ? 'MISS' : 'BYPASS'
     };
 
     const responseToReturn = new Response(JSON.stringify(data), {
@@ -134,31 +144,32 @@ export async function onRequest(context) {
   };
 
   if (cachedResponse && cachedResponse.ok) {
-    const cacheTimeStr = cachedResponse.headers.get('X-Cache-Time');
-    const cacheTime = cacheTimeStr ? parseInt(cacheTimeStr, 10) : 0;
-    const age = Date.now() - cacheTime;
-    
-    // If cache is older than 5 minutes (300000 ms), update it in background (SWR)
-    if (age > 300000) {
-      context.waitUntil(
-        processUpstream().then(async (newResponse) => {
-          if (newResponse.ok && cache && isGet) {
-            await cache.put(request, newResponse.clone());
-          }
-        }).catch(err => console.error("SWR background update failed", err))
-      );
-    }
-    
-    // Return cache immediately
     const finalResp = new Response(cachedResponse.body, cachedResponse);
-    finalResp.headers.set('X-Cache-Status', 'HIT-SWR');
+    finalResp.headers.set('X-Cache-Status', 'HIT');
     return finalResp;
   }
 
-  // Cache MISS: wait for upstream
-  const response = await processUpstream();
-  if (response.ok && cache && isGet) {
-    context.waitUntil(cache.put(request, response.clone()));
+  if (!isGet) {
+    const response = await processUpstream();
+    response.headers.set('X-Cache-Status', 'BYPASS');
+    return response;
   }
+
+  const inFlightKey = cacheKey.url;
+  let responsePromise = inFlightRequests.get(inFlightKey);
+  if (!responsePromise) {
+    responsePromise = processUpstream()
+      .then(response => {
+        if (response.ok && cache) {
+          context.waitUntil(cache.put(cacheKey, response.clone()));
+        }
+        return response;
+      })
+      .finally(() => inFlightRequests.delete(inFlightKey));
+    inFlightRequests.set(inFlightKey, responsePromise);
+  }
+
+  const response = (await responsePromise).clone();
+  response.headers.set('X-Cache-Status', 'MISS');
   return response;
 }
