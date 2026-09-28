@@ -43,7 +43,7 @@ async function settle(context) {
   await Promise.all(context.waits);
 }
 
-test('posts list uses two cold subrequests, zero on normalized cache hit, and deduplicates concurrent misses', async () => {
+test('English posts use one cold upstream, zero on cache hit, and deduplicate concurrent misses', async () => {
   const cache = new MemoryCache();
   globalThis.caches = { default: cache };
   const calls = [];
@@ -72,7 +72,7 @@ test('posts list uses two cold subrequests, zero on normalized cache hit, and de
   const coldResponse = await onRequest(cold);
   await coldResponse.json();
   await settle(cold);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1);
   assert.equal(coldResponse.headers.get('X-Cache-Status'), 'MISS');
 
   const hit = makeContext({
@@ -82,7 +82,7 @@ test('posts list uses two cold subrequests, zero on normalized cache hit, and de
   });
   const hitResponse = await onRequest(hit);
   await hitResponse.json();
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1);
   assert.equal(hitResponse.headers.get('X-Cache-Status'), 'HIT');
 
   calls.length = 0;
@@ -92,7 +92,7 @@ test('posts list uses two cold subrequests, zero on normalized cache hit, and de
   const [firstResponse, secondResponse] = await Promise.all([onRequest(first), onRequest(second)]);
   await Promise.all([firstResponse.json(), secondResponse.json()]);
   await Promise.all([settle(first), settle(second)]);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1);
 
   calls.length = 0;
   const otherStudio = makeContext({
@@ -103,7 +103,30 @@ test('posts list uses two cold subrequests, zero on normalized cache hit, and de
   const otherStudioResponse = await onRequest(otherStudio);
   await otherStudioResponse.json();
   await settle(otherStudio);
+  assert.equal(calls.length, 1);
+
+  calls.length = 0;
+  const localized = makeContext({
+    request: new Request('https://www.missav-j.com/api/posts?lang=id&page=3'),
+    env,
+    params: { id: [] }
+  });
+  const localizedResponse = await onRequest(localized);
+  await localizedResponse.json();
+  await settle(localized);
   assert.equal(calls.length, 2);
+  assert.ok(calls.some(url => url.startsWith('https://db.example/')));
+
+  calls.length = 0;
+  const invalid = makeContext({
+    request: new Request('https://www.missav-j.com/api/posts?lang=en&cacheBust=1'),
+    env,
+    params: { id: [] }
+  });
+  const invalidResponse = await onRequest(invalid);
+  assert.equal(invalidResponse.status, 400);
+  assert.equal(invalidResponse.headers.get('X-Cache-Status'), 'BYPASS');
+  assert.equal(calls.length, 0);
 });
 
 test('related strategy produces one primary query and at most one fallback', async () => {
@@ -120,39 +143,35 @@ test('related strategy produces one primary query and at most one fallback', asy
   assert.equal(strategy.MIN_RELATED_RESULTS, 12);
 });
 
-test('dynamic sitemap is generated once and then served without external fetches', async () => {
-  const actors = await readFile(new URL('api/actors.json', ROOT), 'utf8');
-  const categories = await readFile(new URL('api/categories.json', ROOT), 'utf8');
-  const replacements = [
-    [/import ACTORS from '\.\.\/\.\.\/api\/actors\.json';/, `const ACTORS = ${actors};`],
-    [/import CATEGORIES from '\.\.\/\.\.\/api\/categories\.json';/, `const CATEGORIES = ${categories};`]
-  ];
-  const { onRequest } = await importSource('functions/api/sitemap.js', replacements);
+test('English detail bypasses Supabase and still returns every localized slug key', async () => {
+  const { onRequest } = await importSource('functions/api/posts/[[id]].js');
   const cache = new MemoryCache();
   globalThis.caches = { default: cache };
-  let fetchCount = 0;
+  const calls = [];
   globalThis.fetch = async input => {
-    fetchCount += 1;
-    if (String(input).startsWith('https://db.example/')) {
-      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
-    return new Response(JSON.stringify([
-      { id: 10, code: 'ABC-010', title: 'Example', date: '2026-09-28T00:00:00Z' }
-    ]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    calls.push(String(input));
+    return new Response(JSON.stringify({ id: 77, code: 'ABC-077', title: 'English title' }), { status: 200 });
   };
-  const request = new Request('https://www.missav-j.com/api/sitemap?file=en-1.xml');
-  const first = makeContext({ request, env: { SUPABASE_URL: 'https://db.example', SUPABASE_KEY: 'key' } });
-  const firstResponse = await onRequest(first);
-  await firstResponse.text();
-  await settle(first);
-  assert.equal(fetchCount, 2);
-  assert.equal(firstResponse.headers.get('X-Cache-Status'), 'MISS');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/api/posts/77?lang=en'),
+    env: { SUPABASE_URL: 'https://db.example', SUPABASE_KEY: 'key' },
+    params: { id: ['77'] }
+  });
+  const response = await onRequest(context);
+  const post = await response.json();
+  await settle(context);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].includes('/posts/77'));
+  assert.deepEqual(Object.keys(post.localized_slugs).sort(), ['de', 'en', 'fil', 'fr', 'id', 'ja', 'ko', 'ms', 'pt', 'th', 'vi', 'zh-CN', 'zh-TW'].sort());
+});
 
-  const second = makeContext({ request: request.clone(), env: first.env });
-  const secondResponse = await onRequest(second);
-  await secondResponse.text();
-  assert.equal(fetchCount, 2);
-  assert.equal(secondResponse.headers.get('X-Cache-Status'), 'HIT');
+test('sitemap routes are static and legacy API redirects without a runtime generator', async () => {
+  const routes = JSON.parse(await readFile(new URL('_routes.json', ROOT), 'utf8'));
+  const redirects = await readFile(new URL('_redirects', ROOT), 'utf8');
+  assert.ok(routes.exclude.includes('/api/sitemap*'));
+  assert.ok(routes.exclude.includes('/sitemap.xml'));
+  assert.match(redirects, /^\/api\/sitemap \/sitemaps\/sitemap_index\.xml 301$/m);
+  assert.match(redirects, /^\/sitemap\.xml \/sitemaps\/sitemap_index\.xml 200$/m);
 });
 
 test('social image proxy streams instead of buffering the upstream body', async () => {
@@ -181,6 +200,102 @@ test('social image proxy streams instead of buffering the upstream body', async 
   assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [1, 2, 3]);
   await settle(context);
   assert.equal(arrayBufferCalled, false);
+});
+
+test('legacy image endpoint redirects to the stable image path without fetching upstream', async () => {
+  const { onRequest } = await importSource('functions/api/image.js');
+  let fetchCount = 0;
+  globalThis.fetch = async () => { fetchCount += 1; throw new Error('must not fetch'); };
+  const source = 'https://pics.dmm.co.jp/example.jpg';
+  const response = await onRequest({
+    request: new Request(`https://www.missav-j.com/api/image?url=${encodeURIComponent(source)}`)
+  });
+  assert.equal(response.status, 301);
+  assert.match(response.headers.get('Location'), /^https:\/\/www\.missav-j\.com\/img\/[A-Za-z0-9_-]+\.jpg$/);
+  assert.equal(response.headers.get('X-Edge-Mode'), 'IMAGE-REDIRECT');
+  assert.equal(fetchCount, 0);
+});
+
+test('human routes share one cached SPA shell while commercial crawlers perform zero subrequests', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const cache = new MemoryCache();
+  globalThis.caches = { default: cache };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  let assetFetches = 0;
+  let externalFetches = 0;
+  globalThis.fetch = async () => { externalFetches += 1; throw new Error('unexpected external fetch'); };
+  const env = {
+    ASSETS: {
+      fetch: async () => {
+        assetFetches += 1;
+        return new Response(indexHtml, { status: 200, headers: { 'Content-Type': 'text/html' } });
+      }
+    }
+  };
+
+  const cold = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/example-321'),
+    env
+  });
+  const coldResponse = await onRequest(cold);
+  await coldResponse.text();
+  await settle(cold);
+  assert.equal(coldResponse.headers.get('X-Edge-Mode'), 'HUMAN-SHELL');
+  assert.equal(coldResponse.headers.get('X-Cache-Status'), 'MISS');
+  assert.equal(assetFetches, 1);
+
+  const warm = makeContext({ request: new Request('https://www.missav-j.com/id/category?name=Drama'), env });
+  const warmResponse = await onRequest(warm);
+  await warmResponse.text();
+  assert.equal(warmResponse.headers.get('X-Cache-Status'), 'HIT');
+  assert.equal(assetFetches, 1);
+  assert.equal(externalFetches, 0);
+
+  for (const bot of ['AhrefsBot', 'SemrushBot', 'MJ12bot']) {
+    const blocked = await onRequest(makeContext({
+      request: new Request('https://www.missav-j.com/en/watch/example-321', { headers: { 'User-Agent': bot } }),
+      env
+    }));
+    assert.equal(blocked.status, 403);
+    assert.equal(blocked.headers.get('X-Edge-Mode'), 'BLOCKED-BOT');
+  }
+  assert.equal(assetFetches, 1);
+  assert.equal(externalFetches, 0);
+});
+
+test('player cache is shared across languages and rejects cache-busting parameters', async () => {
+  const { onRequest } = await importSource('functions/api/player/[[id]].js');
+  const cache = new MemoryCache();
+  globalThis.caches = { default: cache };
+  let fetchCount = 0;
+  globalThis.fetch = async () => {
+    fetchCount += 1;
+    return new Response(JSON.stringify({ iframe_html: '<iframe></iframe>' }), { status: 200 });
+  };
+  const first = makeContext({
+    request: new Request('https://www.missav-j.com/api/player?id=88&lang=en'),
+    params: { id: [] }
+  });
+  const firstResponse = await onRequest(first);
+  await firstResponse.json();
+  await settle(first);
+  assert.equal(firstResponse.headers.get('X-Cache-Status'), 'MISS');
+
+  const second = makeContext({
+    request: new Request('https://www.missav-j.com/api/player?lang=id&id=88'),
+    params: { id: [] }
+  });
+  const secondResponse = await onRequest(second);
+  await secondResponse.json();
+  assert.equal(secondResponse.headers.get('X-Cache-Status'), 'HIT');
+  assert.equal(fetchCount, 1);
+
+  const invalid = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/api/player?id=88&nonce=1'),
+    params: { id: [] }
+  }));
+  assert.equal(invalid.status, 400);
+  assert.equal(fetchCount, 1);
 });
 
 test('fast social metadata source avoids starting the fallback and warm page cache avoids all metadata fetches', async () => {
@@ -219,12 +334,17 @@ test('fast social metadata source avoids starting the fallback and warm page cac
   await settle(cold);
   assert.equal(coldResponse.status, 200);
   assert.match(html, /summary_large_image/);
+  assert.match(html, /rel="canonical"/);
+  assert.match(html, /hreflang=/);
+  assert.match(html, /VideoObject/);
+  assert.equal(coldResponse.headers.get('X-Edge-Mode'), 'SOCIAL-SSR');
   assert.equal(metadataFetches, 1);
 
   const warm = makeContext({ request: request.clone(), env });
   const warmResponse = await onRequest(warm);
   await warmResponse.text();
   assert.equal(metadataFetches, 1);
+  assert.equal(warmResponse.headers.get('X-Cache-Status'), 'HIT');
 });
 
 test('slow social metadata source starts exactly one fallback', async () => {
@@ -258,6 +378,39 @@ test('slow social metadata source starts exactly one fallback', async () => {
   assert.equal(response.status, 200);
   assert.equal(calls.length, 2);
   assert.ok(calls.some(url => url.includes('/api/posts/124')));
+});
+
+test('Googlebot receives full search SSR metadata instead of the human shell', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  let assetFetches = 0;
+  let metadataFetches = 0;
+  globalThis.fetch = async () => {
+    metadataFetches += 1;
+    return new Response(JSON.stringify({
+      id: 125,
+      code: 'ABC-125',
+      title: 'Search Metadata',
+      thumbnail: 'https://pics.dmm.co.jp/example.jpg',
+      date: '2026-09-27T00:00:00Z'
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/abc-125-search-metadata-125', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' }
+    }),
+    env: { ASSETS: { fetch: async () => { assetFetches += 1; return new Response(indexHtml); } } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  await settle(context);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('X-Edge-Mode'), 'SEARCH-SSR');
+  assert.match(html, /VideoObject/);
+  assert.match(html, /hreflang=/);
+  assert.equal(assetFetches, 1);
+  assert.equal(metadataFetches, 1);
 });
 
 test('service worker API cache prevents a second Worker request within TTL', async () => {

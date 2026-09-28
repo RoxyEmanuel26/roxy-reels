@@ -9,12 +9,62 @@ const LIST_FRESH_TTL_SECONDS = 15 * 60;
 const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
 const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
 const inFlightRequests = new Map();
+const ALLOWED_PARAMS = new Set([
+  'id', 'lang', 'page', 'per_page', 'actor', 'studio', 'category', 'tag',
+  'search', 'orderby', 'order', 'after'
+]);
+const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
+const LANG_BY_LOWER = new Map(VALID_LANGS.map(lang => [lang.toLowerCase(), lang]));
+const FILTER_PARAMS = new Set(['actor', 'studio', 'category', 'tag', 'search']);
+const ORDER_BY_VALUES = new Set(['date', 'modified', 'likes', 'views']);
 
-function normalizeCacheRequest(request) {
-  const url = new URL(request.url);
+function normalizeRequest(request, routeId) {
+  const source = new URL(request.url);
+  const url = new URL(source.origin + source.pathname);
   url.hash = '';
+  for (const key of source.searchParams.keys()) {
+    if (!ALLOWED_PARAMS.has(key)) return { error: `Unsupported query parameter: ${key}` };
+    if (source.searchParams.getAll(key).length !== 1) return { error: `Duplicate query parameter: ${key}` };
+  }
+
+  const queryId = source.searchParams.get('id');
+  const id = routeId || queryId;
+  if (routeId && queryId && routeId !== queryId) return { error: 'Conflicting video ID' };
+  if (id && !/^\d+$/.test(id)) return { error: 'Invalid video ID' };
+
+  for (const [key, rawValue] of source.searchParams) {
+    if (key === 'id') continue;
+    const value = rawValue.trim();
+    if (key === 'lang') {
+      const lang = LANG_BY_LOWER.get(value.toLowerCase());
+      if (!lang) return { error: 'Invalid language' };
+      url.searchParams.set(key, lang);
+    } else if (key === 'page' || key === 'per_page') {
+      if (!/^\d+$/.test(value)) return { error: `Invalid ${key}` };
+      const number = Number(value);
+      const maximum = key === 'per_page' ? 100 : 1000000;
+      if (number < 1 || number > maximum) return { error: `Invalid ${key}` };
+      url.searchParams.set(key, String(number));
+    } else if (FILTER_PARAMS.has(key)) {
+      if (!value || value.length > 200) return { error: `Invalid ${key}` };
+      url.searchParams.set(key, value);
+    } else if (key === 'orderby') {
+      const normalized = value.toLowerCase();
+      if (!ORDER_BY_VALUES.has(normalized)) return { error: 'Invalid orderby' };
+      url.searchParams.set(key, normalized);
+    } else if (key === 'order') {
+      const normalized = value.toUpperCase();
+      if (normalized !== 'ASC' && normalized !== 'DESC') return { error: 'Invalid order' };
+      url.searchParams.set(key, normalized);
+    } else if (key === 'after') {
+      if (value.length > 40 || Number.isNaN(Date.parse(value))) return { error: 'Invalid after' };
+      url.searchParams.set(key, value);
+    }
+  }
+  if (id) url.searchParams.set('id', id);
+  if (!url.searchParams.has('lang')) url.searchParams.set('lang', 'en');
   url.searchParams.sort();
-  return new Request(url.toString(), { method: 'GET' });
+  return { url, id, lang: url.searchParams.get('lang'), cacheKey: new Request(url.toString(), { method: 'GET' }) };
 }
 
 function getCacheTtl(url, id) {
@@ -196,11 +246,24 @@ export async function onRequest(context) {
   }
 
   const isGet = request.method === 'GET';
-  const requestUrl = new URL(request.url);
   const routeId = params.id && params.id.length > 0 ? params.id[0] : null;
-  const requestedId = routeId || requestUrl.searchParams.get('id');
+  const normalized = normalizeRequest(request, routeId);
+  if (normalized.error) {
+    return new Response(JSON.stringify({ error: 'Bad Request', message: normalized.error }), {
+      status: 400,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Cache-Status': 'BYPASS',
+        'X-Edge-Mode': 'API-POSTS'
+      }
+    });
+  }
+  const requestUrl = normalized.url;
+  const requestedId = normalized.id;
   const cacheTtl = getCacheTtl(requestUrl, requestedId);
-  const cacheKey = isGet ? normalizeCacheRequest(request) : null;
+  const cacheKey = isGet ? normalized.cacheKey : null;
   let cache = null;
   let cachedResponse = null;
   if (isGet) {
@@ -214,18 +277,12 @@ export async function onRequest(context) {
 
   const processUpstream = async () => {
   try {
-    const url = new URL(request.url);
+    const url = new URL(requestUrl);
     const SUPABASE_URL = env.SUPABASE_URL;
     const SUPABASE_KEY = env.SUPABASE_KEY;
 
-    let id = null;
-    if (params.id && params.id.length > 0) {
-      id = params.id[0];
-    }
-    const idQuery = url.searchParams.get('id');
-    id = id || idQuery;
-
-    const lang = url.searchParams.get('lang') || 'en';
+    const id = requestedId;
+    const lang = normalized.lang;
 
     let targetUrl;
     if (id) {
@@ -237,7 +294,7 @@ export async function onRequest(context) {
     const isOtherStudio = url.searchParams.get('studio') === 'Other' || url.searchParams.get('studio') === 'Unknown Studio';
 
     url.searchParams.forEach((value, key) => {
-      if (id && key === 'id') return;
+      if (key === 'id' || key === 'lang') return;
       if (isOtherStudio && key === 'studio') return;
       targetUrl.searchParams.append(key, value);
     });
@@ -336,7 +393,9 @@ export async function onRequest(context) {
     }
 
     if (data) {
-      if (id && !Array.isArray(data)) {
+      if (id && !Array.isArray(data) && lang === 'en') {
+        data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {});
+      } else if (id && !Array.isArray(data)) {
         // Single post: apply translation with a strict 5-second timeout cap
         const translationTimeout = new Promise(resolve => setTimeout(() => resolve(null), 5000));
         const translationResult = await Promise.race([
@@ -352,6 +411,10 @@ export async function onRequest(context) {
           // Timeout — return with English title, generate slugs from English title
           data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {});
         }
+      } else if (Array.isArray(data) && lang === 'en') {
+        data.forEach(post => {
+          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, {});
+        });
       } else if (Array.isArray(data)) {
         // LIST: Only apply CACHED translations (fast Supabase lookup, max 6s timeout)
         // Never block the response for real-time translation of new posts.
@@ -374,7 +437,8 @@ export async function onRequest(context) {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': `public, max-age=0, s-maxage=${cacheTtl}`,
-      'X-Cache-Status': isGet ? 'MISS' : 'BYPASS'
+      'X-Cache-Status': isGet ? 'MISS' : 'BYPASS',
+      'X-Edge-Mode': 'API-POSTS'
     };
 
     if (total) responseHeaders['X-WP-Total'] = total;
@@ -429,12 +493,14 @@ export async function onRequest(context) {
   if (cachedResponse && cachedResponse.ok) {
     const finalResp = new Response(cachedResponse.body, cachedResponse);
     finalResp.headers.set('X-Cache-Status', 'HIT');
+    finalResp.headers.set('X-Edge-Mode', 'API-POSTS');
     return finalResp;
   }
 
   if (!isGet) {
     const response = await processUpstream();
     response.headers.set('X-Cache-Status', 'BYPASS');
+    response.headers.set('X-Edge-Mode', 'API-POSTS');
     return response;
   }
 
@@ -454,5 +520,6 @@ export async function onRequest(context) {
 
   const response = (await responsePromise).clone();
   response.headers.set('X-Cache-Status', 'MISS');
+  response.headers.set('X-Edge-Mode', 'API-POSTS');
   return response;
 }

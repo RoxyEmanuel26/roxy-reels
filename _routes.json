@@ -57,6 +57,8 @@
   "exclude": [
     "/assets/*",
     "/sitemaps/*",
+    "/sitemap.xml",
+    "/api/sitemap*",
     "/history*",
     "/*/history*",
     "/watch-later*",

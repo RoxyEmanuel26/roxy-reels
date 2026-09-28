@@ -76,9 +76,12 @@ export async function onRequest(context) {
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
+      const headers = new Headers(cached.headers);
+      headers.set('X-Cache-Status', 'HIT');
+      headers.set('X-Edge-Mode', 'IMAGE-PROXY');
       return request.method === 'HEAD'
-        ? new Response(null, { status: cached.status, headers: cached.headers })
-        : cached;
+        ? new Response(null, { status: cached.status, headers })
+        : new Response(cached.body, { status: cached.status, headers });
     }
   } catch (err) {
     console.warn('[Social Image Cache Read Error]', err);
@@ -120,7 +123,9 @@ export async function onRequest(context) {
       'X-Content-Type-Options': 'nosniff',
       'Content-Disposition': 'inline',
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'Access-Control-Allow-Origin': '*'
+      'Access-Control-Allow-Origin': '*',
+      'X-Cache-Status': 'MISS',
+      'X-Edge-Mode': 'IMAGE-PROXY'
     });
     if (!upstream.body) {
       return new Response('Upstream image body unavailable', {

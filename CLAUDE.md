@@ -10,14 +10,14 @@
 - **Source of truth for languages**: `assets/js/i18n.js` → `LANGS` array + `getLang()` (reads first URL path segment, falls back to `localStorage`/`en`).
 - Runtime `<head>` SEO tags (canonical, alternates, OG) are injected by `updateSEOTags()` in `assets/js/app.js` on every SPA route change.
 - Sitemaps are emitted by THREE generators that must stay in sync:
-  - `generate_sitemap.js` (Node CLI, pulls actors/categories/videos from external API + Supabase — needs network + `SUPABASE_URL`/`SUPABASE_KEY` env; can't run in sandbox).
-  - `api/sitemap.js` and `functions/api/sitemap.js` (runtime Cloudflare versions; nearly identical to each other).
+  - `generate_sitemap.js` (deterministic Node CLI; pulls the catalog directly from the source API and does not use Supabase or Worker endpoints).
+  - Runtime sitemap generation was removed; `/api/sitemap` redirects to the static generated sitemap index.
   - Committed static XML lives in `sitemaps/*.xml` (actors split into 4 files, plus categories/studios/videos/pages). `robots.txt` → `sitemaps/sitemap_index.xml`.
 
 ### hreflang code mapping (Ahrefs fix, 2026-07)
 - Ahrefs validates hreflang strictly against **ISO 639-1**. The internal key `fil` (ISO 639-2) is invalid there → must emit `tl` (ISO 639-1 Tagalog/Filipino).
 - Introduced `HREFLANG_CODE_MAP = { fil: 'tl' }` + `hreflangCode()` in each emitter. **URL paths keep `/fil/`** — only the `hreflang="..."` attribute value changes.
-- If you add a language whose internal key isn't a valid ISO 639-1 code, add it to `HREFLANG_CODE_MAP` in ALL emitters (i18n.js, generate_sitemap.js, api/sitemap.js, functions/api/sitemap.js).
+- If you add a language whose internal key isn't a valid ISO 639-1 code, add it to `HREFLANG_CODE_MAP` in i18n.js and generate_sitemap.js.
 
 ## Known Ahrefs Site Audit issues (project 10157215, crawl 2026-07-27, health 6.96)
 - **FIXED (this branch)**: "Hreflang and HTML lang mismatch" (1,749) — `<html lang>` was frozen at `id` from `index.html`; `updateSEOTags()` now sets `document.documentElement.lang`.

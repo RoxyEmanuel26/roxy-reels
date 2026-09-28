@@ -195,10 +195,9 @@ const api = {
   async getPlayer(id) {
     try {
       if (!id) throw new Error('Player ID wajib disertakan');
-      const lang = getActiveLang();
-      const cacheKey = `player:${id}:${lang}`;
+      const cacheKey = `player:${id}`;
       // Gunakan proxy /api/player bukan langsung ke server.apijav.com
-      const url = `/api/player?id=${id}&lang=${lang}`;
+      const url = `/api/player?id=${id}`;
       
       if (apiCache.has(cacheKey)) {
         return apiCache.get(cacheKey);

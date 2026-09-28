@@ -50,8 +50,14 @@ const ui = {
       finalUrl = `https:${finalUrl}`;
     }
 
-    // Gunakan Cloudflare Worker Image Proxy internal yang cepat dan anti blokir
-    return `/api/image?url=${encodeURIComponent(finalUrl)}`;
+    // Stable path keys avoid query-string cache fragmentation across cards and crawlers.
+    const bytes = new TextEncoder().encode(finalUrl);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `/img/${encoded}.jpg`;
   },
 
   /**

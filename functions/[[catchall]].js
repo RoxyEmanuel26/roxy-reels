@@ -12,9 +12,38 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 // Social preview crawlers do not execute the client-side metadata updater. They
 // must receive complete, stable metadata in the first HTML response.
 const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot|TelegramBot|Discordbot|Slackbot|WhatsApp/i;
-const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|AhrefsBot|SemrushBot|MJ12bot|Applebot/i;
+const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot/i;
+const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.84';
+const SSR_CACHE_VERSION = 'v2.8.85';
+
+async function serveHumanShell(context, origin) {
+  const cacheKey = new Request(`${origin}/__human-spa-shell?version=${SSR_CACHE_VERSION}`, { method: 'GET' });
+  let cache = null;
+  try {
+    cache = caches.default;
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      const headers = new Headers(cached.headers);
+      headers.set('X-Edge-Mode', 'HUMAN-SHELL');
+      headers.set('X-Cache-Status', 'HIT');
+      return new Response(cached.body, { status: cached.status, headers });
+    }
+  } catch (error) {
+    console.warn('[Human Shell Cache Read Error]', error);
+  }
+
+  const asset = await context.env.ASSETS.fetch(new URL('/index.html', origin));
+  const headers = new Headers(asset.headers);
+  headers.set('Content-Type', 'text/html; charset=utf-8');
+  headers.set('Cache-Control', 'public, max-age=3600, s-maxage=604800');
+  headers.set('CDN-Cache-Control', 'public, max-age=604800');
+  headers.set('X-Edge-Mode', 'HUMAN-SHELL');
+  headers.set('X-Cache-Status', 'MISS');
+  const response = new Response(asset.body, { status: asset.status, headers });
+  if (cache && response.ok) context.waitUntil(cache.put(cacheKey, response.clone()));
+  return response;
+}
 
 // Map internal language keys to valid ISO 639-1 hreflang / html-lang codes.
 // Mirrors HREFLANG_CODE_MAP in assets/js/i18n.js and the sitemap emitters:
@@ -603,6 +632,18 @@ export async function onRequest(context) {
   const isSocialCrawler = SOCIAL_CRAWLER_REGEX.test(userAgent);
   const isKnownCrawler = isSocialCrawler || SEARCH_CRAWLER_REGEX.test(userAgent);
 
+  if (COMMERCIAL_CRAWLER_REGEX.test(userAgent)) {
+    return new Response('Forbidden', {
+      status: 403,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Edge-Mode': 'BLOCKED-BOT',
+        'X-Cache-Status': 'BYPASS'
+      }
+    });
+  }
+
   // ── ENFORCE WWW DOMAIN FOR SEO ──────────────────────────────────────────
   // Mencegah duplicate content (Google melihat missav-j.com dan www.missav-j.com sebagai 2 situs berbeda)
   if (url.hostname === 'missav-j.com') {
@@ -668,6 +709,17 @@ export async function onRequest(context) {
     const newRequest = new Request(new URL('/sitemaps/sitemap_index.xml', request.url), request);
     return env.ASSETS.fetch(newRequest);
   }
+  if (pathname === '/api/sitemap' || pathname.startsWith('/api/sitemap/')) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}/sitemaps/sitemap_index.xml`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'STATIC-REDIRECT',
+        'X-Cache-Status': 'BYPASS'
+      }
+    });
+  }
   // Check cache for GET requests on Watch and Listing Pages only
   const isGet = request.method === 'GET';
   const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?\/?$/;
@@ -694,6 +746,10 @@ export async function onRequest(context) {
     }
   }
 
+  if (isCacheableRoute && !isKnownCrawler) {
+    return serveHumanShell(context, url.origin);
+  }
+
   let cache = null;
   const versionedCacheUrl = getCleanPublicUrl(url);
   versionedCacheUrl.searchParams.set('__ssr', SSR_CACHE_VERSION);
@@ -703,7 +759,10 @@ export async function onRequest(context) {
       cache = caches.default;
       const cachedResponse = await cache.match(pageCacheKey);
       if (cachedResponse) {
-        return cachedResponse;
+        const headers = new Headers(cachedResponse.headers);
+        headers.set('X-Edge-Mode', isSocialCrawler ? 'SOCIAL-SSR' : 'SEARCH-SSR');
+        headers.set('X-Cache-Status', 'HIT');
+        return new Response(cachedResponse.body, { status: cachedResponse.status, headers });
       }
     } catch (e) {
       console.error('[Cache SSR Match Error]', e);
@@ -891,7 +950,7 @@ export async function onRequest(context) {
                 "@type": "VideoObject",
                 "name": title,
                 "description": description,
-                // Array thumbnailUrl: gunakan URL proxy kita (/api/image) agar Googlebot
+                // Array thumbnailUrl: gunakan URL proxy stabil /img/ agar Googlebot
                 // selalu bisa akses thumbnail (domain kita sendiri, tidak di-block CDN).
                 "thumbnailUrl": [proxiedImageUrl],
                 "uploadDate": uploadDate,
@@ -1007,7 +1066,9 @@ export async function onRequest(context) {
               'Content-Type': 'text/plain; charset=utf-8',
               'Cache-Control': cacheControl,
               'CDN-Cache-Control': cdnCacheControl,
-              'Retry-After': '120'
+              'Retry-After': '120',
+              'X-Edge-Mode': 'SOCIAL-SSR',
+              'X-Cache-Status': 'BYPASS'
             }
           });
         }
@@ -1017,7 +1078,9 @@ export async function onRequest(context) {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': cacheControl,
-          'CDN-Cache-Control': cdnCacheControl
+          'CDN-Cache-Control': cdnCacheControl,
+          'X-Edge-Mode': isSocialCrawler ? 'SOCIAL-SSR' : 'SEARCH-SSR',
+          'X-Cache-Status': 'MISS'
         }
       });
 
@@ -1212,7 +1275,9 @@ export async function onRequest(context) {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
             'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400',
-            'CDN-Cache-Control': 'public, max-age=604800'
+            'CDN-Cache-Control': 'public, max-age=604800',
+            'X-Edge-Mode': isSocialCrawler ? 'SOCIAL-SSR' : 'SEARCH-SSR',
+            'X-Cache-Status': 'MISS'
           }
         });
 

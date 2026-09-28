@@ -6,12 +6,24 @@
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
 const PLAYER_TTL_SECONDS = 60 * 60;
 const inFlightRequests = new Map();
+const VALID_LANGS = new Set(['zh-tw', 'zh-cn', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt']);
 
-function normalizeCacheRequest(request) {
-  const url = new URL(request.url);
-  url.hash = '';
-  url.searchParams.sort();
-  return new Request(url.toString(), { method: 'GET' });
+function normalizeRequest(request, routeId) {
+  const source = new URL(request.url);
+  for (const key of source.searchParams.keys()) {
+    if (key !== 'id' && key !== 'lang') return { error: `Unsupported query parameter: ${key}` };
+    if (source.searchParams.getAll(key).length !== 1) return { error: `Duplicate query parameter: ${key}` };
+  }
+  const queryId = source.searchParams.get('id');
+  if (routeId && queryId && routeId !== queryId) return { error: 'Conflicting video ID' };
+  const id = routeId || queryId;
+  if (!id || !/^\d+$/.test(id)) return { error: 'Invalid or missing video ID' };
+  const lang = source.searchParams.get('lang');
+  if (lang && !VALID_LANGS.has(lang.toLowerCase())) return { error: 'Invalid language' };
+  return {
+    id,
+    cacheKey: new Request(`${source.origin}/api/player/${id}`, { method: 'GET' })
+  };
 }
 
 export async function onRequest(context) {
@@ -28,7 +40,21 @@ export async function onRequest(context) {
   }
 
   const isGet = request.method === 'GET';
-  const cacheKey = isGet ? normalizeCacheRequest(request) : null;
+  const routeId = params.id && params.id.length > 0 ? params.id[0] : null;
+  const normalized = normalizeRequest(request, routeId);
+  if (normalized.error) {
+    return new Response(JSON.stringify({ error: 'Bad Request', message: normalized.error }), {
+      status: 400,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Cache-Status': 'BYPASS',
+        'X-Edge-Mode': 'API-PLAYER'
+      }
+    });
+  }
+  const cacheKey = isGet ? normalized.cacheKey : null;
   let cache = null;
   let cachedResponse = null;
   if (isGet) {
@@ -42,27 +68,7 @@ export async function onRequest(context) {
 
   const processUpstream = async () => {
   try {
-    const url = new URL(request.url);
-    
-    let id = null;
-    if (params.id && params.id.length > 0) {
-      id = params.id[0];
-    }
-    const idQuery = url.searchParams.get('id');
-    id = id || idQuery;
-
-    if (!id) {
-      return new Response(JSON.stringify({ 
-        error: 'Bad Request', 
-        message: 'Dynamic parameter video ID wajib disertakan' 
-      }), {
-        status: 400,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json; charset=utf-8'
-        }
-      });
-    }
+    const id = normalized.id;
 
     const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
 
@@ -118,7 +124,8 @@ export async function onRequest(context) {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': `public, max-age=0, s-maxage=${PLAYER_TTL_SECONDS}`,
-      'X-Cache-Status': isGet ? 'MISS' : 'BYPASS'
+      'X-Cache-Status': isGet ? 'MISS' : 'BYPASS',
+      'X-Edge-Mode': 'API-PLAYER'
     };
 
     const responseToReturn = new Response(JSON.stringify(data), {
@@ -146,12 +153,14 @@ export async function onRequest(context) {
   if (cachedResponse && cachedResponse.ok) {
     const finalResp = new Response(cachedResponse.body, cachedResponse);
     finalResp.headers.set('X-Cache-Status', 'HIT');
+    finalResp.headers.set('X-Edge-Mode', 'API-PLAYER');
     return finalResp;
   }
 
   if (!isGet) {
     const response = await processUpstream();
     response.headers.set('X-Cache-Status', 'BYPASS');
+    response.headers.set('X-Edge-Mode', 'API-PLAYER');
     return response;
   }
 
@@ -171,5 +180,6 @@ export async function onRequest(context) {
 
   const response = (await responsePromise).clone();
   response.headers.set('X-Cache-Status', 'MISS');
+  response.headers.set('X-Edge-Mode', 'API-PLAYER');
   return response;
 }
