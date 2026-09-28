@@ -1,0 +1,96 @@
+name: Weekly sitemap
+
+'on':
+  schedule:
+    # Sunday 09:17 Asia/Jakarta (UTC+7). Avoid minute 0 GitHub Actions congestion.
+    - cron: '17 2 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-sitemap-main
+  cancel-in-progress: false
+
+jobs:
+  update-sitemap:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run sitemap unit tests
+        run: node --test tests/sitemap-generator.test.mjs
+
+      - name: Generate deterministic sitemap set
+        id: generate
+        run: node generate_sitemap.js
+
+      - name: Validate every sitemap
+        run: >-
+          python scripts/validate_sitemaps.py
+          --dir sitemaps
+          --expected-total "${{ steps.generate.outputs.total_videos }}"
+          --expected-latest-id "${{ steps.generate.outputs.latest_id }}"
+
+      - name: Check patch integrity
+        run: git diff --check
+
+      - name: Detect sitemap changes
+        id: changes
+        shell: bash
+        run: |
+          if git diff --quiet -- sitemaps; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Sitemap is already current."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push sitemap update
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- sitemaps
+          git commit -m "chore(sitemap): weekly catalog update $(date -u +%F)"
+          git push origin HEAD:main
+
+      - name: Verify Cloudflare Pages deployment
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          LATEST_FILE: ${{ steps.generate.outputs.latest_file }}
+          LATEST_URL: ${{ steps.generate.outputs.latest_url }}
+          LATEST_THUMBNAIL: ${{ steps.generate.outputs.latest_thumbnail }}
+          LATEST_PLAYER: ${{ steps.generate.outputs.latest_player }}
+        run: node scripts/smoke_sitemap.mjs
+
+      - name: Publish workflow summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Weekly sitemap"
+            echo "- Catalog videos: ${{ steps.generate.outputs.total_videos }}"
+            echo "- Video-enriched entries: ${{ steps.generate.outputs.eligible_videos }}"
+            echo "- Latest video ID: ${{ steps.generate.outputs.latest_id }}"
+            echo "- Sitemap changed: ${{ steps.changes.outputs.changed }}"
+            echo "- Cloudflare Worker requests from generation: 0"
+          } >> "$GITHUB_STEP_SUMMARY"

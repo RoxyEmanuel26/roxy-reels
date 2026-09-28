@@ -24,10 +24,13 @@ yarn-error.log*
 dist/
 out/
 build/
+__pycache__/
+*.py[cod]
 
 # Sitemap states
 sitemaps/*.state
 sitemap_index.xml.state
+sitemap_state.json
 
 # Logs
 *.log
