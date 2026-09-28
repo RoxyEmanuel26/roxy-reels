@@ -1,16 +1,16 @@
-name: Weekly sitemap
+name: Daily sitemap
 
 'on':
   schedule:
-    # Sunday 09:17 Asia/Jakarta (UTC+7). Avoid minute 0 GitHub Actions congestion.
-    - cron: '17 2 * * 0'
+    # Every day at 09:17 Asia/Jakarta (UTC+7). Avoid minute 0 GitHub Actions congestion.
+    - cron: '17 2 * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: weekly-sitemap-main
+  group: daily-sitemap-main
   cancel-in-progress: false
 
 jobs:
@@ -70,7 +70,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- sitemaps
-          git commit -m "chore(sitemap): weekly catalog update $(date -u +%F)"
+          git commit -m "chore(sitemap): daily catalog update $(date -u +%F)"
           git push origin HEAD:main
 
       - name: Verify Cloudflare Pages deployment
@@ -87,7 +87,7 @@ jobs:
         shell: bash
         run: |
           {
-            echo "## Weekly sitemap"
+            echo "## Daily sitemap"
             echo "- Catalog videos: ${{ steps.generate.outputs.total_videos }}"
             echo "- Video-enriched entries: ${{ steps.generate.outputs.eligible_videos }}"
             echo "- Latest video ID: ${{ steps.generate.outputs.latest_id }}"
