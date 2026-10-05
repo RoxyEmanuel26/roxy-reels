@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
+import fs from 'node:fs';
+import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -62,6 +63,29 @@ test('promotion removes stale page-based sitemap files only after a valid set ex
   assert.ok(!names.includes('sitemap_videos_1.xml'));
   assert.ok(names.includes('notes.txt'));
   assert.ok(names.includes('sitemap_videos_0-999.xml'));
+});
+
+test('a failed sitemap swap restores the previous complete set', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'roxy-sitemap-swap-test-'));
+  const directory = join(parent, 'sitemaps');
+  const initial = buildSitemapSet([post(100)], options);
+  const updated = buildSitemapSet([post(100), post(1001)], options);
+  promoteSitemapSet(initial.files, directory);
+  const oldIndex = await readFile(join(directory, 'sitemap_index.xml'), 'utf8');
+  const oldShard = await readFile(join(directory, 'sitemap_videos_0-999.xml'), 'utf8');
+
+  const failingFs = Object.create(fs);
+  let renameCount = 0;
+  failingFs.renameSync = (source, destination) => {
+    renameCount += 1;
+    if (renameCount === 2) throw new Error('injected staging failure');
+    return fs.renameSync(source, destination);
+  };
+
+  assert.throws(() => promoteSitemapSet(updated.files, directory, failingFs), /injected staging failure/);
+  assert.equal(await readFile(join(directory, 'sitemap_index.xml'), 'utf8'), oldIndex);
+  assert.equal(await readFile(join(directory, 'sitemap_videos_0-999.xml'), 'utf8'), oldShard);
+  assert.deepEqual(await readdir(parent), ['sitemaps']);
 });
 
 test('video XML escapes text and includes all required Google video fields', () => {

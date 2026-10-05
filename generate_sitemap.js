@@ -373,25 +373,84 @@ function validateSitemapSet(result, expectedTotal) {
   if (!summary.latest || !locations.has(escXml(summary.latest.url))) throw new Error('Latest video is missing');
 }
 
-function promoteSitemapSet(files, outputDir) {
-  fs.mkdirSync(outputDir, { recursive: true });
+function removeGeneratedTempDirectory(fileSystem, target, parent, prefix) {
+  const resolved = path.resolve(target);
+  if (path.dirname(resolved) !== path.resolve(parent) || !path.basename(resolved).startsWith(prefix)) {
+    throw new Error(`Refusing to remove an unexpected temporary directory: ${resolved}`);
+  }
+  fileSystem.rmSync(resolved, { recursive: true, force: true });
+}
+
+function promoteSitemapSet(files, outputDir, fileSystem = fs) {
+  const targetDir = path.resolve(outputDir);
+  const parent = path.dirname(targetDir);
+  fileSystem.mkdirSync(parent, { recursive: true });
+  const hasPreviousSet = fileSystem.existsSync(targetDir);
+  if (hasPreviousSet && fileSystem.lstatSync(targetDir).isSymbolicLink()) {
+    throw new Error('Refusing to replace a symbolic-link sitemap directory');
+  }
   const desired = new Set(files.keys());
   let written = 0;
   let unchanged = 0;
   for (const [name, content] of files) {
-    const target = path.join(outputDir, name);
-    if (fs.existsSync(target) && fs.readFileSync(target, 'utf8') === content) {
+    if (!SITEMAP_FILE_PATTERN.test(name)) throw new Error(`Unsafe sitemap filename: ${name}`);
+    const target = path.join(targetDir, name);
+    if (hasPreviousSet && fileSystem.existsSync(target) && fileSystem.readFileSync(target, 'utf8') === content) {
       unchanged += 1;
       continue;
     }
-    fs.writeFileSync(target, content, 'utf8');
     written += 1;
   }
   let removed = 0;
-  for (const name of fs.readdirSync(outputDir)) {
-    if (SITEMAP_FILE_PATTERN.test(name) && !desired.has(name)) {
-      fs.unlinkSync(path.join(outputDir, name));
-      removed += 1;
+  const previousNames = hasPreviousSet ? fileSystem.readdirSync(targetDir) : [];
+  for (const name of previousNames) {
+    if (SITEMAP_FILE_PATTERN.test(name) && !desired.has(name)) removed += 1;
+  }
+  if (written === 0 && removed === 0) return { written, unchanged, removed };
+
+  // Build the complete replacement next to the current directory so both
+  // renames stay on the same filesystem. A failed swap restores the old set.
+  const stageDir = fileSystem.mkdtempSync(path.join(parent, '.sitemaps-stage-'));
+  const backupDir = path.join(parent, `.sitemaps-backup-${crypto.randomUUID()}`);
+  let originalMoved = false;
+  let stageMoved = false;
+  try {
+    for (const name of previousNames) {
+      if (!SITEMAP_FILE_PATTERN.test(name)) {
+        fileSystem.cpSync(path.join(targetDir, name), path.join(stageDir, name), { recursive: true });
+      }
+    }
+    for (const [name, content] of files) {
+      fileSystem.writeFileSync(path.join(stageDir, name), content, 'utf8');
+    }
+    if (hasPreviousSet) {
+      fileSystem.renameSync(targetDir, backupDir);
+      originalMoved = true;
+    }
+    try {
+      fileSystem.renameSync(stageDir, targetDir);
+      stageMoved = true;
+    } catch (error) {
+      if (originalMoved) {
+        try {
+          fileSystem.renameSync(backupDir, targetDir);
+          originalMoved = false;
+        } catch (rollbackError) {
+          throw new Error(`Sitemap swap failed and the previous set remains at ${backupDir}: ${error.message}; rollback: ${rollbackError.message}`);
+        }
+      }
+      throw error;
+    }
+  } finally {
+    if (!stageMoved && fileSystem.existsSync(stageDir)) {
+      removeGeneratedTempDirectory(fileSystem, stageDir, parent, '.sitemaps-stage-');
+    }
+  }
+  if (originalMoved) {
+    try {
+      removeGeneratedTempDirectory(fileSystem, backupDir, parent, '.sitemaps-backup-');
+    } catch (error) {
+      console.warn(`[WARN] Previous sitemap backup remains at ${backupDir}: ${error.message}`);
     }
   }
   return { written, unchanged, removed };
