@@ -29,7 +29,8 @@ const filesToUpdate = [
   'assets/js/search.js',
   'assets/js/studios.js',
   'assets/js/trending.js',
-  'functions/[[catchall]].js'
+  'functions/[[catchall]].js',
+  'functions/api/posts/[[id]].js'
 ];
 
 let totalReplaced = 0;
@@ -54,6 +55,9 @@ filesToUpdate.forEach(filePath => {
     // SSR page-cache version must move with browser asset/API caches.
     if (filePath === 'functions/[[catchall]].js') {
       newContent = newContent.replace(/SSR_CACHE_VERSION\s*=\s*'v\d+\.\d+\.\d+'/g, `SSR_CACHE_VERSION = 'v${newVersion}'`);
+    }
+    if (filePath === 'functions/api/posts/[[id]].js') {
+      newContent = newContent.replace(/POSTS_CACHE_VERSION\s*=\s*'v\d+\.\d+\.\d+'/g, `POSTS_CACHE_VERSION = 'v${newVersion}'`);
     }
 
     if (content !== newContent) {

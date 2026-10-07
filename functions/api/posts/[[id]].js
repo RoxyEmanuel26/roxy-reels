@@ -5,6 +5,7 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
+const POSTS_CACHE_VERSION = 'v2.8.86';
 const LIST_FRESH_TTL_SECONDS = 15 * 60;
 const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
 const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -64,7 +65,9 @@ function normalizeRequest(request, routeId) {
   if (id) url.searchParams.set('id', id);
   if (!url.searchParams.has('lang')) url.searchParams.set('lang', 'en');
   url.searchParams.sort();
-  return { url, id, lang: url.searchParams.get('lang'), cacheKey: new Request(url.toString(), { method: 'GET' }) };
+  const cacheUrl = new URL(url);
+  cacheUrl.searchParams.set('__posts_cache_version', POSTS_CACHE_VERSION);
+  return { url, id, lang: url.searchParams.get('lang'), cacheKey: new Request(cacheUrl.toString(), { method: 'GET' }) };
 }
 
 function getCacheTtl(url, id) {
@@ -87,21 +90,19 @@ function slugify(text) {
     .replace(/-+$/, '');
 }
 
-function generateLocalizedSlugs(code, title, translations) {
+function generateLocalizedSlugs(code, title, translations, sourceSlug = '') {
   const supportedLangs = ['zh-TW', 'zh-CN', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
   const cleanCode = slugify(code || '');
-  const cleanTitle = slugify(title || '');
-  
-  let enSlug = cleanCode && cleanTitle ? `${cleanCode}-${cleanTitle}` : (cleanCode || cleanTitle || 'video');
-  if (enSlug.length > 100) enSlug = enSlug.substring(0, 100);
+  const withCode = value => {
+    let base = slugify(value) || 'video';
+    if (cleanCode && base !== cleanCode && !base.startsWith(`${cleanCode}-`)) base = `${cleanCode}-${base}`;
+    return base.slice(0, 100).replace(/-+$/g, '') || 'video';
+  };
+  const enSlug = withCode(sourceSlug || title);
 
   const slugs = { en: enSlug };
   supportedLangs.forEach(lang => {
-    const tTitle = translations[lang] || title;
-    const cleanTTitle = slugify(tTitle || '');
-    let slug = cleanCode && cleanTTitle ? `${cleanCode}-${cleanTTitle}` : (cleanCode || cleanTTitle || 'video');
-    if (slug.length > 100) slug = slug.substring(0, 100);
-    slugs[lang] = slug;
+    slugs[lang] = translations[lang] ? withCode(translations[lang]) : enSlug;
   });
   return slugs;
 }
@@ -394,7 +395,7 @@ export async function onRequest(context) {
 
     if (data) {
       if (id && !Array.isArray(data) && lang === 'en') {
-        data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {});
+        data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {}, data.slug);
       } else if (id && !Array.isArray(data)) {
         // Single post: apply translation with a strict 5-second timeout cap
         const translationTimeout = new Promise(resolve => setTimeout(() => resolve(null), 5000));
@@ -406,14 +407,14 @@ export async function onRequest(context) {
           if (lang && lang !== 'en' && translationResult[lang]) {
             data.title = translationResult[lang];
           }
-          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, translationResult);
+          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, translationResult, data.slug);
         } else {
           // Timeout — return with English title, generate slugs from English title
-          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {});
+          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {}, data.slug);
         }
       } else if (Array.isArray(data) && lang === 'en') {
         data.forEach(post => {
-          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, {});
+          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, {}, post.slug);
         });
       } else if (Array.isArray(data)) {
         // LIST: Only apply CACHED translations (fast Supabase lookup, max 6s timeout)
@@ -427,7 +428,7 @@ export async function onRequest(context) {
           if (lang && lang !== 'en' && translations[lang]) {
             post.title = translations[lang];
           }
-          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, translations);
+          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, translations, post.slug);
         });
 
       }

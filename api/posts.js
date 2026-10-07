@@ -23,21 +23,19 @@ function slugify(text) {
 }
 
 // Generate localized slugs mapping for frontend alternate links
-function generateLocalizedSlugs(code, title, translations) {
+function generateLocalizedSlugs(code, title, translations, sourceSlug = '') {
   const supportedLangs = ['zh-TW', 'zh-CN', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
   const cleanCode = slugify(code || '');
-  const cleanTitle = slugify(title || '');
-  
-  let enSlug = cleanCode && cleanTitle ? `${cleanCode}-${cleanTitle}` : (cleanCode || cleanTitle || 'video');
-  if (enSlug.length > 100) enSlug = enSlug.substring(0, 100);
+  const withCode = value => {
+    let base = slugify(value) || 'video';
+    if (cleanCode && base !== cleanCode && !base.startsWith(`${cleanCode}-`)) base = `${cleanCode}-${base}`;
+    return base.slice(0, 100).replace(/-+$/g, '') || 'video';
+  };
+  const enSlug = withCode(sourceSlug || title);
 
   const slugs = { en: enSlug };
   supportedLangs.forEach(lang => {
-    const tTitle = translations[lang] || title;
-    const cleanTTitle = slugify(tTitle || '');
-    let slug = cleanCode && cleanTTitle ? `${cleanCode}-${cleanTTitle}` : (cleanCode || cleanTTitle || 'video');
-    if (slug.length > 100) slug = slug.substring(0, 100);
-    slugs[lang] = slug;
+    slugs[lang] = translations[lang] ? withCode(translations[lang]) : enSlug;
   });
   return slugs;
 }
@@ -276,7 +274,7 @@ module.exports = async (req, res) => {
         if (lang && lang !== 'en' && translations[lang]) {
           data.title = translations[lang];
         }
-        data.localized_slugs = generateLocalizedSlugs(data.code, data.title, translations);
+        data.localized_slugs = generateLocalizedSlugs(data.code, data.title, translations, data.slug);
       } else if (Array.isArray(data)) {
         // Posts listing request
         const ids = data.map(p => p.id);
@@ -291,7 +289,7 @@ module.exports = async (req, res) => {
           if (lang && lang !== 'en' && translations[lang]) {
             post.title = translations[lang];
           }
-          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, translations);
+          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, translations, post.slug);
         });
         
         await Promise.all(translatePromises);

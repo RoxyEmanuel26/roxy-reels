@@ -15,7 +15,27 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.85';
+const SSR_CACHE_VERSION = 'v2.8.86';
+
+// Match the canonical English slug emitted by generate_sitemap.js. Locale
+// prefixes carry the language; a stable slug avoids 13 competing aliases.
+function canonicalWatchPath(post, id) {
+  const slugify = value => String(value || '')
+    .toLowerCase().trim().replace(/[\s_]+/g, '-')
+    .replace(/[^\p{L}\p{N}-]/gu, '').replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  const code = slugify(post.code);
+  let base = slugify(post.slug || post.title) || 'video';
+  if (code && base !== code && !base.startsWith(`${code}-`)) base = `${code}-${base}`;
+  base = base.slice(0, 100).replace(/-+$/g, '') || 'video';
+  return `/watch/${encodeURIComponent(`${base}-${id}`)}`;
+}
+
+function removeDefaultSeoNoscript(html) {
+  // SSR replaces the generic homepage fallback with route-specific content.
+  // Leaving the homepage noscript behind creates a second, conflicting H1.
+  return html.replace(/<noscript>\s*<div[^>]*>\s*<h1>MISSAV-J — Premium JAV Streaming<\/h1>[\s\S]*?<\/div>\s*<\/noscript>/i, '');
+}
 
 async function serveHumanShell(context, origin) {
   const cacheKey = new Request(`${origin}/__human-spa-shell?version=${SSR_CACHE_VERSION}`, { method: 'GET' });
@@ -383,7 +403,7 @@ async function fetchPostMetadata(id, origin, request, executionContext) {
     const cached = await metadataCache.match(cacheKey);
     if (cached) {
       const cachedData = await cached.json();
-      if (cachedData && cachedData.title) return cachedData;
+      if (cachedData && cachedData.title) return { post: cachedData, notFound: false };
     }
   } catch (err) {
     console.warn('[OG Metadata Cache Read Error]', err);
@@ -407,7 +427,11 @@ async function fetchPostMetadata(id, origin, request, executionContext) {
   async function fetchJsonSource(sourceName, endpoint, signal) {
     try {
       const response = await fetch(endpoint, { headers: requestHeaders, signal });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
       const data = await response.json();
       if (!data || !data.title) throw new Error('Response is missing a title');
       return data;
@@ -415,7 +439,7 @@ async function fetchPostMetadata(id, origin, request, executionContext) {
       // Promise.any cancels the losing request after another source succeeds.
       // That is expected control flow, not an operational warning.
       if (err && err.name === 'AbortError') throw err;
-      console.warn(`[OG Metadata ${sourceName} Error] id=${id}`, err);
+      if (err?.status !== 404) console.warn(`[OG Metadata ${sourceName} Error] id=${id}: ${err?.message || err}`);
       throw err;
     }
   }
@@ -426,6 +450,7 @@ async function fetchPostMetadata(id, origin, request, executionContext) {
   const timeoutId = setTimeout(() => controller.abort(), 10000);
   let hedgeTimer = null;
   let data = null;
+  let notFound = false;
   try {
     const upstreamPromise = fetchJsonSource(
       'upstream',
@@ -458,13 +483,18 @@ async function fetchPostMetadata(id, origin, request, executionContext) {
       fallbackPromise
     ]);
   } catch (err) {
-    console.error(`[OG Metadata Unavailable] id=${id}`, err);
+    notFound = Array.isArray(err?.errors) && err.errors.length === 2 &&
+      err.errors.every(sourceError => sourceError?.status === 404);
+    if (!notFound) {
+      const reasons = Array.isArray(err?.errors) ? err.errors.map(sourceError => sourceError?.message || 'unknown').join(', ') : (err?.message || 'unknown');
+      console.warn(`[OG Metadata Unavailable] id=${id}: ${reasons}`);
+    }
   } finally {
     if (hedgeTimer) clearTimeout(hedgeTimer);
     clearTimeout(timeoutId);
     controller.abort();
   }
-  if (!data) return null;
+  if (!data) return { post: null, notFound };
 
   // Cache persistence is an optimization, never a prerequisite for returning
   // metadata that was fetched successfully.
@@ -485,7 +515,7 @@ async function fetchPostMetadata(id, origin, request, executionContext) {
     console.warn('[OG Metadata Cache Write Error]', err);
   }
 
-  return data;
+  return { post: data, notFound: false };
 }
 
 /** Remove analytics-only parameters without disturbing meaningful query data. */
@@ -723,7 +753,7 @@ export async function onRequest(context) {
   // Check cache for GET requests on Watch and Listing Pages only
   const isGet = request.method === 'GET';
   const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?\/?$/;
-  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)\/?$/;
+  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|tag|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)\/?$/;
   const langRegex = /^\/([a-zA-Z\-]+)?\/?$/;
   
   const isWatch = pathname.match(watchRegex);
@@ -789,17 +819,39 @@ export async function onRequest(context) {
 
       const activeLang = isLangValid ? lang : 'en';
 
+      if (!id && isKnownCrawler) {
+        return new Response('Video not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+      }
+
       // OPTIMIZED: Fetch index.html and APIJAV metadata in parallel (Promise.all)
       // Previously sequential (~320ms+), now concurrent (~300ms max).
-      const [indexResponse, post] = await Promise.all([
+      const [indexResponse, metadataResult] = await Promise.all([
         env.ASSETS.fetch(new URL('/index.html', request.url)),
         id ? fetchPostMetadata(id, url.origin, request, context) : Promise.resolve(null)
       ]);
 
+      const post = metadataResult?.post || null;
+      if (id && !post && isKnownCrawler) {
+        const missing = Boolean(metadataResult?.notFound);
+        return new Response(metadataResult?.notFound ? 'Video not found' : 'Video metadata temporarily unavailable', {
+          status: missing ? 404 : 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store',
+            ...(!missing ? { 'Retry-After': '120' } : {}),
+            'X-Edge-Mode': isSocialCrawler ? 'SOCIAL-SSR' : 'SEARCH-SSR', 'X-Cache-Status': 'BYPASS' }
+        });
+      }
+      const canonicalPath = post ? `/${activeLang}${canonicalWatchPath(post, id)}` : null;
+      if (canonicalPath && SEARCH_CRAWLER_REGEX.test(userAgent) && url.pathname !== canonicalPath) {
+        return new Response(null, { status: 301, headers: {
+          'Location': `${url.origin}${canonicalPath}`,
+          'Cache-Control': 'public, max-age=3600', 'X-Edge-Mode': 'SEARCH-REDIRECT', 'X-Cache-Status': 'BYPASS'
+        } });
+      }
+
       if (!indexResponse.ok) {
         return new Response('Internal Server Error: Failed to fetch index.html', { status: 500 });
       }
-      let htmlContent = await indexResponse.text();
+      let htmlContent = removeDefaultSeoNoscript(await indexResponse.text());
       htmlContent = htmlContent.replace(/<div class="custom-sponsor-banner"[\s\S]*?<\/div>/gi, '');
 
       // Stamp <html lang> to match the route's language for crawlers. index.html
@@ -824,7 +876,10 @@ export async function onRequest(context) {
             }
 
             const code = post.code || '';
-            const fullTitle = code ? `[${code}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
+            const normalizedCode = String(code).toLowerCase().replace(/[\s_]+/g, '-');
+            const normalizedTitle = String(title).toLowerCase().replace(/[\s_]+/g, '-');
+            const displayCode = normalizedCode && (normalizedTitle === normalizedCode || normalizedTitle.startsWith(`${normalizedCode}-`)) ? '' : code;
+            const fullTitle = displayCode ? `[${displayCode}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
             
             let actorsStr = '';
             if (post.actors && Array.isArray(post.actors)) {
@@ -836,7 +891,7 @@ export async function onRequest(context) {
             }
 
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
-            const description = descFn(code, title, actorsStr, studioStr);
+            const description = descFn(displayCode, title, actorsStr, studioStr);
 
             let sourceImageUrl = post.thumbnail || '';
 
@@ -867,7 +922,7 @@ export async function onRequest(context) {
             const proxiedImageUrl = getSocialImageUrl(sourceImageUrl, url.origin);
             const imageUrl = proxiedImageUrl;
 
-            const pageUrl = getCleanPublicUrl(url).toString();
+            const pageUrl = canonicalPath ? `${url.origin}${canonicalPath}` : getCleanPublicUrl(url).toString();
 
             htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(fullTitle)}</title>`);
             htmlContent = htmlContent.replace(
@@ -926,7 +981,7 @@ export async function onRequest(context) {
               () => `<meta name="twitter:image:alt" id="twitter-image-alt" content="${escapeHtml(fullTitle)}"`
             );
             
-            const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
+            const hreflangBlock = generateHreflangTags(url.origin, canonicalPath || url.pathname, '');
             htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
 
             if (htmlContent.includes('"@type": "WebSite"')) {
@@ -1107,7 +1162,7 @@ export async function onRequest(context) {
         if (!indexResponse.ok) {
           return new Response('Internal Server Error: Failed to fetch index.html', { status: 500 });
         }
-        let htmlContent = await indexResponse.text();
+        let htmlContent = removeDefaultSeoNoscript(await indexResponse.text());
         htmlContent = htmlContent.replace(/<div class="custom-sponsor-banner"[\s\S]*?<\/div>/gi, '');
 
         // Stamp <html lang> to match the route's language for crawlers (see note
@@ -1120,7 +1175,7 @@ export async function onRequest(context) {
         let schemaType = 'CollectionPage';
         
         // Resolve actual route type from URL pattern (popular-actors falls back to actors, empty type is home)
-        const typeKey = (type === 'popular-actors') ? 'actors' : (type === 'watch-later') ? 'watch_later' : (type || 'home');
+        const typeKey = (type === 'popular-actors') ? 'actors' : (type === 'watch-later') ? 'watch_later' : (type === 'tag') ? 'category' : (type || 'home');
         const langDict = SEO_I18N[activeLang] || SEO_I18N['en'];
         const pageTemplate = langDict[typeKey] || SEO_I18N['en'][typeKey] || langDict['default'] || SEO_I18N['en']['default'];
         

@@ -150,7 +150,7 @@ test('English detail bypasses Supabase and still returns every localized slug ke
   const calls = [];
   globalThis.fetch = async input => {
     calls.push(String(input));
-    return new Response(JSON.stringify({ id: 77, code: 'ABC-077', title: 'English title' }), { status: 200 });
+    return new Response(JSON.stringify({ id: 77, code: 'ABC-077', title: 'ABC-077 English title', slug: 'abc-077-english-title' }), { status: 200 });
   };
   const context = makeContext({
     request: new Request('https://www.missav-j.com/api/posts/77?lang=en'),
@@ -162,6 +162,8 @@ test('English detail bypasses Supabase and still returns every localized slug ke
   await settle(context);
   assert.equal(calls.length, 1);
   assert.ok(calls[0].includes('/posts/77'));
+  assert.equal(post.localized_slugs.en, 'abc-077-english-title');
+  assert.equal(post.localized_slugs.de, 'abc-077-english-title');
   assert.deepEqual(Object.keys(post.localized_slugs).sort(), ['de', 'en', 'fil', 'fr', 'id', 'ja', 'ko', 'ms', 'pt', 'th', 'vi', 'zh-CN', 'zh-TW'].sort());
 });
 
@@ -413,6 +415,99 @@ test('Googlebot receives full search SSR metadata instead of the human shell', a
   assert.equal(metadataFetches, 1);
 });
 
+test('Googlebot watch aliases redirect to the same slug as the sitemap', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const post = {
+    id: 771,
+    code: 'H0930-KI180818',
+    title: 'H0930-KI180818 Request work collection',
+    slug: 'h0930-ki180818-request-work-collection',
+    thumbnail: 'https://pics.dmm.co.jp/example.jpg'
+  };
+  globalThis.fetch = async () => new Response(JSON.stringify(post), { status: 200 });
+  const env = { ASSETS: { fetch: async () => new Response(indexHtml) } };
+  const headers = { 'User-Agent': 'Googlebot/2.1' };
+  const alias = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/h0930-ki180818-h0930-ki180818-request-work-collection-771', { headers }),
+    env
+  });
+  const redirect = await onRequest(alias);
+  await settle(alias);
+  const canonicalUrl = 'https://www.missav-j.com/en/watch/h0930-ki180818-request-work-collection-771';
+  assert.equal(redirect.status, 301);
+  assert.equal(redirect.headers.get('Location'), canonicalUrl);
+
+  const canonical = makeContext({ request: new Request(canonicalUrl, { headers }), env });
+  const response = await onRequest(canonical);
+  const html = await response.text();
+  await settle(canonical);
+  assert.equal(response.status, 200);
+  assert.match(html, new RegExp(`<link rel="canonical"[^>]+href="${canonicalUrl}"`));
+  assert.match(html, /<title>H0930-KI180818 Request work collection - MISSAV-J<\/title>/);
+  assert.equal((html.match(/<h1\b/gi) || []).length, 1);
+  assert.match(html, /hreflang="de" href="https:\/\/www\.missav-j\.com\/de\/watch\/h0930-ki180818-request-work-collection-771"/);
+  assert.match(html, /VideoObject/);
+
+  const social = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/h0930-ki180818-h0930-ki180818-request-work-collection-771', {
+      headers: { 'User-Agent': 'Twitterbot/1.0' }
+    }),
+    env
+  });
+  const socialResponse = await onRequest(social);
+  const socialHtml = await socialResponse.text();
+  await settle(social);
+  assert.equal(socialResponse.status, 200);
+  assert.match(socialHtml, new RegExp(`<link rel="canonical"[^>]+href="${canonicalUrl}"`));
+  assert.match(socialHtml, /summary_large_image/);
+  assert.match(socialHtml, /\/img\/[A-Za-z0-9_-]+\.jpg/);
+});
+
+test('missing watch metadata returns 404 only for confirmed absence, 503 for upstream failure', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const env = { ASSETS: { fetch: async () => new Response(indexHtml) } };
+  const request = new Request('https://www.missav-j.com/en/watch/missing-999999999', {
+    headers: { 'User-Agent': 'Googlebot/2.1' }
+  });
+  globalThis.fetch = async () => new Response('not found', { status: 404 });
+  const absent = makeContext({ request, env });
+  const notFound = await onRequest(absent);
+  assert.equal(notFound.status, 404);
+  assert.equal(notFound.headers.get('Cache-Control'), 'no-store');
+
+  globalThis.caches = { default: new MemoryCache() };
+  globalThis.fetch = async () => new Response('unavailable', { status: 503 });
+  const transient = makeContext({ request: request.clone(), env });
+  const retry = await onRequest(transient);
+  assert.equal(retry.status, 503);
+  assert.equal(retry.headers.get('Retry-After'), '120');
+});
+
+test('tag pages receive route-specific crawler metadata instead of the home shell', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const routes = JSON.parse(await readFile(new URL('_routes.json', ROOT), 'utf8'));
+  assert.ok(routes.include.includes('/*/tag'));
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/de/tag?name=Nanase%20Nishino', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('X-Edge-Mode'), 'SEARCH-SSR');
+  assert.match(html, /<title>[^<]*Nanase Nishino[^<]*<\/title>/);
+  assert.match(html, /rel="canonical"[^>]*\/de\/tag\?name=Nanase%20Nishino/);
+  assert.equal((html.match(/<h1\b/gi) || []).length, 1);
+});
+
 test('service worker API cache prevents a second Worker request within TTL', async () => {
   const handlers = {};
   globalThis.self = {
@@ -486,13 +581,16 @@ test('frontend retries one transient failure but never retries a 4xx response', 
 test('versioned caches stay synchronized and private routes bypass Functions', async () => {
   const sw = await readFile(new URL('sw.js', ROOT), 'utf8');
   const catchall = await readFile(new URL('functions/[[catchall]].js', ROOT), 'utf8');
+  const postsFunction = await readFile(new URL('functions/api/posts/[[id]].js', ROOT), 'utf8');
   const routes = JSON.parse(await readFile(new URL('_routes.json', ROOT), 'utf8'));
   const assetVersion = sw.match(/CACHE_NAME = 'missavj-cache-v([^']+)'/)?.[1];
   const apiVersion = sw.match(/API_CACHE_NAME = 'missavj-api-cache-v([^']+)'/)?.[1];
   const ssrVersion = catchall.match(/SSR_CACHE_VERSION = 'v([^']+)'/)?.[1];
+  const postsVersion = postsFunction.match(/POSTS_CACHE_VERSION = 'v([^']+)'/)?.[1];
   assert.ok(assetVersion);
   assert.equal(apiVersion, assetVersion);
   assert.equal(ssrVersion, assetVersion);
+  assert.equal(postsVersion, assetVersion);
   assert.ok(routes.exclude.includes('/history*'));
   assert.ok(routes.exclude.includes('/*/history*'));
   assert.ok(routes.exclude.includes('/watch-later*'));

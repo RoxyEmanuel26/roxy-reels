@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.85';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.85';
-import i18n from './i18n.js?v=2.8.85';
-import { Analytics } from './analytics.js?v=2.8.85';
-import ReferralSystem from './referral.js?v=2.8.85';
-import './ads.js?v=2.8.85';
+import ui from './ui.js?v=2.8.86';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.86';
+import i18n from './i18n.js?v=2.8.86';
+import { Analytics } from './analytics.js?v=2.8.86';
+import ReferralSystem from './referral.js?v=2.8.86';
+import './ads.js?v=2.8.86';
 
 // Initialize Global In-Memory SPA States
 // FIX: Validate Array type — JSON.parse() doesn't throw on non-array values (e.g. string/number),
@@ -87,21 +87,14 @@ export function slugify(text) {
 }
 
 // Global helpers for generating and navigating watch URLs using clean slugs
-window.missavJGetWatchUrl = function(id, code, title) {
+window.missavJGetWatchUrl = function(id, code, title, sourceSlug = '') {
   const cleanCode = slugify(code || '');
-  const cleanTitle = slugify(title || '');
-  let slug = '';
-  if (cleanCode && cleanTitle) {
-    slug = `${cleanCode}-${cleanTitle}`;
-  } else if (cleanCode) {
-    slug = cleanCode;
-  } else if (cleanTitle) {
-    slug = cleanTitle;
+  let slug = slugify(sourceSlug || title || '') || 'video';
+  if (cleanCode && slug !== cleanCode && !slug.startsWith(`${cleanCode}-`)) {
+    slug = `${cleanCode}-${slug}`;
   }
-  if (slug.length > 100) {
-    slug = slug.substring(0, 100);
-  }
-  return slug ? `/watch/${slug}-${id}` : `/watch/${id}`;
+  slug = slug.slice(0, 100).replace(/-+$/g, '') || 'video';
+  return `/watch/${encodeURIComponent(`${slug}-${id}`)}`;
 };
 
 window.missavJNavigateToWatch = function(id, code, title) {
@@ -262,21 +255,21 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.85').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.85').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.85').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.85').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.85').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.85').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.85').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.85').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.85').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.86').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.86').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.86').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.86').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.86').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.86').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.86').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.86').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.86').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.85').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.85').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.85').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.85').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.86').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.86').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.86').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.86').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -300,18 +293,9 @@ function updateSEOTags(routePath, targetId) {
   document.documentElement.lang = i18n.hreflangCode(currentLang);
 
   let cleanRoutePath = routePath;
-  let hasLocalizedSlugs = false;
-  let localizedSlugsMap = {};
-
   if (routePath === '/watch' && window.missavJState.activeVideo) {
     const post = window.missavJState.activeVideo;
-    if (post.localized_slugs) {
-      hasLocalizedSlugs = true;
-      localizedSlugsMap = post.localized_slugs;
-      cleanRoutePath = `/watch/${localizedSlugsMap[currentLang] || slugify(post.code) + '-' + slugify(post.title)}-${post.id}`;
-    } else {
-      cleanRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title);
-    }
+    cleanRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
   } else {
     // For listing and browsing pages
     const parsed = parseUrl(window.location.pathname);
@@ -335,11 +319,7 @@ function updateSEOTags(routePath, targetId) {
     
     if (routePath === '/watch' && window.missavJState.activeVideo) {
       const post = window.missavJState.activeVideo;
-      if (hasLocalizedSlugs && localizedSlugsMap[lang.code]) {
-        langRoutePath = `/watch/${localizedSlugsMap[lang.code]}-${post.id}`;
-      } else {
-        langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title);
-      }
+      langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
     }
     
     const altLink = document.createElement('link');
@@ -356,11 +336,7 @@ function updateSEOTags(routePath, targetId) {
   let enWatchPath = cleanRoutePath;
   if (routePath === '/watch' && window.missavJState.activeVideo) {
     const post = window.missavJState.activeVideo;
-    if (hasLocalizedSlugs && localizedSlugsMap['en']) {
-      enWatchPath = `/watch/${localizedSlugsMap['en']}-${post.id}`;
-    } else {
-      enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title);
-    }
+    enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
   }
   xDefaultLink.href = `${baseDomain}/en${enWatchPath}`;
   document.head.appendChild(xDefaultLink);
@@ -397,7 +373,10 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
     const post = window.missavJState.activeVideo;
     const translatedTitle = i18n.translateVideoTitle(post.title);
     const pageTitle = `${translatedTitle} — MISSAV-J`;
-    const description = `${i18n.t('meta_watch_prefix') || 'Watch'} ${post.code || ''} ${translatedTitle}`.trim();
+    const normalizedCode = slugify(post.code || '');
+    const normalizedTitle = slugify(translatedTitle);
+    const displayCode = normalizedCode && (normalizedTitle === normalizedCode || normalizedTitle.startsWith(`${normalizedCode}-`)) ? '' : (post.code || '');
+    const description = `${i18n.t('meta_watch_prefix') || 'Watch'} ${displayCode} ${translatedTitle}`.replace(/\s+/g, ' ').trim();
     // Gunakan image proxy internal untuk konsistensi dengan [[catchall]].js agar terhindar dari hotlink protection CDN
     const thumbnail = post.thumbnail ? ui.getProxiedThumbnail(post.thumbnail) : '/assets/images/logo.webp';
 
@@ -623,7 +602,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.85').then(m => {
+    import('./player.js?v=2.8.86').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -634,7 +613,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.85').then(m => {
+    import('./player.js?v=2.8.86').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -717,7 +696,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.85').then(m => {
+  import('./player.js?v=2.8.86').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -910,7 +889,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.85').then(m => {
+      import('./player.js?v=2.8.86').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
