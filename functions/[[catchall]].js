@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.86';
+const SSR_CACHE_VERSION = 'v2.8.87';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
