@@ -143,6 +143,8 @@ self.addEventListener('fetch', (event) => {
   // === CRITICAL FOR AD REVENUE ===
   // Script jaringan iklan (Adsterra) TIDAK boleh di-cache oleh Service Worker.
   const AD_NETWORK_DOMAINS = [
+    'benchform.org',
+    'biomanos.org',
     'glamournakedemployee.com',
     'a.adnxs.com',
     's.magsrv.com',
