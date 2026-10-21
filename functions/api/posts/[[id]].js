@@ -5,7 +5,7 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
-const POSTS_CACHE_VERSION = 'v2.8.87';
+const POSTS_CACHE_VERSION = 'v2.8.88';
 const LIST_FRESH_TTL_SECONDS = 15 * 60;
 const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
 const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
