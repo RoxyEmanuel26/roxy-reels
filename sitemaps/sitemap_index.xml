@@ -13,8 +13,16 @@
     <loc>https://www.missav-j.com/sitemaps/sitemap_actors_1.xml</loc>
   </sitemap>
   <sitemap>
+    <loc>https://www.missav-j.com/sitemaps/sitemap_videos_126000-126999.xml</loc>
+    <lastmod>2026-10-22</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.missav-j.com/sitemaps/sitemap_videos_125000-125999.xml</loc>
+    <lastmod>2026-10-22</lastmod>
+  </sitemap>
+  <sitemap>
     <loc>https://www.missav-j.com/sitemaps/sitemap_videos_124000-124999.xml</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-22</lastmod>
   </sitemap>
   <sitemap>
     <loc>https://www.missav-j.com/sitemaps/sitemap_videos_123000-123999.xml</loc>
