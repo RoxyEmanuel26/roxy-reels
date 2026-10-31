@@ -1,5 +1,36 @@
 # === MISSAV-J Robots.txt ===
 
+# AI Search & Citation Crawlers (Allow for GEO / AI Citations)
+User-agent: GPTBot
+Allow: /
+Allow: /api/image
+Allow: /img/
+Disallow: /api/
+Disallow: /search
+Disallow: /*/search
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /api/image
+Allow: /img/
+Disallow: /api/
+Disallow: /search
+Disallow: /*/search
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /api/image
+Allow: /img/
+Disallow: /api/
+Disallow: /search
+Disallow: /*/search
+
+User-agent: Google-Extended
+Allow: /
+
 User-agent: AhrefsBot
 Disallow: /
 
@@ -21,19 +52,13 @@ Allow: /img/
 # Blokir semua endpoint API lainnya (tidak perlu di-crawl oleh Google)
 Disallow: /api/
 
-# FIX: Blokir rute user-session & halaman pencarian — mencegah crawler trap & index bloat.
-# Google akan meng-crawl /search?q=... tanpa batas (unlimited query variations),
-# memboroskan crawl budget dan mengindeks ribuan halaman duplikat/kosong.
+# Blokir rute user-session & halaman pencarian — mencegah crawler trap & index bloat.
 Disallow: /search
 Disallow: /*/search
 Disallow: /history
 Disallow: /*/history
 Disallow: /watch-later
 Disallow: /*/watch-later
-
-# FIX: Hapus 'Disallow: /functions/' — direktori ini adalah source code internal
-# dan tidak pernah disajikan sebagai URL publik. Menyebutkannya membocorkan
-# struktur folder proyek dan tidak berdampak pada crawling.
 
 # Sitemaps
 Sitemap: https://www.missav-j.com/sitemaps/sitemap_index.xml

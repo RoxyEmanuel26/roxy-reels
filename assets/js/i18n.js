@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.8.88';
+import ui from './ui.js?v=2.8.89';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -607,6 +607,18 @@ const TITLE_DICTIONARY = {
   },
   legal_contact_link: {
     en: 'Contact Us', id: 'Hubungi Kami', 'zh-TW': '聯絡我們', 'zh-CN': '联络我们', ja: 'お問い合わせ', ko: '문의하기', ms: 'Hubungi Kami', th: 'ติดต่อเรา', de: 'Kontakt', fr: 'Contactez-nous', vi: 'Liên hệ', fil: 'Contact Us', pt: 'Contate-nos'
+  },
+  legal_privacy_link: {
+    en: 'Privacy Policy', id: 'Kebijakan Privasi', 'zh-TW': '隱私權政策', 'zh-CN': '隐私政策', ja: 'プライバシーポリシー', ko: '개인정보처리방침', ms: 'Dasar Privasi', th: 'นโยบายความเป็นส่วนตัว', de: 'Datenschutz', fr: 'Politique de confidentialité', vi: 'Chính sách bảo mật', fil: 'Patakaran sa Privacy', pt: 'Política de Privacidade'
+  },
+  legal_privacy_title: {
+    en: 'Privacy Policy', id: 'Kebijakan Privasi', 'zh-TW': '隱私權政策', 'zh-CN': '隐私政策', ja: 'プライバシーポリシー', ko: '개인정보처리방침', ms: 'Dasar Privasi', th: 'นโยบายความเป็นส่วนตัว', de: 'Datenschutzerklärung', fr: 'Politique de confidentialité', vi: 'Chính sách bảo mật', fil: 'Patakaran sa Privacy', pt: 'Política de Privacidade'
+  },
+  legal_terms_link: {
+    en: 'Terms of Service', id: 'Ketentuan Layanan', 'zh-TW': '服務條款', 'zh-CN': '服务条款', ja: '利用規約', ko: '이용 약관', ms: 'Syarat Perkhidmatan', th: 'ข้อกำหนดการใช้งาน', de: 'Nutzungsbedingungen', fr: 'Conditions d\'utilisation', vi: 'Điều khoản dịch vụ', fil: 'Mga Tuntunin ng Serbisyo', pt: 'Termos de Serviço'
+  },
+  legal_terms_title: {
+    en: 'Terms of Service & Agreement', id: 'Ketentuan Layanan & Perjanjian', 'zh-TW': '服務條款與使用者協議', 'zh-CN': '服务条款与用户协议', ja: '利用規約・ユーザー同意書', ko: '이용 약관 및 사용자 계약', ms: 'Syarat Perkhidmatan & Perjanjian', th: 'ข้อกำหนดในการให้บริการและข้อตกลง', de: 'Nutzungsbedingungen & Vereinbarung', fr: 'Conditions d\'utilisation et accord', vi: 'Điều khoản dịch vụ & Thỏa thuận', fil: 'Mga Tuntunin ng Serbisyo at Kasunduan', pt: 'Termos de Serviço e Contrato'
   },
   legal_contact_title: {
     en: 'Contact Us & Partnerships', id: 'Hubungi Kami & Kemitraan', 'zh-TW': '聯絡我們與商務合作', 'zh-CN': '联络我们与商务合作', ja: 'お問い合わせ・広告掲載', ko: '문의하기 및 제휴', ms: 'Hubungi Kami & Kerjasama', th: 'ติดต่อเราและโฆษณา', de: 'Kontakt & Partnerschaften', fr: 'Contactez-nous & Partenariats', vi: 'Liên hệ & Hợp tác', fil: 'Makipag-ugnayan & Pakikipagtulungan', pt: 'Contato & Parcerias'

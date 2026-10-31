@@ -596,3 +596,76 @@ test('versioned caches stay synchronized and private routes bypass Functions', a
   assert.ok(routes.exclude.includes('/watch-later*'));
   assert.ok(routes.exclude.includes('/*/watch-later*'));
 });
+
+
+test('bare legal routes redirect to localized paths', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/dmca', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('not found', { status: 404 }) } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/en/dmca');
+});
+
+test('legal routes render full compliance SSR metadata and AboutPage schema', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const cache = new MemoryCache();
+  globalThis.caches = { default: cache };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/dmca', {
+      headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const text = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(text, /DMCA Copyright Notice/);
+  assert.match(text, /compliance@missav-j\.com/);
+  assert.match(text, /"@type":\s*"AboutPage"/);
+});
+
+test('unknown routes return genuine HTTP 404 with noindex metadata', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/non-existent-broken-url', {
+      headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response('not found', { status: 404 }) } }
+  });
+  const response = await onRequest(context);
+  const text = await response.text();
+  assert.equal(response.status, 404);
+  assert.match(text, /404 - Page Not Found/);
+  assert.match(text, /name="robots" content="noindex, follow"/);
+});
+
+test('category and studio hubs render crawlable directory links in SSR', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const cache = new MemoryCache();
+  globalThis.caches = { default: cache };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const categoriesJson = JSON.stringify(['Uncensored', 'Amateur', 'Drama']);
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/categories', {
+      headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' }
+    }),
+    env: {
+      ASSETS: {
+        fetch: async req => {
+          const u = String(req.url || req);
+          if (u.includes('categories.json')) return new Response(categoriesJson, { status: 200 });
+          return new Response(indexHtml);
+        }
+      }
+    }
+  });
+  const response = await onRequest(context);
+  const text = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(text, /aria-label="All categories"/);
+  assert.match(text, /href="\/en\/category\?name=Uncensored"/);
+});

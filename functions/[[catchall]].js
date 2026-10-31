@@ -12,10 +12,10 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 // Social preview crawlers do not execute the client-side metadata updater. They
 // must receive complete, stable metadata in the first HTML response.
 const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot|TelegramBot|Discordbot|Slackbot|WhatsApp/i;
-const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot/i;
+const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.88';
+const SSR_CACHE_VERSION = 'v2.8.89';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
@@ -36,6 +36,107 @@ function removeDefaultSeoNoscript(html) {
   // Leaving the homepage noscript behind creates a second, conflicting H1.
   return html.replace(/<noscript>\s*<div[^>]*>\s*<h1>MISSAV-J — Premium JAV Streaming<\/h1>[\s\S]*?<\/div>\s*<\/noscript>/i, '');
 }
+
+function generate404Html(origin, lang = 'en') {
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>404 - Page Not Found | MISSAV-J</title>
+  <meta name="robots" content="noindex, follow" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f0f10; color: #fff; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; }
+    .container { max-width: 500px; padding: 40px 20px; }
+    h1 { font-size: 5rem; margin: 0; color: #e50914; font-weight: 900; }
+    h2 { font-size: 1.5rem; margin: 10px 0 20px; }
+    p { color: #888; line-height: 1.6; margin-bottom: 30px; }
+    a.btn { display: inline-block; background: #e50914; color: #fff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.2s; }
+    a.btn:hover { background: #b80710; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>404</h1>
+    <h2>Page Not Found</h2>
+    <p>The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+    <a href="${origin}/${lang}/" class="btn">Back to Home</a>
+  </div>
+</body>
+</html>`;
+}
+
+const LEGAL_SSR_HTML = {
+  'dmca': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>DMCA (Digital Millennium Copyright Act) Policy</h1>
+      <p>MISSAV-J respects the intellectual property rights of others. We are an automated search and indexing portal for third-party videos and do not host, store, upload, or stream any media files on our own servers. All video materials are embedded directly from external third-party sources.</p>
+      <h2>Notice and Takedown Procedure</h2>
+      <p>If you believe that copyrighted material has been linked to or displayed on this website in a manner that constitutes infringement, please submit a formal DMCA take-down notification to our designated compliance agent.</p>
+      <h3>Required Notice Elements</h3>
+      <ul>
+        <li>A physical or electronic signature of a person authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
+        <li>Identification of the copyrighted work claimed to have been infringed.</li>
+        <li>Direct URLs on MISSAV-J where the allegedly infringing link or embed is located.</li>
+        <li>Contact information of the complaining party, including full legal name, physical address, email address, and telephone number.</li>
+        <li>A statement that the complaining party has a good faith belief that use of the material is not authorized by the copyright owner, its agent, or the law.</li>
+        <li>A statement that the information in the notification is accurate, and under penalty of perjury, that the complaining party is authorized to act on behalf of the copyright owner.</li>
+      </ul>
+      <h2>Designated Compliance Contact</h2>
+      <p>Please send all formal DMCA notices to: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+      <p>Valid notices are processed within 24 to 48 business hours.</p>
+    </article>
+  `,
+  '2257': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>18 U.S.C. § 2257 Record-Keeping Compliance Statement</h1>
+      <p>All visual depictions of actual sexually explicit conduct appearing on this website were produced and published by third-party content creators and organizations. Pursuant to Title 18 of the United States Code, Section 2257 (18 U.S.C. § 2257) and 28 C.F.R. Part 75, all models, actors, and performers depicted in these visual materials were 18 years of age or older at the time of production.</p>
+      <h2>Custodian of Records</h2>
+      <p>Age verification records and compliance documentation required under 18 U.S.C. § 2257 are maintained by the respective original producers and publishers of the primary video content. This website operates strictly as an indexing service and does not produce, record, or physically retain master records for third-party materials.</p>
+      <p>For inquiries regarding specific producer record custodians, please contact: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+    </article>
+  `,
+  'privacy-policy': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>Privacy Policy</h1>
+      <p>At MISSAV-J, accessible from https://www.missav-j.com/, the privacy of our visitors is of paramount importance. This Privacy Policy outlines the types of information collected and how it is used.</p>
+      <h2>Log Files & Cookies</h2>
+      <p>Like most websites, MISSAV-J utilizes standard log files. The information inside log files includes IP addresses, browser types, Internet Service Providers (ISP), referring/exit pages, and date/time stamps. This information is used solely to analyze trends, administer the site, and track technical performance.</p>
+      <p>We use local storage strictly for remembering user interface preferences, such as selected language and display mode.</p>
+      <h2>Third-Party Advertising & Privacy</h2>
+      <p>Third-party ad networks and ad servers may use cookies, JavaScript, or web beacons in their respective advertisements displayed on MISSAV-J. These third parties automatically receive your IP address when this occurs. MISSAV-J has no access to or control over these cookies used by third-party advertisers.</p>
+      <h2>Consent</h2>
+      <p>By using our website, you hereby consent to our Privacy Policy and agree to its terms.</p>
+      <p>Questions? Contact us at: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+    </article>
+  `,
+  'terms': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>Terms of Service</h1>
+      <p>Welcome to MISSAV-J. By accessing and using https://www.missav-j.com/, you accept and agree to be bound by the following Terms of Service.</p>
+      <h2>Age Requirement (18+)</h2>
+      <p>You must be at least 18 years of age, or the age of legal majority in your jurisdiction, whichever is greater, to view content on MISSAV-J. If you are under 18, you must exit this website immediately.</p>
+      <h2>Nature of the Service</h2>
+      <p>MISSAV-J is an online indexing and search interface for third-party media content. We do not host, store, or broadcast media files on our servers. All video streams originate from independent external services.</p>
+      <h2>Disclaimer of Warranties & Limitation of Liability</h2>
+      <p>The materials on MISSAV-J are provided on an 'as is' basis. MISSAV-J makes no warranties, expressed or implied, regarding reliability, availability, or fitness for a particular purpose.</p>
+      <p>Contact: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+    </article>
+  `,
+  'contact': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>Contact Us & Advertising Inquiries</h1>
+      <p>If you have any questions, feedback, or business inquiries, please reach out through the channels below:</p>
+      <h2>Advertising & Sponsorships</h2>
+      <p>For display banners, native placements, pop-under opportunities, or direct partnerships, please include your network name, budget, and target geos.</p>
+      <h2>Content & Compliance</h2>
+      <p>To report broken links, submit DMCA notices, or request copyright review, please include the exact video code and URLs.</p>
+      <h2>Email Contact</h2>
+      <p>Official Contact Email: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+      <p>We aim to respond to all legitimate requests within 24 to 48 hours.</p>
+    </article>
+  `
+};
 
 async function serveHumanShell(context, origin) {
   const cacheKey = new Request(`${origin}/__human-spa-shell?version=${SSR_CACHE_VERSION}`, { method: 'GET' });
@@ -192,6 +293,11 @@ const SEO_I18N = {
     search: { t: "Search Results | MISSAV-J", d: "Search results for premium JAV videos on MISSAV-J." },
     history: { t: "Session History | MISSAV-J", d: "Your recently watched JAV videos on MISSAV-J." },
     watch_later: { t: "Watch Later | MISSAV-J", d: "Your saved JAV videos to watch later on MISSAV-J." },
+    dmca: { t: "DMCA Copyright Notice & Policy | MISSAV-J", d: "MISSAV-J Digital Millennium Copyright Act (DMCA) policy. How to submit copyright complaints and content removal requests." },
+    2257: { t: "18 U.S.C. 2257 Record-Keeping Compliance | MISSAV-J", d: "18 U.S.C. 2257 compliance statement. All performers appearing on MISSAV-J were 18 years of age or older at production time." },
+    privacy_policy: { t: "Privacy Policy | MISSAV-J", d: "MISSAV-J Privacy Policy. Learn how we handle cookies, respect user privacy, and maintain compliance standards." },
+    terms: { t: "Terms of Service & User Agreement | MISSAV-J", d: "MISSAV-J Terms of Service. Review website terms of use, content disclaimers, and user obligations." },
+    contact: { t: "Contact Us & Business Partnerships | MISSAV-J", d: "Contact MISSAV-J for advertising inquiries, banner sponsorships, content reporting, and support." },
     default: { t: "MISSAV-J | Premium JAV Streaming", d: "Watch the best premium JAV streaming on MISSAV-J." }
   },
   id: {
@@ -207,6 +313,11 @@ const SEO_I18N = {
     search: { t: "Hasil Pencarian | MISSAV-J", d: "Hasil pencarian untuk video JAV premium di MISSAV-J." },
     history: { t: "Riwayat Sesi | MISSAV-J", d: "Video JAV yang baru saja Anda tonton di MISSAV-J." },
     watch_later: { t: "Tonton Nanti | MISSAV-J", d: "Video JAV yang Anda simpan untuk ditonton nanti di MISSAV-J." },
+    dmca: { t: "Kebijakan Hak Cipta DMCA | MISSAV-J", d: "Kebijakan DMCA MISSAV-J. Cara mengirimkan keluhan hak cipta dan permintaan penghapusan konten." },
+    2257: { t: "Pernyataan Kepatuhan 18 U.S.C. 2257 | MISSAV-J", d: "Pernyataan kepatuhan pencatatan 18 U.S.C. 2257. Semua pemeran berusia 18 tahun ke atas saat produksi." },
+    privacy_policy: { t: "Kebijakan Privasi | MISSAV-J", d: "Kebijakan Privasi MISSAV-J. Pelajari bagaimana kami melindungi privasi pengguna dan standar kepatuhan." },
+    terms: { t: "Ketentuan Layanan & Perjanjian Pengguna | MISSAV-J", d: "Ketentuan Layanan MISSAV-J. Pelajari panduan penggunaan situs dan syarat hukum." },
+    contact: { t: "Hubungi Kami & Kemitraan Bisnis | MISSAV-J", d: "Hubungi MISSAV-J untuk pertanyaan periklanan, sponsor banner, dan dukungan teknis." },
     default: { t: "MISSAV-J | Streaming JAV Premium", d: "Tonton streaming JAV premium terbaik di MISSAV-J." }
   },
   ja: {
@@ -750,10 +861,22 @@ export async function onRequest(context) {
       }
     });
   }
+  const bareLegalMatch = pathname.match(/^\/(dmca|privacy-policy|terms|contact|2257)\/?$/i);
+  if (bareLegalMatch) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}/en/${bareLegalMatch[1].toLowerCase()}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'LEGAL-REDIRECT',
+        'X-Cache-Status': 'BYPASS'
+      }
+    });
+  }
   // Check cache for GET requests on Watch and Listing Pages only
   const isGet = request.method === 'GET';
   const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?\/?$/;
-  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|tag|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)\/?$/;
+  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|tag|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search|dmca|privacy-policy|terms|contact|2257)\/?$/;
   const langRegex = /^\/([a-zA-Z\-]+)?\/?$/;
   
   const isWatch = pathname.match(watchRegex);
@@ -1075,11 +1198,35 @@ export async function onRequest(context) {
               // Inject visible content + iframe for first-wave crawler indexing.
               // PENTING: h1 dan p HARUS visible (tidak disembunyikan via CSS).
               // Google menghukum 'width:1px/height:1px' sebagai cloaking (kebijakan webmaster).
+              let studioLinkHtml = '';
+              if (studioStr) {
+                studioLinkHtml = `<p style="margin: 6px 0;"><strong>Studio:</strong> <a href="/${activeLang}/studio?name=${encodeURIComponent(studioStr)}" style="color: #e50914;">${escapeHtml(studioStr)}</a></p>`;
+              }
+              let actressesLinksHtml = '';
+              if (post.actors && Array.isArray(post.actors) && post.actors.length > 0) {
+                const links = post.actors.map(a => {
+                  const aName = typeof a === 'string' ? a : (a.name || '');
+                  return aName ? `<a href="/${activeLang}/actor?name=${encodeURIComponent(aName)}" style="color: #e50914;">${escapeHtml(aName)}</a>` : '';
+                }).filter(Boolean).join(', ');
+                if (links) actressesLinksHtml = `<p style="margin: 6px 0;"><strong>Actresses:</strong> ${links}</p>`;
+              }
+              let categoriesLinksHtml = '';
+              if (post.categories && Array.isArray(post.categories) && post.categories.length > 0) {
+                const links = post.categories.map(c => {
+                  const cName = typeof c === 'string' ? c : (c.name || '');
+                  return cName ? `<a href="/${activeLang}/category?name=${encodeURIComponent(cName)}" style="color: #e50914;">${escapeHtml(cName)}</a>` : '';
+                }).filter(Boolean).join(', ');
+                if (links) categoriesLinksHtml = `<p style="margin: 6px 0;"><strong>Categories:</strong> ${links}</p>`;
+              }
+
               const seoFallbackContent = `
         <div class="seo-fallback" style="display: contents;">
           <h1>${escapeHtml(fullTitle)}</h1>
           <p>${escapeHtml(description)}</p>
-          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000;">
+          <div style="margin: 16px 0;">
+            <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(fullTitle)}" width="800" height="450" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 1rem;" />
+          </div>
+          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 16px;">
             <iframe
               src="${escapeHtml(cleanEmbedUrl)}"
               title="${escapeHtml(fullTitle)}"
@@ -1089,6 +1236,11 @@ export async function onRequest(context) {
               referrerpolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>
+          <nav aria-label="Video Metadata" style="margin-top: 16px; font-size: 0.95rem; line-height: 1.6;">
+            ${studioLinkHtml}
+            ${actressesLinksHtml}
+            ${categoriesLinksHtml}
+          </nav>
         </div>
               `;
               htmlContent = htmlContent.replace(/<div class="seo-fallback"[^>]*>[\s\S]*?<\/div>/i, () => seoFallbackContent);
@@ -1175,7 +1327,11 @@ export async function onRequest(context) {
         let schemaType = 'CollectionPage';
         
         // Resolve actual route type from URL pattern (popular-actors falls back to actors, empty type is home)
-        const typeKey = (type === 'popular-actors') ? 'actors' : (type === 'watch-later') ? 'watch_later' : (type === 'tag') ? 'category' : (type || 'home');
+        const typeKey = (type === 'popular-actors') ? 'actors'
+          : (type === 'watch-later') ? 'watch_later'
+          : (type === 'privacy-policy') ? 'privacy_policy'
+          : (type === 'tag') ? 'category'
+          : (type || 'home');
         const langDict = SEO_I18N[activeLang] || SEO_I18N['en'];
         const pageTemplate = langDict[typeKey] || SEO_I18N['en'][typeKey] || langDict['default'] || SEO_I18N['en']['default'];
         
@@ -1190,6 +1346,8 @@ export async function onRequest(context) {
           schemaType = 'ProfilePage';
         } else if (type === 'search') {
           schemaType = 'SearchResultsPage';
+        } else if (['dmca', 'privacy-policy', 'terms', 'contact', '2257'].includes(type)) {
+          schemaType = 'AboutPage';
         }
 
         const pageUrl = `${url.origin}${url.pathname}${url.search}`;
@@ -1243,6 +1401,14 @@ export async function onRequest(context) {
           schemaJson = {
             "@context": "https://schema.org",
             "@type": "SearchResultsPage",
+            "name": pageTitle,
+            "description": pageDesc,
+            "url": pageUrl
+          };
+        } else if (schemaType === 'AboutPage') {
+          schemaJson = {
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
             "name": pageTitle,
             "description": pageDesc,
             "url": pageUrl
@@ -1314,12 +1480,127 @@ export async function onRequest(context) {
           }
         }
 
-        // Inject fallback h1 text (+ crawlable actor directory on /actors)
+        // Hub pages: Categories directory
+        let categoryLinksHtml = '';
+        if (type === 'categories') {
+          try {
+            const catRes = await env.ASSETS.fetch(new URL('/api/categories.json', request.url));
+            if (catRes.ok) {
+              const catNames = await catRes.json();
+              if (Array.isArray(catNames)) {
+                const items = catNames
+                  .filter(c => typeof c === 'string' && c.trim() !== '')
+                  .map(c => `<li><a href="/${activeLang}/category?name=${encodeURIComponent(c)}">${escapeHtml(c)}</a></li>`)
+                  .join('');
+                categoryLinksHtml = `<nav aria-label="All categories" style="margin-top: 16px;"><ul>${items}</ul></nav>`;
+              }
+            }
+          } catch (err) {
+            console.error('[Category Directory Error]', err);
+          }
+        }
+
+        // Hub pages: Studios directory
+        let studioLinksHtml = '';
+        if (type === 'studios') {
+          const POPULAR_STUDIOS = [
+            'S1 NO.1 STYLE', 'MOODYZ', 'PRESTIGE', 'Soft On Demand',
+            'Idea Pocket', 'FALENO', 'MUTEKI', 'Fitch',
+            'OPPAL', 'Kawaii*', 'KMP', 'Attackers', 'Premium', 'Other'
+          ];
+          const items = POPULAR_STUDIOS
+            .map(s => `<li><a href="/${activeLang}/studio?name=${encodeURIComponent(s)}">${escapeHtml(s)}</a></li>`)
+            .join('');
+          studioLinksHtml = `<nav aria-label="All studios" style="margin-top: 16px;"><ul>${items}</ul></nav>`;
+        }
+
+        // Legal content injection
+        const legalPageKey = (type === 'privacy-policy') ? 'privacy-policy'
+          : (type === 'terms') ? 'terms'
+          : (type === 'dmca') ? 'dmca'
+          : (type === 'contact') ? 'contact'
+          : (type === '2257') ? '2257'
+          : null;
+        const legalHtml = legalPageKey ? (LEGAL_SSR_HTML[legalPageKey] || '') : '';
+
+        // Crawlable Video Catalog for Listing Pages (Home, Trending, Recent, Category, Actor, Studio)
+        let videoCatalogHtml = '';
+        const isVideoListing = ['home', 'trending', 'recent', 'category', 'actor', 'studio', 'tag'].includes(typeKey);
+        if (isVideoListing && isKnownCrawler) {
+          try {
+            const apiParams = new URLSearchParams();
+            apiParams.set('per_page', '12');
+            const pageNum = parseInt(url.searchParams.get('page') || '1', 10);
+            if (pageNum > 1) apiParams.set('page', String(pageNum));
+
+            if (type === 'category' || type === 'tag') {
+              if (nameParam) apiParams.set('category', nameParam);
+            } else if (type === 'actor') {
+              if (nameParam) apiParams.set('actor', nameParam);
+            } else if (type === 'studio') {
+              if (nameParam) apiParams.set('studio', nameParam);
+            } else if (type === 'trending') {
+              apiParams.set('sort', 'views');
+              apiParams.set('order', 'desc');
+            } else if (type === 'recent') {
+              apiParams.set('sort', 'release');
+              apiParams.set('order', 'desc');
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const apiRes = await fetch(`${TARGET_BASE}/posts?${apiParams.toString()}`, {
+              headers: {
+                'Accept': 'application/json',
+                'X-Client-Site': 'https://www.missav-j.com',
+                'User-Agent': 'MISSAV-J-Edge-SSR/1.0'
+              },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (apiRes.ok) {
+              const posts = await apiRes.json();
+              if (Array.isArray(posts) && posts.length > 0) {
+                const items = posts.map(p => {
+                  const vUrl = `/${activeLang}${canonicalWatchPath(p, p.id)}`;
+                  const imgUrl = getSocialImageUrl(p.thumbnail, url.origin);
+                  const pTitle = p.title || '';
+                  const code = p.code ? `[${escapeHtml(p.code)}] ` : '';
+                  return `<li style="margin-bottom: 16px;"><article><a href="${vUrl}"><img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(pTitle)}" width="320" height="180" loading="lazy" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px;" /><h2 style="font-size: 0.95rem; margin: 6px 0;">${code}${escapeHtml(pTitle)}</h2></a></article></li>`;
+                }).join('');
+
+                const nextPageNum = pageNum + 1;
+                const nextUrl = new URL(url.toString());
+                nextUrl.searchParams.set('page', String(nextPageNum));
+
+                videoCatalogHtml = `
+                  <nav aria-label="Video Catalog" style="margin-top: 20px;">
+                    <ul style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
+                      ${items}
+                    </ul>
+                    <nav class="pagination-nav" aria-label="Pagination" style="margin-top: 24px; text-align: center;">
+                      <a href="${escapeHtml(nextUrl.pathname + nextUrl.search)}" rel="next" style="display: inline-block; padding: 8px 18px; background: #e50914; color: #fff; text-decoration: none; border-radius: 4px; font-weight: 600;">Next Page »</a>
+                    </nav>
+                  </nav>
+                `;
+              }
+            }
+          } catch (apiErr) {
+            console.warn('[Video Catalog SSR Fetch Error]', apiErr?.message || apiErr);
+          }
+        }
+
+        // Inject fallback h1 text (+ crawlable actor/category/studio directories, legal content, video catalog)
         const seoFallbackContent = `
           <div class="seo-fallback" style="display: contents;">
             <h1>${escapeHtml(pageTitle)}</h1>
             <p>${escapeHtml(pageDesc)}</p>
             ${actorLinksHtml}
+            ${categoryLinksHtml}
+            ${studioLinksHtml}
+            ${legalHtml}
+            ${videoCatalogHtml}
           </div>
         `;
         // Function replacer: actor names may contain `$`, which is special in a
@@ -1345,7 +1626,7 @@ export async function onRequest(context) {
     }
   }
 
-  // 4. Fallback SPA routing
+  // 4. Fallback SPA routing & Genuine 404 Status (fixes Soft 404 traps in GSC)
   const res = await env.ASSETS.fetch(request);
 
   if (res.status === 404) {
@@ -1353,12 +1634,28 @@ export async function onRequest(context) {
     const hasExtension = pathname.includes('.') && ext.length < 5;
 
     if (!pathname.startsWith('/api') && !hasExtension) {
-      const indexResponse = await env.ASSETS.fetch(new URL('/index.html', request.url));
-      return new Response(indexResponse.body, {
+      // Check if this might be a root legal route without lang prefix: e.g. /dmca, /2257, /privacy-policy, /terms, /contact
+      const legalMatch = pathname.match(/^\/(dmca|privacy-policy|terms|contact|2257)\/?$/i);
+      if (legalMatch) {
+        return new Response(null, {
+          status: 301,
+          headers: {
+            'Location': `${url.origin}/en/${legalMatch[1].toLowerCase()}`,
+            'Cache-Control': 'public, max-age=86400',
+            'X-Edge-Mode': 'LEGAL-REDIRECT',
+            'X-Cache-Status': 'BYPASS'
+          }
+        });
+      }
+
+      // Return genuine 404 HTTP status for unknown routes so Googlebot drops them
+      return new Response(generate404Html(url.origin, 'en'), {
+        status: 404,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400',
-          'CDN-Cache-Control': 'public, max-age=604800'
+          'Cache-Control': 'public, max-age=3600',
+          'X-Edge-Mode': 'NOT-FOUND-404',
+          'X-Cache-Status': 'BYPASS'
         }
       });
     }
