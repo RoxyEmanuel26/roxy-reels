@@ -1,3 +1,4 @@
 /api/sitemap /sitemaps/sitemap_index.xml 301
 /api/sitemap/* /sitemaps/sitemap_index.xml 301
 /sitemap.xml /sitemaps/sitemap_index.xml 200
+/sitemap_index.xml /sitemaps/sitemap_index.xml 200

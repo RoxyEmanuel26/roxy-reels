@@ -1128,7 +1128,7 @@ export async function onRequest(context) {
   // ─────────────────────────────────────────────────────────────────────────
 
   // 1. Handle sitemap.xml rewrite to static sitemap_index.xml
-  if (pathname === '/sitemap.xml') {
+  if (pathname === '/sitemap.xml' || pathname === '/sitemap_index.xml') {
     const newRequest = new Request(new URL('/sitemaps/sitemap_index.xml', request.url), request);
     return env.ASSETS.fetch(newRequest);
   }

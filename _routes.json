@@ -53,6 +53,7 @@
     "/contact",
     "/*/contact",
     "/sitemap.xml",
+    "/sitemap_index.xml",
     "/",
     "/en", "/en/",
     "/id", "/id/",
@@ -72,6 +73,7 @@
     "/assets/*",
     "/sitemaps/*",
     "/sitemap.xml",
+    "/sitemap_index.xml",
     "/api/sitemap*",
     "/history*",
     "/*/history*",
@@ -83,6 +85,7 @@
     "/ads.txt",
     "/favicon.ico",
     "/_headers",
-    "/b773d20d41194391a49701f57581638e.txt"
+    "/b773d20d41194391a49701f57581638e.txt",
+    "/a1be0a661f577bbd2c3eb82350a10d97.txt"
   ]
 }
