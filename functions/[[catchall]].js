@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.90';
+const SSR_CACHE_VERSION = 'v2.8.91';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
@@ -511,14 +511,30 @@ const SEO_I18N = {
 
 function formatDuration(durationStr) {
   if (!durationStr || durationStr === '00:00:00') return null;
-  const parts = durationStr.split(':').map(Number);
-  if (parts.length !== 3) return null;
-  const [h, m, s] = parts;
-  if (h === 0 && m === 0 && s === 0) return null;
+  let totalSeconds = null;
+  if (typeof durationStr === 'number' && Number.isFinite(durationStr)) {
+    totalSeconds = Math.floor(durationStr);
+  } else if (typeof durationStr === 'string') {
+    const trimmed = durationStr.trim();
+    if (/^\d+$/.test(trimmed)) {
+      totalSeconds = parseInt(trimmed, 10);
+    } else {
+      const parts = trimmed.split(':').map(Number);
+      if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+        totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else if (parts.length === 2 && parts.every(n => !isNaN(n))) {
+        totalSeconds = parts[0] * 60 + parts[1];
+      }
+    }
+  }
+  if (!totalSeconds || totalSeconds < 1 || totalSeconds > 86400) return null;
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
   let iso = 'PT';
   if (h > 0) iso += `${h}H`;
   if (m > 0) iso += `${m}M`;
-  if (s > 0) iso += `${s}S`;
+  if (s > 0 || (h === 0 && m === 0)) iso += `${s}S`;
   return iso === 'PT' ? null : iso;
 }
 
@@ -1243,23 +1259,47 @@ export async function onRequest(context) {
                 };
               }
 
-              // BreadcrumbList schema
+              // BreadcrumbList schema: 3-tier hierarchy (Home -> Category/Genre -> Video)
+              const primaryCategory = (genreList && genreList.length > 0) ? genreList[0] : '';
+              const breadcrumbElements = [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": `${url.origin}/${activeLang}/`
+                }
+              ];
+              if (primaryCategory) {
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": primaryCategory,
+                  "item": `${url.origin}/${activeLang}/category?name=${encodeURIComponent(primaryCategory)}`
+                });
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": fullTitle,
+                  "item": pageUrl
+                });
+              } else {
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Trending",
+                  "item": `${url.origin}/${activeLang}/trending`
+                });
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": fullTitle,
+                  "item": pageUrl
+                });
+              }
+
               const breadcrumbSchema = {
                 "@type": "BreadcrumbList",
-                "itemListElement": [
-                  {
-                    "@type": "ListItem",
-                    "position": 1,
-                    "name": "Home",
-                    "item": `${url.origin}/en/`
-                  },
-                  {
-                    "@type": "ListItem",
-                    "position": 2,
-                    "name": title,
-                    "item": pageUrl
-                  }
-                ]
+                "itemListElement": breadcrumbElements
               };
 
               const structuredData = {
@@ -1497,67 +1537,176 @@ export async function onRequest(context) {
         }
         htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${paginationRelTags}${hreflangBlock}<\/head>`);
 
-        // JSON-LD ItemList / ProfilePage / CollectionPage / SearchResultsPage
-        let schemaJson = {};
-        if (schemaType === 'ProfilePage' && nameParam) {
-          schemaJson = {
-            "@context": "https://schema.org",
-            "@type": "ProfilePage",
-            "mainEntity": {
-              "@type": "Person",
-              "name": nameParam,
-              "url": pageUrl
+        let structuredData;
+        if (type === 'home') {
+          const webSiteSchema = {
+            "@type": "WebSite",
+            "name": "MISSAV-J",
+            "alternateName": "MISSAV-J Premium Video Streaming",
+            "url": `${url.origin}/${activeLang}/`,
+            "description": pageDesc,
+            "inLanguage": hreflangCode(activeLang),
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": `${url.origin}/${activeLang}/search?q={search_term_string}`
+              },
+              "query-input": "required name=search_term_string"
             }
           };
-        } else if (schemaType === 'SearchResultsPage') {
-          schemaJson = {
-            "@context": "https://schema.org",
-            "@type": "SearchResultsPage",
-            "name": pageTitle,
-            "description": pageDesc,
-            "url": pageUrl
+
+          const organizationSchema = {
+            "@type": "Organization",
+            "name": "MISSAV-J",
+            "url": url.origin,
+            "logo": {
+              "@type": "ImageObject",
+              "url": `${url.origin}/assets/images/logo.webp`,
+              "width": 192,
+              "height": 192
+            },
+            "sameAs": [
+              "https://t.me/missav_j"
+            ]
           };
-        } else if (schemaType === 'AboutPage') {
-          schemaJson = {
+
+          structuredData = {
             "@context": "https://schema.org",
-            "@type": "AboutPage",
-            "name": pageTitle,
-            "description": pageDesc,
-            "url": pageUrl
+            "@graph": [webSiteSchema, organizationSchema]
           };
         } else {
-          schemaJson = {
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            "name": pageTitle,
-            "description": pageDesc,
-            "url": pageUrl
-          };
-        }
-        
-        // BreadcrumbList for listing
-        const breadcrumbSchema = {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
+          // JSON-LD ItemList / ProfilePage / CollectionPage / SearchResultsPage / AboutPage
+          let schemaJson = {};
+          if (schemaType === 'ProfilePage' && nameParam) {
+            schemaJson = {
+              "@type": "ProfilePage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl,
+              "mainEntity": {
+                "@type": "Person",
+                "name": nameParam,
+                "url": pageUrl
+              }
+            };
+          } else if (schemaType === 'SearchResultsPage') {
+            schemaJson = {
+              "@type": "SearchResultsPage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+          } else if (schemaType === 'AboutPage') {
+            schemaJson = {
+              "@type": "AboutPage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+          } else {
+            schemaJson = {
+              "@type": "CollectionPage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+          }
+
+          // Build exact 2 or 3-tier BreadcrumbList
+          const breadcrumbElements = [
             {
               "@type": "ListItem",
               "position": 1,
               "name": "Home",
-              "item": `${url.origin}/en/`
-            },
-            {
+              "item": `${url.origin}/${activeLang}/`
+            }
+          ];
+
+          if (['category', 'tag'].includes(type) && nameParam) {
+            breadcrumbElements.push({
               "@type": "ListItem",
               "position": 2,
-              "name": (nameParam ? safeName : type.charAt(0).toUpperCase() + type.slice(1)),
+              "name": "Categories",
+              "item": `${url.origin}/${activeLang}/categories`
+            });
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 3,
+              "name": nameParam,
               "item": pageUrl
-            }
-          ]
-        };
-        
-        const structuredData = {
-          "@context": "https://schema.org",
-          "@graph": [schemaJson, breadcrumbSchema]
-        };
+            });
+          } else if (type === 'actor' && nameParam) {
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Actresses",
+              "item": `${url.origin}/${activeLang}/actors`
+            });
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 3,
+              "name": nameParam,
+              "item": pageUrl
+            });
+          } else if (type === 'studio' && nameParam) {
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Studios",
+              "item": `${url.origin}/${activeLang}/studios`
+            });
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 3,
+              "name": nameParam,
+              "item": pageUrl
+            });
+          } else {
+            let hubName = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'actors') hubName = 'Actresses';
+            if (type === 'categories') hubName = 'Categories';
+            if (type === 'studios') hubName = 'Studios';
+            if (type === 'trending') hubName = 'Trending';
+            if (type === 'recent') hubName = 'Recent';
+            if (type === 'popular-actors') hubName = 'Popular Actresses';
+            if (type === 'dmca') hubName = 'DMCA Policy';
+            if (type === '2257') hubName = '18 U.S.C. 2257';
+            if (type === 'privacy-policy') hubName = 'Privacy Policy';
+            if (type === 'terms') hubName = 'Terms of Service';
+            if (type === 'contact') hubName = 'Contact Us';
+
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 2,
+              "name": hubName,
+              "item": pageUrl
+            });
+          }
+
+          const breadcrumbSchema = {
+            "@type": "BreadcrumbList",
+            "itemListElement": breadcrumbElements
+          };
+
+          const graphNodes = [schemaJson, breadcrumbSchema];
+
+          // ItemList for video directory and category listing
+          if (['category', 'tag', 'categories', 'actor', 'actors', 'studio', 'studios', 'trending', 'recent'].includes(type)) {
+            const itemListSchema = {
+              "@type": "ItemList",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+            graphNodes.push(itemListSchema);
+          }
+
+          structuredData = {
+            "@context": "https://schema.org",
+            "@graph": graphNodes
+          };
+        }
         
         htmlContent = htmlContent.replace(
           /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/is,

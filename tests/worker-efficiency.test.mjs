@@ -740,3 +740,98 @@ test('pagination pages (page > 1) receive noindex, follow and pagination links',
   // No hreflang on noindex page
   assert.doesNotMatch(html, /hreflang="ja"/);
 });
+
+test('homepage SSR renders WebSite and Organization schema with SearchAction and no breadcrumbs', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /"@type":\s*"WebSite"/);
+  assert.match(html, /"@type":\s*"Organization"/);
+  assert.match(html, /"@type":\s*"SearchAction"/);
+  // Homepage should not emit BreadcrumbList
+  assert.doesNotMatch(html, /"@type":\s*"BreadcrumbList"/);
+});
+
+test('sub-category and sub-actor SSR render 3-tier BreadcrumbList and ItemList', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  
+  // Test category subpage
+  const catContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Uncensored', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const catRes = await onRequest(catContext);
+  const catHtml = await catRes.text();
+  assert.equal(catRes.status, 200);
+  assert.match(catHtml, /"@type":\s*"BreadcrumbList"/);
+  assert.match(catHtml, /"name":\s*"Categories"/);
+  assert.match(catHtml, /"name":\s*"Uncensored"/);
+  assert.match(catHtml, /"@type":\s*"ItemList"/);
+
+  // Test actor subpage
+  const actorContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/actor?name=Yua%20Mikami', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const actorRes = await onRequest(actorContext);
+  const actorHtml = await actorRes.text();
+  assert.equal(actorRes.status, 200);
+  assert.match(actorHtml, /"@type":\s*"ProfilePage"/);
+  assert.match(actorHtml, /"name":\s*"Actresses"/);
+  assert.match(actorHtml, /"name":\s*"Yua Mikami"/);
+});
+
+test('video watch page SSR renders 3-tier BreadcrumbList with primary category and valid VideoObject', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const post = {
+    id: 888123,
+    code: 'SSIS-888',
+    title: 'SSIS-888 Test Title',
+    duration: '01:45:30',
+    categories: ['Uncensored', 'Drama'],
+    actors: ['Yua Mikami'],
+    studio: 'S1',
+    thumbnail: 'https://image.apijav.com/thumb/888.jpg',
+    embed_url: 'https://server.apijav.com/embed/888123'
+  };
+  globalThis.fetch = async input => {
+    return new Response(JSON.stringify(post), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  };
+  const env = {
+    ASSETS: { fetch: async () => new Response(indexHtml) }
+  };
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/ssis-888-test-title-888123', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /"@type":\s*"VideoObject"/);
+  assert.match(html, /"duration":\s*"PT1H45M30S"/);
+  assert.match(html, /"@type":\s*"BreadcrumbList"/);
+  assert.match(html, /"name":\s*"Uncensored"/);
+  assert.match(html, /"name":\s*"SSIS-888 Test Title [-—] MISSAV-J"/);
+});

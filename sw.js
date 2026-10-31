@@ -1,5 +1,5 @@
-const CACHE_NAME = 'missavj-cache-v2.8.90';
-const API_CACHE_NAME = 'missavj-api-cache-v2.8.90';
+const CACHE_NAME = 'missavj-cache-v2.8.91';
+const API_CACHE_NAME = 'missavj-api-cache-v2.8.91';
 const API_CACHE_TIME_HEADER = 'X-SW-Cache-Time';
 const FIFTEEN_MINUTES = 15 * 60;
 const ONE_HOUR = 60 * 60;
@@ -62,27 +62,27 @@ async function apiCacheFirst(event, ttlSeconds) {
 }
 
 const ASSETS_TO_CACHE = [
-  '/assets/css/components.css?v=2.8.90',
-  '/assets/css/base.css?v=2.8.90',
-  '/assets/css/layout.css?v=2.8.90',
-  '/assets/css/player.css?v=2.8.90',
-  '/assets/js/app.js?v=2.8.90',
-  '/assets/js/api.js?v=2.8.90',
-  '/assets/js/feed.js?v=2.8.90',
-  '/assets/js/i18n.js?v=2.8.90',
-  '/assets/js/player.js?v=2.8.90',
-  '/assets/js/related-strategy.js?v=2.8.90',
-  '/assets/js/ui.js?v=2.8.90',
-  '/assets/js/ads.js?v=2.8.90',
-  '/assets/js/analytics.js?v=2.8.90',
-  '/assets/js/referral.js?v=2.8.90',
-  '/assets/js/filter.js?v=2.8.90',
-  '/assets/js/trending.js?v=2.8.90',
-  '/assets/js/recent.js?v=2.8.90',
-  '/assets/js/search.js?v=2.8.90',
-  '/assets/js/actors.js?v=2.8.90',
-  '/assets/js/studios.js?v=2.8.90',
-  '/assets/js/categories.js?v=2.8.90',
+  '/assets/css/components.css?v=2.8.91',
+  '/assets/css/base.css?v=2.8.91',
+  '/assets/css/layout.css?v=2.8.91',
+  '/assets/css/player.css?v=2.8.91',
+  '/assets/js/app.js?v=2.8.91',
+  '/assets/js/api.js?v=2.8.91',
+  '/assets/js/feed.js?v=2.8.91',
+  '/assets/js/i18n.js?v=2.8.91',
+  '/assets/js/player.js?v=2.8.91',
+  '/assets/js/related-strategy.js?v=2.8.91',
+  '/assets/js/ui.js?v=2.8.91',
+  '/assets/js/ads.js?v=2.8.91',
+  '/assets/js/analytics.js?v=2.8.91',
+  '/assets/js/referral.js?v=2.8.91',
+  '/assets/js/filter.js?v=2.8.91',
+  '/assets/js/trending.js?v=2.8.91',
+  '/assets/js/recent.js?v=2.8.91',
+  '/assets/js/search.js?v=2.8.91',
+  '/assets/js/actors.js?v=2.8.91',
+  '/assets/js/studios.js?v=2.8.91',
+  '/assets/js/categories.js?v=2.8.91',
   '/assets/images/logo.webp',
   '/favicon.svg'
 ];
