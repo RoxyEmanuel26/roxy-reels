@@ -669,3 +669,74 @@ test('category and studio hubs render crawlable directory links in SSR', async (
   assert.match(text, /aria-label="All categories"/);
   assert.match(text, /href="\/en\/category\?name=Uncensored"/);
 });
+
+
+test('language root without trailing slash redirects to trailing slash (/en -> /en/)', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('shell') } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/en/');
+});
+
+test('subpages with trailing slash redirect to stripped slash (/en/trending/ -> /en/trending)', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/trending/', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('shell') } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/en/trending');
+});
+
+test('regional language codes normalize case (/zh-tw/ -> /zh-TW/)', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/zh-tw/', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('shell') } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/zh-TW/');
+});
+
+test('listing canonical strips sorting and pagination parameters', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/trending?sort=views&order=desc&page=1', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /<link rel="canonical" id="canonical-url" href="https:\/\/www\.missav-j\.com\/en\/trending"/);
+  assert.doesNotMatch(html, /href="https:\/\/www\.missav-j\.com\/en\/trending\?sort=/);
+});
+
+test('pagination pages (page > 1) receive noindex, follow and pagination links', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Drama&page=2', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /<meta name="robots" content="noindex, follow">/);
+  assert.match(html, /<link rel="prev"/);
+  assert.match(html, /<link rel="next"/);
+  // No hreflang on noindex page
+  assert.doesNotMatch(html, /hreflang="ja"/);
+});

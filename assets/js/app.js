@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.89';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.89';
-import i18n from './i18n.js?v=2.8.89';
-import { Analytics } from './analytics.js?v=2.8.89';
-import ReferralSystem from './referral.js?v=2.8.89';
-import './ads.js?v=2.8.89';
+import ui from './ui.js?v=2.8.90';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.90';
+import i18n from './i18n.js?v=2.8.90';
+import { Analytics } from './analytics.js?v=2.8.90';
+import ReferralSystem from './referral.js?v=2.8.90';
+import './ads.js?v=2.8.90';
 
 // Initialize Global In-Memory SPA States
 // FIX: Validate Array type — JSON.parse() doesn't throw on non-array values (e.g. string/number),
@@ -357,21 +357,21 @@ function renderStaticLegal(key) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.89').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.89').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.89').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.89').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.89').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.89').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.89').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.89').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.89').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.90').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.90').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.90').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.90').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.90').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.90').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.90').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.90').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.90').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.89').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.89').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.89').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.89').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.90').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.90').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.90').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.90').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -401,20 +401,29 @@ function updateSEOTags(routePath, targetId) {
   // stick on every localized route -> "Hreflang and HTML lang mismatch").
   document.documentElement.lang = i18n.hreflangCode(currentLang);
 
+  const pageNum = parseInt(getParam('page') || '1', 10);
+  const isNoindex = pageNum > 1 || ['/search', '/history', '/watch-later'].includes(routePath);
+
+  let robotsMeta = document.querySelector('meta[name="robots"]');
+  if (!robotsMeta) {
+    robotsMeta = document.createElement('meta');
+    robotsMeta.name = 'robots';
+    document.head.appendChild(robotsMeta);
+  }
+  robotsMeta.content = isNoindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+
   let cleanRoutePath = routePath;
   if (routePath === '/watch' && window.missavJState.activeVideo) {
     const post = window.missavJState.activeVideo;
     cleanRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+  } else if (['/category', '/actor', '/studio', '/tag'].includes(routePath)) {
+    const nameParam = getParam('name');
+    cleanRoutePath = nameParam ? `${routePath}?name=${encodeURIComponent(nameParam)}` : (routePath === '/actor' ? '/actors' : (routePath === '/studio' ? '/studios' : '/categories'));
   } else {
-    // For listing and browsing pages
-    const parsed = parseUrl(window.location.pathname);
-    cleanRoutePath = parsed.routePath;
-    if (window.location.search) {
-      cleanRoutePath += window.location.search;
-    }
+    cleanRoutePath = routePath;
   }
 
-  const canonicalUrl = `${baseDomain}/${currentLang}${cleanRoutePath === '/' ? '' : cleanRoutePath}`;
+  const canonicalUrl = `${baseDomain}/${currentLang}${cleanRoutePath === '/' ? '/' : cleanRoutePath}`;
 
   // 1. Add canonical link
   const canonicalLink = document.createElement('link');
@@ -422,33 +431,33 @@ function updateSEOTags(routePath, targetId) {
   canonicalLink.href = canonicalUrl;
   document.head.appendChild(canonicalLink);
 
-  // 2. Add alternate links for all 13 languages
-  i18n.LANGS.forEach(lang => {
-    let langRoutePath = cleanRoutePath;
+  // 2. Add alternate links ONLY on indexable routes
+  if (!isNoindex) {
+    i18n.LANGS.forEach(lang => {
+      let langRoutePath = cleanRoutePath;
+      if (routePath === '/watch' && window.missavJState.activeVideo) {
+        const post = window.missavJState.activeVideo;
+        langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+      }
+      const altLink = document.createElement('link');
+      altLink.rel = 'alternate';
+      altLink.hreflang = i18n.hreflangCode(lang.code);
+      altLink.href = `${baseDomain}/${lang.code}${langRoutePath === '/' ? '/' : langRoutePath}`;
+      document.head.appendChild(altLink);
+    });
     
+    // Add x-default alternate pointing to English
+    const xDefaultLink = document.createElement('link');
+    xDefaultLink.rel = 'alternate';
+    xDefaultLink.hreflang = 'x-default';
+    let enWatchPath = cleanRoutePath;
     if (routePath === '/watch' && window.missavJState.activeVideo) {
       const post = window.missavJState.activeVideo;
-      langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+      enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
     }
-    
-    const altLink = document.createElement('link');
-    altLink.rel = 'alternate';
-    altLink.hreflang = i18n.hreflangCode(lang.code);
-    altLink.href = `${baseDomain}/${lang.code}${langRoutePath}`;
-    document.head.appendChild(altLink);
-  });
-  
-  // Add x-default alternate pointing to English
-  const xDefaultLink = document.createElement('link');
-  xDefaultLink.rel = 'alternate';
-  xDefaultLink.hreflang = 'x-default';
-  let enWatchPath = cleanRoutePath;
-  if (routePath === '/watch' && window.missavJState.activeVideo) {
-    const post = window.missavJState.activeVideo;
-    enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+    xDefaultLink.href = `${baseDomain}/en${enWatchPath === '/' ? '/' : enWatchPath}`;
+    document.head.appendChild(xDefaultLink);
   }
-  xDefaultLink.href = `${baseDomain}/en${enWatchPath}`;
-  document.head.appendChild(xDefaultLink);
 
   // 3. Update dynamic Meta Description, OG Tags, Twitter Cards, and JSON-LD
   updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath);
@@ -721,7 +730,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.89').then(m => {
+    import('./player.js?v=2.8.90').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -732,7 +741,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.89').then(m => {
+    import('./player.js?v=2.8.90').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -815,7 +824,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.89').then(m => {
+  import('./player.js?v=2.8.90').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -1008,7 +1017,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.89').then(m => {
+      import('./player.js?v=2.8.90').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }

@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.89';
+const SSR_CACHE_VERSION = 'v2.8.90';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
@@ -179,33 +179,54 @@ const LANG_STRIP_REGEX = new RegExp(`^\/(${VALID_LANGS.join('|').replace(/[-]/g,
 // FIX: Hapus tracking query params dari URL sebelum dimasukkan ke tag hreflang.
 // Google Search Console menandai hreflang error jika URL alternate mengandung
 // parameter seperti ?utm_source=... atau ?fbclid=... karena tidak konsisten dengan canonical.
+function getCleanListingCanonical(origin, lang, type, nameParam) {
+  if (!type || type === 'home') {
+    return `${origin}/${lang}/`;
+  }
+  if (['category', 'tag'].includes(type)) {
+    return nameParam
+      ? `${origin}/${lang}/${type}?name=${encodeURIComponent(nameParam)}`
+      : `${origin}/${lang}/categories`;
+  }
+  if (type === 'actor') {
+    return nameParam
+      ? `${origin}/${lang}/actor?name=${encodeURIComponent(nameParam)}`
+      : `${origin}/${lang}/actors`;
+  }
+  if (type === 'studio') {
+    return nameParam
+      ? `${origin}/${lang}/studio?name=${encodeURIComponent(nameParam)}`
+      : `${origin}/${lang}/studios`;
+  }
+  return `${origin}/${lang}/${type}`;
+}
+
 function cleanSearchForHreflang(search) {
   if (!search) return '';
-  const TRACKING_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', '_ga', 'ref', 'cb'];
   const params = new URLSearchParams(search);
-  TRACKING_PARAMS.forEach(k => params.delete(k));
-  const str = params.toString();
-  return str ? `?${str}` : '';
+  const name = params.get('name');
+  if (name) {
+    return `?name=${encodeURIComponent(name)}`;
+  }
+  return '';
 }
 
 function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
-  // Strip ANY lang prefix (including 'en') so we get the bare route path
-  // e.g. /en/trending → /trending, /ko/watch/abc → /watch/abc
   let cleanPath = urlPathname.replace(LANG_STRIP_REGEX, '');
-  if (cleanPath === '') cleanPath = '/';
+  if (cleanPath === '' || cleanPath === '/') {
+    cleanPath = '/';
+  } else {
+    cleanPath = cleanPath.replace(/\/+$/, '');
+  }
   
-  // FIX: Strip tracking params from search before including in hreflang URLs
   const cleanSearch = cleanSearchForHreflang(urlSearch);
   
   const tags = VALID_LANGS.map(lang => {
     const code = hreflangCode(lang);
-    // SEMUA bahasa termasuk 'en' mendapat prefix URL yang benar.
     const path = cleanPath === '/' ? `/${lang}/` : `/${lang}${cleanPath}`;
-    // Use escapeHtml to safely encode ampersands (&) and quotes from urlSearch
     return `<link rel="alternate" hreflang="${code}" href="${escapeHtml(urlOrigin + path + cleanSearch)}" />`;
   });
   
-  // x-default → English URL (bukan root / yang hanya redirect, melainkan /en/ yang berisi konten)
   const xDefaultPath = cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
   tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(urlOrigin + xDefaultPath + cleanSearch)}" />`);
   return tags.join('\n  ');
@@ -787,7 +808,8 @@ export async function onRequest(context) {
 
   // ── ENFORCE WWW DOMAIN FOR SEO ──────────────────────────────────────────
   // Mencegah duplicate content (Google melihat missav-j.com dan www.missav-j.com sebagai 2 situs berbeda)
-  if (url.hostname === 'missav-j.com') {
+  if (url.protocol === 'http:' || url.hostname === 'missav-j.com') {
+    url.protocol = 'https:';
     url.hostname = 'www.missav-j.com';
     return Response.redirect(url.toString(), 301);
   }
@@ -883,6 +905,60 @@ export async function onRequest(context) {
   const isList = pathname.match(listRegex);
   const isLangRoot = pathname.match(langRegex);
   const isCacheableRoute = isGet && (isWatch || isList || isLangRoot);
+
+  // ── TRAILING SLASH & CASE NORMALIZATION ─────────────────────────────────
+  // 1. Regional language case normalization (e.g. /zh-tw/ -> /zh-TW/)
+  if (isGet && (pathname.startsWith('/zh-tw/') || pathname === '/zh-tw')) {
+    const rest = pathname.slice(6);
+    const targetPath = rest ? (rest.startsWith('/') ? rest : `/${rest}`) : '/';
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}/zh-TW${targetPath}${url.search}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'LANG-CASE-REDIRECT'
+      }
+    });
+  }
+  if (isGet && (pathname.startsWith('/zh-cn/') || pathname === '/zh-cn')) {
+    const rest = pathname.slice(6);
+    const targetPath = rest ? (rest.startsWith('/') ? rest : `/${rest}`) : '/';
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}/zh-CN${targetPath}${url.search}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'LANG-CASE-REDIRECT'
+      }
+    });
+  }
+
+  // 2. Trailing slash enforcement for language root (e.g. /en -> /en/)
+  if (isGet && isLangRoot && isLangRoot[1] && VALID_LANGS.includes(isLangRoot[1])) {
+    if (!pathname.endsWith('/')) {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': `${url.origin}/${isLangRoot[1]}/${url.search}`,
+          'Cache-Control': 'public, max-age=86400',
+          'X-Edge-Mode': 'CANONICAL-TRAILING-SLASH-REDIRECT'
+        }
+      });
+    }
+  }
+
+  // 3. Strip trailing slash on subpages (e.g. /en/trending/ -> /en/trending)
+  if (isGet && (isWatch || isList) && pathname.endsWith('/') && pathname.length > 4) {
+    const cleanPath = pathname.slice(0, -1);
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}${cleanPath}${url.search}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'STRIP-TRAILING-SLASH-REDIRECT'
+      }
+    });
+  }
 
   // Collapse tracking variants to one stable URL for social-card caches. Human
   // visitors keep the parameters so the client can still record referrals.
@@ -1350,9 +1426,42 @@ export async function onRequest(context) {
           schemaType = 'AboutPage';
         }
 
-        const pageUrl = `${url.origin}${url.pathname}${url.search}`;
+        const pageUrl = getCleanListingCanonical(url.origin, activeLang, type, nameParam);
         
-        htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(pageTitle)}</title>`);
+        // Index Bloat Control & Pagination Signals
+        const pageNum = parseInt(url.searchParams.get('page') || '1', 10);
+        const isPagination = pageNum > 1;
+        const isPrivateOrInternal = ['search', 'history', 'watch-later', 'watch_later'].includes(typeKey);
+        const isNoindexRoute = isPagination || isPrivateOrInternal;
+
+        if (isNoindexRoute) {
+          htmlContent = htmlContent.replace(
+            /<meta name="robots"[^>]*>/i,
+            '<meta name="robots" content="noindex, follow">'
+          );
+        } else {
+          htmlContent = htmlContent.replace(
+            /<meta name="robots"[^>]*>/i,
+            '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">'
+          );
+        }
+
+        // Pagination rel=prev and rel=next link elements in head
+        let paginationRelTags = '';
+        if (isPagination) {
+          const prevUrl = new URL(pageUrl);
+          if (pageNum > 2) {
+            prevUrl.searchParams.set('page', String(pageNum - 1));
+          }
+          paginationRelTags += `<link rel="prev" href="${escapeHtml(prevUrl.toString())}" />\n  `;
+        }
+        if (['home', 'trending', 'recent', 'category', 'actor', 'studio', 'tag'].includes(typeKey)) {
+          const nextUrl = new URL(pageUrl);
+          nextUrl.searchParams.set('page', String(pageNum + 1));
+          paginationRelTags += `<link rel="next" href="${escapeHtml(nextUrl.toString())}" />\n  `;
+        }
+
+        htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(pageTitle)}<\/title>`);
         htmlContent = htmlContent.replace(
           /<meta name="description" id="meta-description" content="[^"]*"/i,
           () => `<meta name="description" id="meta-description" content="${escapeHtml(pageDesc)}"`
@@ -1382,8 +1491,11 @@ export async function onRequest(context) {
           () => `<meta name="twitter:description" id="twitter-description" content="${escapeHtml(pageDesc)}"`
         );
         
-        const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
-        htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
+        let hreflangBlock = '';
+        if (!isNoindexRoute) {
+          hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search) + '\n  ';
+        }
+        htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${paginationRelTags}${hreflangBlock}<\/head>`);
 
         // JSON-LD ItemList / ProfilePage / CollectionPage / SearchResultsPage
         let schemaJson = {};
