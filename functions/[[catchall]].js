@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.92';
+const SSR_CACHE_VERSION = 'v2.8.93';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
@@ -179,6 +179,250 @@ const LANG_STRIP_REGEX = new RegExp(`^\/(${VALID_LANGS.join('|').replace(/[-]/g,
 // FIX: Hapus tracking query params dari URL sebelum dimasukkan ke tag hreflang.
 // Google Search Console menandai hreflang error jika URL alternate mengandung
 // parameter seperti ?utm_source=... atau ?fbclid=... karena tidak konsisten dengan canonical.
+const SEO_ENRICHED_POSTS = {
+  '999123': {
+    video_id: '999123',
+    seo_title: 'SSIS-999 Exclusive Yua Mikami Feature',
+    meta_description: 'Stream SSIS-999 starring Yua Mikami in full HD. Read our exclusive overview and FAQs.',
+    summary: 'SSIS-999 is a cinematic drama presentation featuring award-winning performances.',
+    highlights: [
+      'Exclusive S1 4K release',
+      'Starring Yua Mikami',
+      'Feature Highlights verified release'
+    ],
+    faq: [
+      {
+        q: 'Who is the lead actress in SSIS-999?',
+        a: 'SSIS-999 stars popular actress Yua Mikami.'
+      },
+      {
+        q: 'Is SSIS-999 available in HD?',
+        a: 'Yes, full high definition streaming is supported.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '999': {
+    video_id: '999',
+    seo_title: 'SSIS-999 Enriched Title',
+    meta_description: 'Enriched meta description for SSIS-999 with rich context.',
+    summary: 'SSIS-999 is a premier presentation featuring exclusive highlights and 4K remastering.',
+    highlights: [
+      'Exclusive high bitrate 1080p release',
+      'Lead performance by award-winning actress',
+      'Feature Highlights verified release'
+    ],
+    faq: [
+      {
+        q: 'Who is the lead actress in SSIS-999?',
+        a: 'SSIS-999 stars celebrated Japanese performers.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '14887': {
+    video_id: '14887',
+    seo_title: 'SDJS-155 Ayaka Yoshii — MISSAV-J',
+    meta_description: 'Watch SDJS-155 starring Ayaka Yoshii produced by SOD. Stream in full HD quality with fast loading on MISSAV-J.',
+    summary: 'SDJS-155 is a premium 123av presentation from SOD featuring Ayaka Yoshii. This title showcases exceptional cinematography and high-definition production values.',
+    highlights: [
+      'Produced by renowned studio SOD',
+      'Lead performance by Ayaka Yoshii',
+      'Full length feature presented in 1080p HD quality',
+      'Verified authentic release code SDJS-155'
+    ],
+    faq: [
+      {
+        q: 'Who stars in SDJS-155?',
+        a: 'This title stars celebrated actress Ayaka Yoshii.'
+      },
+      {
+        q: 'What studio produced SDJS-155?',
+        a: 'This release was produced by SOD.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '40638': {
+    video_id: '40638',
+    seo_title: 'MISM-324-UNCENSORED-LEAK Pierre Sword — MISSAV-J',
+    meta_description: 'Watch MISM-324-UNCENSORED-LEAK starring Pierre Sword produced by えむっ娘ラボ. Stream in full HD quality with fast loading on MISSAV-J.',
+    summary: 'MISM-324-UNCENSORED-LEAK is a premium 123av presentation from えむっ娘ラボ featuring Pierre Sword. This title showcases exceptional cinematography and high-definition production values.',
+    highlights: [
+      'Produced by renowned studio えむっ娘ラボ',
+      'Lead performance by Pierre Sword',
+      'Full length feature presented in 1080p HD quality',
+      'Verified authentic release code MISM-324-UNCENSORED-LEAK'
+    ],
+    faq: [
+      {
+        q: 'Who stars in MISM-324-UNCENSORED-LEAK?',
+        a: 'This title stars celebrated actress Pierre Sword.'
+      },
+      {
+        q: 'What studio produced MISM-324-UNCENSORED-LEAK?',
+        a: 'This release was produced by えむっ娘ラボ.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '43861': {
+    video_id: '43861',
+    seo_title: 'PP004 — MISSAV-J',
+    meta_description: 'Watch PP004 starring top performers produced by Premier Studio. Stream in full HD quality with fast loading on MISSAV-J.',
+    summary: 'PP004 is a premium 123av presentation from Premier Studio. This title showcases exceptional cinematography and high-definition production values.',
+    highlights: [
+      'Produced by renowned studio Premier Studio',
+      'Star-studded ensemble cast',
+      'Full length feature presented in 1080p HD quality',
+      'Verified authentic release code PP004'
+    ],
+    faq: [
+      {
+        q: 'Who stars in PP004?',
+        a: 'This production features popular top performers.'
+      },
+      {
+        q: 'What studio produced PP004?',
+        a: 'This release was produced by Premier Studio.'
+      }
+    ],
+    status: 'enriched'
+  }
+};
+
+const HUB_DESCRIPTIONS = {
+  'uncensored': {
+    title: 'Uncensored JAV Streaming Guide',
+    paragraphs: [
+      'Welcome to the premier archive of Uncensored JAV (Japanese Adult Video) streaming on MISSAV-J. Unlike standard broadcast releases that utilize digital mosaic processing in accordance with traditional domestic regulatory guidelines, uncensored releases showcase authentic, unfiltered footage preserved in pristine high definition and 4K master quality.',
+      'Our collection spans legendary independent production houses, specialized overseas distribution labels, and exclusive uncompressed studio masters. Each title is cataloged with verified actress credits, authentic release dates, and high-bitrate streaming feeds to ensure an unparalleled viewing experience with zero buffer interruptions.',
+      'Explore popular sub-genres, search by renowned performers, or browse newly remastered classic releases. All streams are optimized for seamless multi-device playback on mobile, tablet, and desktop displays.'
+    ],
+    relatedTags: ['FC2', 'Tokyo Hot', 'Caribbeancom', '1pondo', 'Heyzo', 'Uncensored Leaked']
+  },
+  'drama': {
+    title: 'JAV Drama & Narrative Cinema Guide',
+    paragraphs: [
+      'Discover the rich storytelling traditions of Japanese cinematic adult drama. JAV drama productions emphasize compelling storylines, intricate interpersonal conflicts, authentic romantic tension, and atmospheric cinematography guided by seasoned industry directors.',
+      'From suspenseful romantic thrillers to slice-of-life emotional narratives, drama titles feature nuanced performances from Japan\'s top award-winning actresses. High production values, realistic set design, and immersive soundtracks create a sophisticated cinematic journey.',
+      'Filter through celebrated multi-part story arcs, critically acclaimed actress debuts, and contemporary narrative masterpieces streamed in crystal-clear audio and video.'
+    ],
+    relatedTags: ['Romance', 'Story-Driven', 'Cinematic', 'Office Lady', 'Married Woman']
+  },
+  'comedy': {
+    title: 'JAV Comedy & Parody Entertainment',
+    paragraphs: [
+      'Experience the playful and lighthearted side of Japanese adult entertainment. The JAV comedy genre combines creative situational humor, playful role-playing scenarios, and witty banter that showcase performers\' charismatic comedic timing.',
+      'Popular productions feature inventive variety-show concepts, comedic misunderstandings, and lively chemistry between leading performers and directors. These releases offer an uplifting and entertaining twist on standard adult themes.',
+      'Enjoy high-energy entertainment packed with genuine laughter, vibrant staging, and delightful romantic comedy storylines.'
+    ],
+    relatedTags: ['Parody', 'Variety', 'Playful', 'Romantic Comedy', 'Amateur']
+  },
+  'romance': {
+    title: 'Romantic JAV & Intimate Couple Storylines',
+    paragraphs: [
+      'Immerse yourself in heartfelt romantic JAV releases centered on mutual affection, gentle passion, and authentic emotional connection. This curated selection highlights respectful, tender dynamics and cinematic intimacy.',
+      'Carefully crafted with soft aesthetic lighting, delicate musical scores, and genuine romantic chemistry, these titles offer a refreshing alternative emphasizing beauty and emotional depth.',
+      'Browse beloved romance series, renowned couple storylines, and tender encounters from top-tier Japanese production studios.'
+    ],
+    relatedTags: ['Drama', 'Couples', 'Pure', 'Dating', 'Sweet']
+  },
+  'beautiful-mature-woman': {
+    title: 'Mature Woman & Experienced Performers Hub',
+    paragraphs: [
+      'Appreciate the elegance, poise, and refined screen presence of Japan\'s most celebrated mature actresses. The Mature Woman genre remains one of the most enduring and prestigious categories in Japanese adult cinema.',
+      'Featuring distinguished veteran performers renowned for their sophisticated acting, emotional depth, and charismatic screen presence, these films focus on mature relationship dramas, family sagas, and dignified romances.',
+      'Stream iconic releases from renowned specialized labels celebrated for exceptional artistic standards and mature storytelling.'
+    ],
+    relatedTags: ['Married Woman', 'Housewife', 'Elegance', 'Drama', 'Widow']
+  },
+  'amateur': {
+    title: 'Amateur & Debut Showcase Collection',
+    paragraphs: [
+      'Explore the authentic and unscripted world of Japanese amateur releases. Characterized by realistic documentary-style camerawork, spontaneous interactions, and genuine reactions, this category delivers unvarnished natural charm.',
+      'Titles feature fresh debutants, personal interviews, and unpretentious settings that capture the genuine personalities and spontaneous moments of performers from across Japan.',
+      'Enjoy unfiltered authenticity, natural dialogue, and fresh debut experiences streamed in high definition.'
+    ],
+    relatedTags: ['Debut', 'Documentary', 'Interview', 'Natural', 'Real Life']
+  },
+  'cosplay': {
+    title: 'Cosplay & Themed Costume Fantasies',
+    paragraphs: [
+      'Step into the vibrant crossover between Japanese pop culture, anime aesthetics, and premium adult entertainment. The cosplay genre celebrates creative costuming, iconic character homages, and imaginative visual styling.',
+      'Featuring meticulously tailored outfits—from futuristic heroines and gothic maids to fantasy warriors—these productions unite passionate fandom styling with high-end theatrical production values.',
+      'Explore artistic role-play, elaborate fantasy sets, and stunning character tributes brought to life by top Japanese models.'
+    ],
+    relatedTags: ['Anime', 'Costume', 'Maid', 'Fantasy', 'Uniform']
+  },
+  's1': {
+    title: 'S1 No.1 Style Official Studio Archive',
+    paragraphs: [
+      'S1 No.1 Style stands as the undisputed pinnacle of the modern Japanese adult video industry. Founded with a commitment to unmatched cinematic standards, S1 produces ultra-high-budget releases starring the industry\'s most exclusive super-idols.',
+      'Renowned for cutting-edge 4K cinematography, lavish location filming, and visionary artistic direction, every S1 title represents state-of-the-art Japanese commercial production quality.',
+      'Watch exclusive full-length master releases from legendary S1 contract superstars in uncompromised high definition.'
+    ],
+    relatedTags: ['Exclusive', '4K', 'Top Idols', 'High Budget', 'Superstar']
+  },
+  'moodyz': {
+    title: 'MOODYZ Legendary Studio Collection',
+    paragraphs: [
+      'Founded in 2000, MOODYZ is an iconic powerhouse that has shaped modern JAV culture for over two decades. Celebrated for pioneering diverse cinematic concepts, blockbuster debuts, and energetic pacing, MOODYZ remains a fan-favorite worldwide.',
+      'From gripping story epics and superstar ensemble projects to boundary-pushing thematic experiments, MOODYZ consistently delivers electrifying performances and top-tier entertainment value.',
+      'Explore thousands of acclaimed releases from Japan\'s most prolific and versatile entertainment house.'
+    ],
+    relatedTags: ['Blockbuster', 'Debuts', 'Diverse', 'Ensemble', 'Classic']
+  },
+  'sod-create': {
+    title: 'Soft On Demand (SOD Create) Innovation Hub',
+    paragraphs: [
+      'Soft On Demand (SOD Create) is internationally celebrated as the industry\'s most bold and imaginative concept laboratory. Famous for groundbreaking variety concepts, interactive experiments, and documentary realism, SOD constantly redefines viewer expectations.',
+      'With legendary production values, unique social experiments, and boundary-pushing creative direction, SOD titles deliver memorable entertainment that goes far beyond conventional adult filmmaking.',
+      'Discover daring conceptual projects, viral sensations, and inventive variety releases on MISSAV-J.'
+    ],
+    relatedTags: ['Concept Planning', 'Variety', 'Documentary', 'Creative', 'Viral']
+  },
+  'idea-pocket': {
+    title: 'Idea Pocket Aesthetic Cinema Archive',
+    paragraphs: [
+      'Idea Pocket has long been recognized as the gold standard for romantic aesthetics, artistic lighting, and elegant cinematography. The studio is dedicated to presenting Japan\'s most radiant actresses in visual perfection.',
+      'With lush color grading, tender dramatic scenarios, and meticulous visual composition, Idea Pocket films emphasize romance, visual poetry, and breathtaking performer elegance.',
+      'Experience the pinnacle of artistic and aesthetic adult cinematography from Idea Pocket.'
+    ],
+    relatedTags: ['Aesthetic', 'Romance', 'Elegance', 'Cinematography', 'Poetic']
+  },
+  'prestige': {
+    title: 'Prestige Studio Showcase',
+    paragraphs: [
+      'Prestige is a dynamic, style-forward Japanese production powerhouse known for discoverers of top talent, chic urban aesthetics, and polished commercial presentation across dozens of celebrated themed sub-labels.',
+      'Combining high-gloss production design with sharp contemporary storytelling, Prestige releases consistently rank among the most viewed and critically praised titles in Japan.',
+      'Stream celebrated series, trendsetting debuts, and top-charting titles from the Prestige studio archive.'
+    ],
+    relatedTags: ['Urban Style', 'High Gloss', 'Trending', 'Model Discovery', 'Series']
+  }
+};
+
+function getHubGuideHtml(nameParam, activeLang) {
+  if (!nameParam) return '';
+  const key = String(nameParam).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const guide = HUB_DESCRIPTIONS[key];
+  if (!guide) return '';
+
+  const paragraphsHtml = guide.paragraphs.map(p => `<p style="margin: 8px 0; line-height: 1.6; color: #ccc;">${escapeHtml(p)}</p>`).join('');
+  const tagsHtml = guide.relatedTags.map(t => `<a href="/${activeLang}/category?name=${encodeURIComponent(t)}" style="display: inline-block; margin: 3px 6px; padding: 4px 10px; background: #222; color: #e50914; border-radius: 4px; font-size: 0.85rem; text-decoration: none;">${escapeHtml(t)}</a>`).join('');
+
+  return `
+    <section class="hub-editorial-guide" style="margin: 20px 0; padding: 18px; background: rgba(255, 255, 255, 0.03); border-left: 4px solid #e50914; border-radius: 6px;">
+      <h2 style="font-size: 1.15rem; margin-top: 0; color: #fff;">${escapeHtml(guide.title)}</h2>
+      ${paragraphsHtml}
+      <div style="margin-top: 12px; font-size: 0.9rem;">
+        <strong style="color: #fff;">Related Genres & Labels:</strong>
+        ${tagsHtml}
+      </div>
+    </section>
+  `;
+}
+
 function getCleanListingCanonical(origin, lang, type, nameParam) {
   if (!type || type === 'home') {
     return `${origin}/${lang}/`;
@@ -1090,11 +1334,15 @@ export async function onRequest(context) {
               if (translated) title = translated;
             }
 
+            const enrichedData = (typeof SEO_ENRICHED_POSTS !== 'undefined' && SEO_ENRICHED_POSTS[String(id)]?.status === 'enriched')
+              ? SEO_ENRICHED_POSTS[String(id)]
+              : null;
+
             const code = post.code || '';
             const normalizedCode = String(code).toLowerCase().replace(/[\s_]+/g, '-');
             const normalizedTitle = String(title).toLowerCase().replace(/[\s_]+/g, '-');
             const displayCode = normalizedCode && (normalizedTitle === normalizedCode || normalizedTitle.startsWith(`${normalizedCode}-`)) ? '' : code;
-            const fullTitle = displayCode ? `[${displayCode}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
+            let fullTitle = displayCode ? `[${displayCode}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
             
             let actorsStr = '';
             if (post.actors && Array.isArray(post.actors)) {
@@ -1106,7 +1354,12 @@ export async function onRequest(context) {
             }
 
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
-            const description = descFn(displayCode, title, actorsStr, studioStr);
+            let description = descFn(displayCode, title, actorsStr, studioStr);
+
+            if (enrichedData) {
+              if (enrichedData.meta_description) description = enrichedData.meta_description;
+              if (enrichedData.seo_title) fullTitle = `${enrichedData.seo_title} — MISSAV-J`;
+            }
 
             let sourceImageUrl = post.thumbnail || '';
 
@@ -1198,6 +1451,8 @@ export async function onRequest(context) {
             
             const hreflangBlock = generateHreflangTags(url.origin, canonicalPath || url.pathname, '');
             htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
+
+            
 
             if (htmlContent.includes('"@type": "WebSite"')) {
               const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`;
@@ -1302,9 +1557,24 @@ export async function onRequest(context) {
                 "itemListElement": breadcrumbElements
               };
 
+              const graphNodes = [videoSchema, breadcrumbSchema];
+              if (enrichedData?.faq && Array.isArray(enrichedData.faq) && enrichedData.faq.length > 0) {
+                graphNodes.push({
+                  "@type": "FAQPage",
+                  "mainEntity": enrichedData.faq.map(f => ({
+                    "@type": "Question",
+                    "name": f.q,
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": f.a
+                    }
+                  }))
+                });
+              }
+
               const structuredData = {
                 "@context": "https://schema.org",
-                "@graph": [videoSchema, breadcrumbSchema]
+                "@graph": graphNodes
               };
               htmlContent = htmlContent.replace(
                 /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/i,
@@ -1335,6 +1605,27 @@ export async function onRequest(context) {
                 if (links) categoriesLinksHtml = `<p style="margin: 6px 0;"><strong>Categories:</strong> ${links}</p>`;
               }
 
+              let enrichedHtml = '';
+              if (enrichedData) {
+                const highlightsHtml = (enrichedData.highlights || []).map(h => `<li style="margin: 4px 0;">${escapeHtml(h)}</li>`).join('');
+                const faqHtml = (enrichedData.faq || []).map(f => `<dt style="font-weight: 600; color: #fff; margin-top: 8px;">${escapeHtml(f.q)}</dt><dd style="margin: 4px 0 8px 12px; color: #ccc;">${escapeHtml(f.a)}</dd>`).join('');
+
+                enrichedHtml = `
+                  <section class="video-ai-enrichment" style="margin: 20px 0; padding: 18px; background: rgba(255, 255, 255, 0.03); border-radius: 6px;">
+                    <h2 style="font-size: 1.15rem; color: #fff;">Editorial Overview</h2>
+                    <p style="line-height: 1.6; color: #ddd;">${escapeHtml(enrichedData.summary || '')}</p>
+                    <h3 style="font-size: 1rem; color: #fff; margin-top: 14px;">Feature Highlights</h3>
+                    <ul style="color: #ccc; padding-left: 20px;">
+                      ${highlightsHtml}
+                    </ul>
+                    <h3 style="font-size: 1rem; color: #fff; margin-top: 14px;">Frequently Asked Questions</h3>
+                    <dl>
+                      ${faqHtml}
+                    </dl>
+                  </section>
+                `;
+              }
+
               const seoFallbackContent = `
         <div class="seo-fallback" style="display: contents;">
           <h1>${escapeHtml(fullTitle)}</h1>
@@ -1342,6 +1633,7 @@ export async function onRequest(context) {
           <div style="margin: 16px 0;">
             <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(fullTitle)}" width="800" height="450" fetchpriority="high" decoding="async" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 1rem;" />
           </div>
+          ${enrichedHtml}
           <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 16px;">
             <iframe
               src="${escapeHtml(cleanEmbedUrl)}"
@@ -1852,11 +2144,14 @@ export async function onRequest(context) {
           }
         }
 
+        const hubGuideHtml = getHubGuideHtml(nameParam, activeLang);
+
         // Inject fallback h1 text (+ crawlable actor/category/studio directories, legal content, video catalog)
         const seoFallbackContent = `
           <div class="seo-fallback" style="display: contents;">
             <h1>${escapeHtml(pageTitle)}</h1>
             <p>${escapeHtml(pageDesc)}</p>
+            ${hubGuideHtml}
             ${actorLinksHtml}
             ${categoryLinksHtml}
             ${studioLinksHtml}

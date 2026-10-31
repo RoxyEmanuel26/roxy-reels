@@ -835,3 +835,108 @@ test('video watch page SSR renders 3-tier BreadcrumbList with primary category a
   assert.match(html, /"name":\s*"Uncensored"/);
   assert.match(html, /"name":\s*"SSIS-888 Test Title [-—] MISSAV-J"/);
 });
+
+test('category and studio hubs render rich editorial guide (Hub Content) in SSR', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  
+  // Category guide check
+  const catContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Uncensored', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const catRes = await onRequest(catContext);
+  const catHtml = await catRes.text();
+  assert.equal(catRes.status, 200);
+  assert.match(catHtml, /hub-editorial-guide/);
+  assert.match(catHtml, /Uncensored JAV Streaming Guide/);
+  assert.match(catHtml, /Caribbeancom/);
+
+  // Studio guide check
+  const studioContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/studio?name=S1', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const studioRes = await onRequest(studioContext);
+  const studioHtml = await studioRes.text();
+  assert.equal(studioRes.status, 200);
+  assert.match(studioHtml, /hub-editorial-guide/);
+  assert.match(studioHtml, /S1 No.1 Style Official Studio Archive/);
+});
+
+test('enriched video watch page SSR injects FAQPage schema and AI editorial highlights', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const post = {
+    id: 999123,
+    code: 'SSIS-999',
+    title: 'SSIS-999 Enriched Title',
+    duration: '01:30:00',
+    categories: ['Drama'],
+    actors: ['Yua Mikami'],
+    studio: 'S1',
+    thumbnail: 'https://image.apijav.com/thumb/999.jpg',
+    embed_url: 'https://server.apijav.com/embed/999123'
+  };
+  const enrichedPostsDb = {
+    _meta: { version: '1.0.0' },
+    posts: {
+      '999123': {
+        video_id: '999123',
+        seo_title: 'SSIS-999 Exclusive Yua Mikami Feature',
+        meta_description: 'Stream SSIS-999 starring Yua Mikami in full HD. Read our exclusive overview and FAQs.',
+        summary: 'SSIS-999 is a cinematic drama presentation featuring award-winning performances.',
+        highlights: ['Exclusive S1 4K release', 'Starring Yua Mikami', 'Cinematic narrative pacing'],
+        tags: ['Drama', 'S1', 'SSIS-999'],
+        faq: [
+          { q: 'Who is the lead actress in SSIS-999?', a: 'SSIS-999 stars popular actress Yua Mikami.' },
+          { q: 'Is SSIS-999 available in HD?', a: 'Yes, full high definition streaming is supported.' }
+        ],
+        status: 'enriched'
+      }
+    }
+  };
+
+  globalThis.fetch = async input => {
+    return new Response(JSON.stringify(post), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  };
+
+  const env = {
+    ASSETS: {
+      fetch: async url => {
+        const u = String(url);
+        if (u.includes('seo-enriched-posts.json')) {
+          return new Response(JSON.stringify(enrichedPostsDb), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return new Response(indexHtml);
+      }
+    }
+  };
+
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/ssis-999-enriched-title-999123', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env
+  });
+
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /Who is the lead actress in SSIS-999?/);
+  assert.match(html, /video-ai-enrichment/);
+  assert.match(html, /Feature Highlights/);
+});
