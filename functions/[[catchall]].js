@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.91';
+const SSR_CACHE_VERSION = 'v2.8.92';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
@@ -1340,7 +1340,7 @@ export async function onRequest(context) {
           <h1>${escapeHtml(fullTitle)}</h1>
           <p>${escapeHtml(description)}</p>
           <div style="margin: 16px 0;">
-            <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(fullTitle)}" width="800" height="450" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 1rem;" />
+            <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(fullTitle)}" width="800" height="450" fetchpriority="high" decoding="async" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 1rem;" />
           </div>
           <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 16px;">
             <iframe
@@ -1828,7 +1828,7 @@ export async function onRequest(context) {
                   const imgUrl = getSocialImageUrl(p.thumbnail, url.origin);
                   const pTitle = p.title || '';
                   const code = p.code ? `[${escapeHtml(p.code)}] ` : '';
-                  return `<li style="margin-bottom: 16px;"><article><a href="${vUrl}"><img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(pTitle)}" width="320" height="180" loading="lazy" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px;" /><h2 style="font-size: 0.95rem; margin: 6px 0;">${code}${escapeHtml(pTitle)}</h2></a></article></li>`;
+                  return `<li style="margin-bottom: 16px;"><article><a href="${vUrl}"><img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(pTitle)}" width="320" height="180" loading="lazy" decoding="async" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px;" /><h2 style="font-size: 0.95rem; margin: 6px 0;">${code}${escapeHtml(pTitle)}</h2></a></article></li>`;
                 }).join('');
 
                 const nextPageNum = pageNum + 1;

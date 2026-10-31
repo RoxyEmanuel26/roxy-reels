@@ -5,10 +5,10 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.91';
-import ui from './ui.js?v=2.8.91';
-import filter from './filter.js?v=2.8.91';
-import i18n from './i18n.js?v=2.8.91';
+import api from './api.js?v=2.8.92';
+import ui from './ui.js?v=2.8.92';
+import filter from './filter.js?v=2.8.92';
+import i18n from './i18n.js?v=2.8.92';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -193,9 +193,9 @@ export function renderVideoCard(post, index = 0) {
   const rawEmbedUrl = (post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&');
   const safeEmbedUrl = ui.escapeHTML(rawEmbedUrl);
 
-  // Optimize image loading: use eager loading and high fetch priority for the first few cards (Above The Fold)
-  const loadingStrategy = index < 6 ? 'eager' : 'lazy';
-  const fetchPriority = index < 2 ? 'fetchpriority="high"' : '';
+  // Optimize image loading: 1st card gets fetchpriority="high" (Above The Fold LCP), 2nd eager, others lazy
+  const loadingStrategy = index < 2 ? 'eager' : 'lazy';
+  const fetchPriority = index === 0 ? 'fetchpriority="high"' : '';
 
   return `
     <article class="video-card fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
@@ -205,6 +205,7 @@ export function renderVideoCard(post, index = 0) {
           alt="${safeTitle}" 
           loading="${loadingStrategy}" 
           ${fetchPriority}
+          decoding="async"
           width="320" 
           height="180"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
