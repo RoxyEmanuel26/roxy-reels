@@ -33,7 +33,7 @@ if (fs.existsSync('.env')) {
 
 const DATA_FILE = path.resolve('data/seo-enriched-posts.json');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const DAILY_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '1000', 10);
 const DEFAULT_BATCH_SIZE = parseInt(process.env.GEMINI_BATCH_SIZE || '5', 10);
 
@@ -136,52 +136,66 @@ STRICT RULES:
     duration: p.duration || ''
   })), null, 2);
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  
-  let attempts = 0;
-  let delay = 1000;
-  while (attempts < 3) {
-    attempts++;
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-            }
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.2
-          }
-        })
-      });
+  const candidateModels = [model, 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
+  let lastError = null;
 
-      if (response.status === 429) {
-        console.warn(`[Gemini 429] Rate limited. Retrying after ${delay}ms...`);
+  for (const currentModel of candidateModels) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
+    let attempts = 0;
+    let delay = 1000;
+
+    while (attempts < 2) {
+      attempts++;
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+              }
+            ],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.2
+            }
+          })
+        });
+
+        if (response.status === 429) {
+          console.warn(`[Gemini 429] Rate limited on ${currentModel}. Retrying after ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+          continue;
+        }
+
+        if (response.status === 404 || response.status === 503) {
+          const text = await response.text();
+          console.warn(`[Gemini Fallback] Model ${currentModel} returned ${response.status}, trying next fallback model...`);
+          lastError = new Error(`Model ${currentModel} (${response.status}): ${text}`);
+          break; // break retry loop to try next model in candidateModels
+        }
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`Gemini API Error HTTP ${response.status}: ${text}`);
+        }
+
+        const resData = await response.json();
+        const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('Empty response from Gemini');
+        return JSON.parse(rawText);
+      } catch (err) {
+        lastError = err;
         await new Promise(r => setTimeout(r, delay));
         delay *= 2;
-        continue;
       }
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Gemini API Error HTTP ${response.status}: ${text}`);
-      }
-
-      const resData = await response.json();
-      const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) throw new Error('Empty response from Gemini');
-      return JSON.parse(rawText);
-    } catch (err) {
-      if (attempts >= 3) throw err;
-      await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
     }
   }
+
+  throw lastError || new Error('All candidate Gemini models failed.');
 }
 
 /**
