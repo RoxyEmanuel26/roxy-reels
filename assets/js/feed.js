@@ -5,10 +5,11 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.88';
-import ui from './ui.js?v=2.8.88';
-import filter from './filter.js?v=2.8.88';
-import i18n from './i18n.js?v=2.8.88';
+import api from './api.js?v=2.8.93';
+import ui from './ui.js?v=2.8.93';
+import filter from './filter.js?v=2.8.93';
+import i18n from './i18n.js?v=2.8.93';
+import { getHubContent } from './hub-content.js?v=2.8.93';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -193,9 +194,9 @@ export function renderVideoCard(post, index = 0) {
   const rawEmbedUrl = (post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&');
   const safeEmbedUrl = ui.escapeHTML(rawEmbedUrl);
 
-  // Optimize image loading: use eager loading and high fetch priority for the first few cards (Above The Fold)
-  const loadingStrategy = index < 6 ? 'eager' : 'lazy';
-  const fetchPriority = index < 2 ? 'fetchpriority="high"' : '';
+  // Optimize image loading: 1st card gets fetchpriority="high" (Above The Fold LCP), 2nd eager, others lazy
+  const loadingStrategy = index < 2 ? 'eager' : 'lazy';
+  const fetchPriority = index === 0 ? 'fetchpriority="high"' : '';
 
   return `
     <article class="video-card fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
@@ -205,6 +206,7 @@ export function renderVideoCard(post, index = 0) {
           alt="${safeTitle}" 
           loading="${loadingStrategy}" 
           ${fetchPriority}
+          decoding="async"
           width="320" 
           height="180"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
@@ -282,15 +284,34 @@ export async function init(filters = {}) {
     `;
   } else if (currentFilters.studio) {
     const studioName = ui.escapeHTML(currentFilters.studio);
-    taxonomyBannerHtml = `
-      <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
-        <div class="banner-icon">🎬</div>
-        <div class="banner-content">
-          <span class="banner-label">${i18n.t('banner_studio_label')}</span>
-          <h2 class="banner-title">${studioName}</h2>
-          <p class="banner-desc">${i18n.t('banner_studio_desc', { name: studioName })}</p>
+    const hub = getHubContent('studio', currentFilters.studio);
+    let hubGuideHtml = '';
+    if (hub) {
+      const p = hub.paragraphs.map(text => `<p style="margin: 6px 0; line-height: 1.5; color: var(--text-secondary, #ccc); font-size: 0.88rem;">${ui.escapeHTML(text)}</p>`).join('');
+      const tags = (hub.relatedTags || []).map(t => {
+        const lang = i18n.getLang() || 'en';
+        return `<a href="/${lang}/category?name=${encodeURIComponent(t)}" style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.06); color: var(--color-accent, #ff527b); border-radius: 4px; font-size: 0.8rem; text-decoration: none;">${ui.escapeHTML(t)}</a>`;
+      }).join('');
+      hubGuideHtml = `
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); width: 100%;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 4px;">${ui.escapeHTML(hub.title)}</h3>
+          ${p}
+          ${tags ? `<div style="margin-top: 8px; font-size: 0.8rem;"><strong style="color: #fff;">${i18n.t('related_tags') || 'Related'}:</strong> ${tags}</div>` : ''}
         </div>
-        <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
+      `;
+    }
+    taxonomyBannerHtml = `
+      <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms; display: flex; flex-direction: column; align-items: flex-start;">
+        <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+          <div class="banner-icon">🎬</div>
+          <div class="banner-content">
+            <span class="banner-label">${i18n.t('banner_studio_label')}</span>
+            <h2 class="banner-title">${studioName}</h2>
+            <p class="banner-desc">${i18n.t('banner_studio_desc', { name: studioName })}</p>
+          </div>
+          <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
+        </div>
+        ${hubGuideHtml}
       </div>
     `;
   } else if (currentFilters.tag) {
@@ -310,19 +331,38 @@ export async function init(filters = {}) {
     const catName = ui.escapeHTML(currentFilters.category);
     const dictKey = `category_${catName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
     const displayName = i18n.t(dictKey) || catName;
+    const hub = getHubContent('category', currentFilters.category);
+    let hubGuideHtml = '';
+    if (hub) {
+      const p = hub.paragraphs.map(text => `<p style="margin: 6px 0; line-height: 1.5; color: var(--text-secondary, #ccc); font-size: 0.88rem;">${ui.escapeHTML(text)}</p>`).join('');
+      const tags = (hub.relatedTags || []).map(t => {
+        const lang = i18n.getLang() || 'en';
+        return `<a href="/${lang}/category?name=${encodeURIComponent(t)}" style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.06); color: var(--color-accent, #ff527b); border-radius: 4px; font-size: 0.8rem; text-decoration: none;">${ui.escapeHTML(t)}</a>`;
+      }).join('');
+      hubGuideHtml = `
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); width: 100%;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 4px;">${ui.escapeHTML(hub.title)}</h3>
+          ${p}
+          ${tags ? `<div style="margin-top: 8px; font-size: 0.8rem;"><strong style="color: #fff;">${i18n.t('related_tags') || 'Related'}:</strong> ${tags}</div>` : ''}
+        </div>
+      `;
+    }
     
-    // Render taxonomy banners only if category clicked is a non-standard curated header category
+    // Render taxonomy banners if special category OR has hub editorial guide
     const isSpecialCategory = ['Uncensored', 'Amateur', 'Subtitled', 'Creampie', 'Cosplay', 'Mosaic', 'POV'].indexOf(catName) === -1;
-    if (isSpecialCategory) {
+    if (isSpecialCategory || hub) {
       taxonomyBannerHtml = `
-        <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms;">
-          <div class="banner-icon">📁</div>
-          <div class="banner-content">
-            <span class="banner-label">${i18n.t('banner_category_label')}</span>
-            <h2 class="banner-title">${displayName}</h2>
-            <p class="banner-desc">${i18n.t('banner_category_desc', { name: displayName })}</p>
+        <div class="taxonomy-banner fadeInUp" style="animation-delay: 50ms; display: flex; flex-direction: column; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+            <div class="banner-icon">📁</div>
+            <div class="banner-content">
+              <span class="banner-label">${i18n.t('banner_category_label')}</span>
+              <h2 class="banner-title">${displayName}</h2>
+              <p class="banner-desc">${i18n.t('banner_category_desc', { name: displayName })}</p>
+            </div>
+            <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
           </div>
-          <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
+          ${hubGuideHtml}
         </div>
       `;
     }

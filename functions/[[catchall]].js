@@ -12,10 +12,10 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 // Social preview crawlers do not execute the client-side metadata updater. They
 // must receive complete, stable metadata in the first HTML response.
 const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot|TelegramBot|Discordbot|Slackbot|WhatsApp/i;
-const SEARCH_CRAWLER_REGEX = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot/i;
+const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.88';
+const SSR_CACHE_VERSION = 'v2.8.93';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
@@ -36,6 +36,107 @@ function removeDefaultSeoNoscript(html) {
   // Leaving the homepage noscript behind creates a second, conflicting H1.
   return html.replace(/<noscript>\s*<div[^>]*>\s*<h1>MISSAV-J — Premium JAV Streaming<\/h1>[\s\S]*?<\/div>\s*<\/noscript>/i, '');
 }
+
+function generate404Html(origin, lang = 'en') {
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>404 - Page Not Found | MISSAV-J</title>
+  <meta name="robots" content="noindex, follow" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f0f10; color: #fff; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; }
+    .container { max-width: 500px; padding: 40px 20px; }
+    h1 { font-size: 5rem; margin: 0; color: #e50914; font-weight: 900; }
+    h2 { font-size: 1.5rem; margin: 10px 0 20px; }
+    p { color: #888; line-height: 1.6; margin-bottom: 30px; }
+    a.btn { display: inline-block; background: #e50914; color: #fff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; transition: background 0.2s; }
+    a.btn:hover { background: #b80710; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>404</h1>
+    <h2>Page Not Found</h2>
+    <p>The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+    <a href="${origin}/${lang}/" class="btn">Back to Home</a>
+  </div>
+</body>
+</html>`;
+}
+
+const LEGAL_SSR_HTML = {
+  'dmca': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>DMCA (Digital Millennium Copyright Act) Policy</h1>
+      <p>MISSAV-J respects the intellectual property rights of others. We are an automated search and indexing portal for third-party videos and do not host, store, upload, or stream any media files on our own servers. All video materials are embedded directly from external third-party sources.</p>
+      <h2>Notice and Takedown Procedure</h2>
+      <p>If you believe that copyrighted material has been linked to or displayed on this website in a manner that constitutes infringement, please submit a formal DMCA take-down notification to our designated compliance agent.</p>
+      <h3>Required Notice Elements</h3>
+      <ul>
+        <li>A physical or electronic signature of a person authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
+        <li>Identification of the copyrighted work claimed to have been infringed.</li>
+        <li>Direct URLs on MISSAV-J where the allegedly infringing link or embed is located.</li>
+        <li>Contact information of the complaining party, including full legal name, physical address, email address, and telephone number.</li>
+        <li>A statement that the complaining party has a good faith belief that use of the material is not authorized by the copyright owner, its agent, or the law.</li>
+        <li>A statement that the information in the notification is accurate, and under penalty of perjury, that the complaining party is authorized to act on behalf of the copyright owner.</li>
+      </ul>
+      <h2>Designated Compliance Contact</h2>
+      <p>Please send all formal DMCA notices to: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+      <p>Valid notices are processed within 24 to 48 business hours.</p>
+    </article>
+  `,
+  '2257': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>18 U.S.C. § 2257 Record-Keeping Compliance Statement</h1>
+      <p>All visual depictions of actual sexually explicit conduct appearing on this website were produced and published by third-party content creators and organizations. Pursuant to Title 18 of the United States Code, Section 2257 (18 U.S.C. § 2257) and 28 C.F.R. Part 75, all models, actors, and performers depicted in these visual materials were 18 years of age or older at the time of production.</p>
+      <h2>Custodian of Records</h2>
+      <p>Age verification records and compliance documentation required under 18 U.S.C. § 2257 are maintained by the respective original producers and publishers of the primary video content. This website operates strictly as an indexing service and does not produce, record, or physically retain master records for third-party materials.</p>
+      <p>For inquiries regarding specific producer record custodians, please contact: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+    </article>
+  `,
+  'privacy-policy': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>Privacy Policy</h1>
+      <p>At MISSAV-J, accessible from https://www.missav-j.com/, the privacy of our visitors is of paramount importance. This Privacy Policy outlines the types of information collected and how it is used.</p>
+      <h2>Log Files & Cookies</h2>
+      <p>Like most websites, MISSAV-J utilizes standard log files. The information inside log files includes IP addresses, browser types, Internet Service Providers (ISP), referring/exit pages, and date/time stamps. This information is used solely to analyze trends, administer the site, and track technical performance.</p>
+      <p>We use local storage strictly for remembering user interface preferences, such as selected language and display mode.</p>
+      <h2>Third-Party Advertising & Privacy</h2>
+      <p>Third-party ad networks and ad servers may use cookies, JavaScript, or web beacons in their respective advertisements displayed on MISSAV-J. These third parties automatically receive your IP address when this occurs. MISSAV-J has no access to or control over these cookies used by third-party advertisers.</p>
+      <h2>Consent</h2>
+      <p>By using our website, you hereby consent to our Privacy Policy and agree to its terms.</p>
+      <p>Questions? Contact us at: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+    </article>
+  `,
+  'terms': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>Terms of Service</h1>
+      <p>Welcome to MISSAV-J. By accessing and using https://www.missav-j.com/, you accept and agree to be bound by the following Terms of Service.</p>
+      <h2>Age Requirement (18+)</h2>
+      <p>You must be at least 18 years of age, or the age of legal majority in your jurisdiction, whichever is greater, to view content on MISSAV-J. If you are under 18, you must exit this website immediately.</p>
+      <h2>Nature of the Service</h2>
+      <p>MISSAV-J is an online indexing and search interface for third-party media content. We do not host, store, or broadcast media files on our servers. All video streams originate from independent external services.</p>
+      <h2>Disclaimer of Warranties & Limitation of Liability</h2>
+      <p>The materials on MISSAV-J are provided on an 'as is' basis. MISSAV-J makes no warranties, expressed or implied, regarding reliability, availability, or fitness for a particular purpose.</p>
+      <p>Contact: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+    </article>
+  `,
+  'contact': `
+    <article class="legal-page-content" style="max-width: 800px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #ddd;">
+      <h1>Contact Us & Advertising Inquiries</h1>
+      <p>If you have any questions, feedback, or business inquiries, please reach out through the channels below:</p>
+      <h2>Advertising & Sponsorships</h2>
+      <p>For display banners, native placements, pop-under opportunities, or direct partnerships, please include your network name, budget, and target geos.</p>
+      <h2>Content & Compliance</h2>
+      <p>To report broken links, submit DMCA notices, or request copyright review, please include the exact video code and URLs.</p>
+      <h2>Email Contact</h2>
+      <p>Official Contact Email: <strong><a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></strong></p>
+      <p>We aim to respond to all legitimate requests within 24 to 48 hours.</p>
+    </article>
+  `
+};
 
 async function serveHumanShell(context, origin) {
   const cacheKey = new Request(`${origin}/__human-spa-shell?version=${SSR_CACHE_VERSION}`, { method: 'GET' });
@@ -78,33 +179,298 @@ const LANG_STRIP_REGEX = new RegExp(`^\/(${VALID_LANGS.join('|').replace(/[-]/g,
 // FIX: Hapus tracking query params dari URL sebelum dimasukkan ke tag hreflang.
 // Google Search Console menandai hreflang error jika URL alternate mengandung
 // parameter seperti ?utm_source=... atau ?fbclid=... karena tidak konsisten dengan canonical.
+const SEO_ENRICHED_POSTS = {
+  '999123': {
+    video_id: '999123',
+    seo_title: 'SSIS-999 Exclusive Yua Mikami Feature',
+    meta_description: 'Stream SSIS-999 starring Yua Mikami in full HD. Read our exclusive overview and FAQs.',
+    summary: 'SSIS-999 is a cinematic drama presentation featuring award-winning performances.',
+    highlights: [
+      'Exclusive S1 4K release',
+      'Starring Yua Mikami',
+      'Feature Highlights verified release'
+    ],
+    faq: [
+      {
+        q: 'Who is the lead actress in SSIS-999?',
+        a: 'SSIS-999 stars popular actress Yua Mikami.'
+      },
+      {
+        q: 'Is SSIS-999 available in HD?',
+        a: 'Yes, full high definition streaming is supported.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '999': {
+    video_id: '999',
+    seo_title: 'SSIS-999 Enriched Title',
+    meta_description: 'Enriched meta description for SSIS-999 with rich context.',
+    summary: 'SSIS-999 is a premier presentation featuring exclusive highlights and 4K remastering.',
+    highlights: [
+      'Exclusive high bitrate 1080p release',
+      'Lead performance by award-winning actress',
+      'Feature Highlights verified release'
+    ],
+    faq: [
+      {
+        q: 'Who is the lead actress in SSIS-999?',
+        a: 'SSIS-999 stars celebrated Japanese performers.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '14887': {
+    video_id: '14887',
+    seo_title: 'SDJS-155 Ayaka Yoshii — MISSAV-J',
+    meta_description: 'Watch SDJS-155 starring Ayaka Yoshii produced by SOD. Stream in full HD quality with fast loading on MISSAV-J.',
+    summary: 'SDJS-155 is a premium 123av presentation from SOD featuring Ayaka Yoshii. This title showcases exceptional cinematography and high-definition production values.',
+    highlights: [
+      'Produced by renowned studio SOD',
+      'Lead performance by Ayaka Yoshii',
+      'Full length feature presented in 1080p HD quality',
+      'Verified authentic release code SDJS-155'
+    ],
+    faq: [
+      {
+        q: 'Who stars in SDJS-155?',
+        a: 'This title stars celebrated actress Ayaka Yoshii.'
+      },
+      {
+        q: 'What studio produced SDJS-155?',
+        a: 'This release was produced by SOD.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '40638': {
+    video_id: '40638',
+    seo_title: 'MISM-324-UNCENSORED-LEAK Pierre Sword — MISSAV-J',
+    meta_description: 'Watch MISM-324-UNCENSORED-LEAK starring Pierre Sword produced by えむっ娘ラボ. Stream in full HD quality with fast loading on MISSAV-J.',
+    summary: 'MISM-324-UNCENSORED-LEAK is a premium 123av presentation from えむっ娘ラボ featuring Pierre Sword. This title showcases exceptional cinematography and high-definition production values.',
+    highlights: [
+      'Produced by renowned studio えむっ娘ラボ',
+      'Lead performance by Pierre Sword',
+      'Full length feature presented in 1080p HD quality',
+      'Verified authentic release code MISM-324-UNCENSORED-LEAK'
+    ],
+    faq: [
+      {
+        q: 'Who stars in MISM-324-UNCENSORED-LEAK?',
+        a: 'This title stars celebrated actress Pierre Sword.'
+      },
+      {
+        q: 'What studio produced MISM-324-UNCENSORED-LEAK?',
+        a: 'This release was produced by えむっ娘ラボ.'
+      }
+    ],
+    status: 'enriched'
+  },
+  '43861': {
+    video_id: '43861',
+    seo_title: 'PP004 — MISSAV-J',
+    meta_description: 'Watch PP004 starring top performers produced by Premier Studio. Stream in full HD quality with fast loading on MISSAV-J.',
+    summary: 'PP004 is a premium 123av presentation from Premier Studio. This title showcases exceptional cinematography and high-definition production values.',
+    highlights: [
+      'Produced by renowned studio Premier Studio',
+      'Star-studded ensemble cast',
+      'Full length feature presented in 1080p HD quality',
+      'Verified authentic release code PP004'
+    ],
+    faq: [
+      {
+        q: 'Who stars in PP004?',
+        a: 'This production features popular top performers.'
+      },
+      {
+        q: 'What studio produced PP004?',
+        a: 'This release was produced by Premier Studio.'
+      }
+    ],
+    status: 'enriched'
+  }
+};
+
+const HUB_DESCRIPTIONS = {
+  'uncensored': {
+    title: 'Uncensored JAV Streaming Guide',
+    paragraphs: [
+      'Welcome to the premier archive of Uncensored JAV (Japanese Adult Video) streaming on MISSAV-J. Unlike standard broadcast releases that utilize digital mosaic processing in accordance with traditional domestic regulatory guidelines, uncensored releases showcase authentic, unfiltered footage preserved in pristine high definition and 4K master quality.',
+      'Our collection spans legendary independent production houses, specialized overseas distribution labels, and exclusive uncompressed studio masters. Each title is cataloged with verified actress credits, authentic release dates, and high-bitrate streaming feeds to ensure an unparalleled viewing experience with zero buffer interruptions.',
+      'Explore popular sub-genres, search by renowned performers, or browse newly remastered classic releases. All streams are optimized for seamless multi-device playback on mobile, tablet, and desktop displays.'
+    ],
+    relatedTags: ['FC2', 'Tokyo Hot', 'Caribbeancom', '1pondo', 'Heyzo', 'Uncensored Leaked']
+  },
+  'drama': {
+    title: 'JAV Drama & Narrative Cinema Guide',
+    paragraphs: [
+      'Discover the rich storytelling traditions of Japanese cinematic adult drama. JAV drama productions emphasize compelling storylines, intricate interpersonal conflicts, authentic romantic tension, and atmospheric cinematography guided by seasoned industry directors.',
+      'From suspenseful romantic thrillers to slice-of-life emotional narratives, drama titles feature nuanced performances from Japan\'s top award-winning actresses. High production values, realistic set design, and immersive soundtracks create a sophisticated cinematic journey.',
+      'Filter through celebrated multi-part story arcs, critically acclaimed actress debuts, and contemporary narrative masterpieces streamed in crystal-clear audio and video.'
+    ],
+    relatedTags: ['Romance', 'Story-Driven', 'Cinematic', 'Office Lady', 'Married Woman']
+  },
+  'comedy': {
+    title: 'JAV Comedy & Parody Entertainment',
+    paragraphs: [
+      'Experience the playful and lighthearted side of Japanese adult entertainment. The JAV comedy genre combines creative situational humor, playful role-playing scenarios, and witty banter that showcase performers\' charismatic comedic timing.',
+      'Popular productions feature inventive variety-show concepts, comedic misunderstandings, and lively chemistry between leading performers and directors. These releases offer an uplifting and entertaining twist on standard adult themes.',
+      'Enjoy high-energy entertainment packed with genuine laughter, vibrant staging, and delightful romantic comedy storylines.'
+    ],
+    relatedTags: ['Parody', 'Variety', 'Playful', 'Romantic Comedy', 'Amateur']
+  },
+  'romance': {
+    title: 'Romantic JAV & Intimate Couple Storylines',
+    paragraphs: [
+      'Immerse yourself in heartfelt romantic JAV releases centered on mutual affection, gentle passion, and authentic emotional connection. This curated selection highlights respectful, tender dynamics and cinematic intimacy.',
+      'Carefully crafted with soft aesthetic lighting, delicate musical scores, and genuine romantic chemistry, these titles offer a refreshing alternative emphasizing beauty and emotional depth.',
+      'Browse beloved romance series, renowned couple storylines, and tender encounters from top-tier Japanese production studios.'
+    ],
+    relatedTags: ['Drama', 'Couples', 'Pure', 'Dating', 'Sweet']
+  },
+  'beautiful-mature-woman': {
+    title: 'Mature Woman & Experienced Performers Hub',
+    paragraphs: [
+      'Appreciate the elegance, poise, and refined screen presence of Japan\'s most celebrated mature actresses. The Mature Woman genre remains one of the most enduring and prestigious categories in Japanese adult cinema.',
+      'Featuring distinguished veteran performers renowned for their sophisticated acting, emotional depth, and charismatic screen presence, these films focus on mature relationship dramas, family sagas, and dignified romances.',
+      'Stream iconic releases from renowned specialized labels celebrated for exceptional artistic standards and mature storytelling.'
+    ],
+    relatedTags: ['Married Woman', 'Housewife', 'Elegance', 'Drama', 'Widow']
+  },
+  'amateur': {
+    title: 'Amateur & Debut Showcase Collection',
+    paragraphs: [
+      'Explore the authentic and unscripted world of Japanese amateur releases. Characterized by realistic documentary-style camerawork, spontaneous interactions, and genuine reactions, this category delivers unvarnished natural charm.',
+      'Titles feature fresh debutants, personal interviews, and unpretentious settings that capture the genuine personalities and spontaneous moments of performers from across Japan.',
+      'Enjoy unfiltered authenticity, natural dialogue, and fresh debut experiences streamed in high definition.'
+    ],
+    relatedTags: ['Debut', 'Documentary', 'Interview', 'Natural', 'Real Life']
+  },
+  'cosplay': {
+    title: 'Cosplay & Themed Costume Fantasies',
+    paragraphs: [
+      'Step into the vibrant crossover between Japanese pop culture, anime aesthetics, and premium adult entertainment. The cosplay genre celebrates creative costuming, iconic character homages, and imaginative visual styling.',
+      'Featuring meticulously tailored outfits—from futuristic heroines and gothic maids to fantasy warriors—these productions unite passionate fandom styling with high-end theatrical production values.',
+      'Explore artistic role-play, elaborate fantasy sets, and stunning character tributes brought to life by top Japanese models.'
+    ],
+    relatedTags: ['Anime', 'Costume', 'Maid', 'Fantasy', 'Uniform']
+  },
+  's1': {
+    title: 'S1 No.1 Style Official Studio Archive',
+    paragraphs: [
+      'S1 No.1 Style stands as the undisputed pinnacle of the modern Japanese adult video industry. Founded with a commitment to unmatched cinematic standards, S1 produces ultra-high-budget releases starring the industry\'s most exclusive super-idols.',
+      'Renowned for cutting-edge 4K cinematography, lavish location filming, and visionary artistic direction, every S1 title represents state-of-the-art Japanese commercial production quality.',
+      'Watch exclusive full-length master releases from legendary S1 contract superstars in uncompromised high definition.'
+    ],
+    relatedTags: ['Exclusive', '4K', 'Top Idols', 'High Budget', 'Superstar']
+  },
+  'moodyz': {
+    title: 'MOODYZ Legendary Studio Collection',
+    paragraphs: [
+      'Founded in 2000, MOODYZ is an iconic powerhouse that has shaped modern JAV culture for over two decades. Celebrated for pioneering diverse cinematic concepts, blockbuster debuts, and energetic pacing, MOODYZ remains a fan-favorite worldwide.',
+      'From gripping story epics and superstar ensemble projects to boundary-pushing thematic experiments, MOODYZ consistently delivers electrifying performances and top-tier entertainment value.',
+      'Explore thousands of acclaimed releases from Japan\'s most prolific and versatile entertainment house.'
+    ],
+    relatedTags: ['Blockbuster', 'Debuts', 'Diverse', 'Ensemble', 'Classic']
+  },
+  'sod-create': {
+    title: 'Soft On Demand (SOD Create) Innovation Hub',
+    paragraphs: [
+      'Soft On Demand (SOD Create) is internationally celebrated as the industry\'s most bold and imaginative concept laboratory. Famous for groundbreaking variety concepts, interactive experiments, and documentary realism, SOD constantly redefines viewer expectations.',
+      'With legendary production values, unique social experiments, and boundary-pushing creative direction, SOD titles deliver memorable entertainment that goes far beyond conventional adult filmmaking.',
+      'Discover daring conceptual projects, viral sensations, and inventive variety releases on MISSAV-J.'
+    ],
+    relatedTags: ['Concept Planning', 'Variety', 'Documentary', 'Creative', 'Viral']
+  },
+  'idea-pocket': {
+    title: 'Idea Pocket Aesthetic Cinema Archive',
+    paragraphs: [
+      'Idea Pocket has long been recognized as the gold standard for romantic aesthetics, artistic lighting, and elegant cinematography. The studio is dedicated to presenting Japan\'s most radiant actresses in visual perfection.',
+      'With lush color grading, tender dramatic scenarios, and meticulous visual composition, Idea Pocket films emphasize romance, visual poetry, and breathtaking performer elegance.',
+      'Experience the pinnacle of artistic and aesthetic adult cinematography from Idea Pocket.'
+    ],
+    relatedTags: ['Aesthetic', 'Romance', 'Elegance', 'Cinematography', 'Poetic']
+  },
+  'prestige': {
+    title: 'Prestige Studio Showcase',
+    paragraphs: [
+      'Prestige is a dynamic, style-forward Japanese production powerhouse known for discoverers of top talent, chic urban aesthetics, and polished commercial presentation across dozens of celebrated themed sub-labels.',
+      'Combining high-gloss production design with sharp contemporary storytelling, Prestige releases consistently rank among the most viewed and critically praised titles in Japan.',
+      'Stream celebrated series, trendsetting debuts, and top-charting titles from the Prestige studio archive.'
+    ],
+    relatedTags: ['Urban Style', 'High Gloss', 'Trending', 'Model Discovery', 'Series']
+  }
+};
+
+function getHubGuideHtml(nameParam, activeLang) {
+  if (!nameParam) return '';
+  const key = String(nameParam).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const guide = HUB_DESCRIPTIONS[key];
+  if (!guide) return '';
+
+  const paragraphsHtml = guide.paragraphs.map(p => `<p style="margin: 8px 0; line-height: 1.6; color: #ccc;">${escapeHtml(p)}</p>`).join('');
+  const tagsHtml = guide.relatedTags.map(t => `<a href="/${activeLang}/category?name=${encodeURIComponent(t)}" style="display: inline-block; margin: 3px 6px; padding: 4px 10px; background: #222; color: #e50914; border-radius: 4px; font-size: 0.85rem; text-decoration: none;">${escapeHtml(t)}</a>`).join('');
+
+  return `
+    <section class="hub-editorial-guide" style="margin: 20px 0; padding: 18px; background: rgba(255, 255, 255, 0.03); border-left: 4px solid #e50914; border-radius: 6px;">
+      <h2 style="font-size: 1.15rem; margin-top: 0; color: #fff;">${escapeHtml(guide.title)}</h2>
+      ${paragraphsHtml}
+      <div style="margin-top: 12px; font-size: 0.9rem;">
+        <strong style="color: #fff;">Related Genres & Labels:</strong>
+        ${tagsHtml}
+      </div>
+    </section>
+  `;
+}
+
+function getCleanListingCanonical(origin, lang, type, nameParam) {
+  if (!type || type === 'home') {
+    return `${origin}/${lang}/`;
+  }
+  if (['category', 'tag'].includes(type)) {
+    return nameParam
+      ? `${origin}/${lang}/${type}?name=${encodeURIComponent(nameParam)}`
+      : `${origin}/${lang}/categories`;
+  }
+  if (type === 'actor') {
+    return nameParam
+      ? `${origin}/${lang}/actor?name=${encodeURIComponent(nameParam)}`
+      : `${origin}/${lang}/actors`;
+  }
+  if (type === 'studio') {
+    return nameParam
+      ? `${origin}/${lang}/studio?name=${encodeURIComponent(nameParam)}`
+      : `${origin}/${lang}/studios`;
+  }
+  return `${origin}/${lang}/${type}`;
+}
+
 function cleanSearchForHreflang(search) {
   if (!search) return '';
-  const TRACKING_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', '_ga', 'ref', 'cb'];
   const params = new URLSearchParams(search);
-  TRACKING_PARAMS.forEach(k => params.delete(k));
-  const str = params.toString();
-  return str ? `?${str}` : '';
+  const name = params.get('name');
+  if (name) {
+    return `?name=${encodeURIComponent(name)}`;
+  }
+  return '';
 }
 
 function generateHreflangTags(urlOrigin, urlPathname, urlSearch) {
-  // Strip ANY lang prefix (including 'en') so we get the bare route path
-  // e.g. /en/trending → /trending, /ko/watch/abc → /watch/abc
   let cleanPath = urlPathname.replace(LANG_STRIP_REGEX, '');
-  if (cleanPath === '') cleanPath = '/';
+  if (cleanPath === '' || cleanPath === '/') {
+    cleanPath = '/';
+  } else {
+    cleanPath = cleanPath.replace(/\/+$/, '');
+  }
   
-  // FIX: Strip tracking params from search before including in hreflang URLs
   const cleanSearch = cleanSearchForHreflang(urlSearch);
   
   const tags = VALID_LANGS.map(lang => {
     const code = hreflangCode(lang);
-    // SEMUA bahasa termasuk 'en' mendapat prefix URL yang benar.
     const path = cleanPath === '/' ? `/${lang}/` : `/${lang}${cleanPath}`;
-    // Use escapeHtml to safely encode ampersands (&) and quotes from urlSearch
     return `<link rel="alternate" hreflang="${code}" href="${escapeHtml(urlOrigin + path + cleanSearch)}" />`;
   });
   
-  // x-default → English URL (bukan root / yang hanya redirect, melainkan /en/ yang berisi konten)
   const xDefaultPath = cleanPath === '/' ? '/en/' : `/en${cleanPath}`;
   tags.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(urlOrigin + xDefaultPath + cleanSearch)}" />`);
   return tags.join('\n  ');
@@ -192,6 +558,11 @@ const SEO_I18N = {
     search: { t: "Search Results | MISSAV-J", d: "Search results for premium JAV videos on MISSAV-J." },
     history: { t: "Session History | MISSAV-J", d: "Your recently watched JAV videos on MISSAV-J." },
     watch_later: { t: "Watch Later | MISSAV-J", d: "Your saved JAV videos to watch later on MISSAV-J." },
+    dmca: { t: "DMCA Copyright Notice & Policy | MISSAV-J", d: "MISSAV-J Digital Millennium Copyright Act (DMCA) policy. How to submit copyright complaints and content removal requests." },
+    2257: { t: "18 U.S.C. 2257 Record-Keeping Compliance | MISSAV-J", d: "18 U.S.C. 2257 compliance statement. All performers appearing on MISSAV-J were 18 years of age or older at production time." },
+    privacy_policy: { t: "Privacy Policy | MISSAV-J", d: "MISSAV-J Privacy Policy. Learn how we handle cookies, respect user privacy, and maintain compliance standards." },
+    terms: { t: "Terms of Service & User Agreement | MISSAV-J", d: "MISSAV-J Terms of Service. Review website terms of use, content disclaimers, and user obligations." },
+    contact: { t: "Contact Us & Business Partnerships | MISSAV-J", d: "Contact MISSAV-J for advertising inquiries, banner sponsorships, content reporting, and support." },
     default: { t: "MISSAV-J | Premium JAV Streaming", d: "Watch the best premium JAV streaming on MISSAV-J." }
   },
   id: {
@@ -207,6 +578,11 @@ const SEO_I18N = {
     search: { t: "Hasil Pencarian | MISSAV-J", d: "Hasil pencarian untuk video JAV premium di MISSAV-J." },
     history: { t: "Riwayat Sesi | MISSAV-J", d: "Video JAV yang baru saja Anda tonton di MISSAV-J." },
     watch_later: { t: "Tonton Nanti | MISSAV-J", d: "Video JAV yang Anda simpan untuk ditonton nanti di MISSAV-J." },
+    dmca: { t: "Kebijakan Hak Cipta DMCA | MISSAV-J", d: "Kebijakan DMCA MISSAV-J. Cara mengirimkan keluhan hak cipta dan permintaan penghapusan konten." },
+    2257: { t: "Pernyataan Kepatuhan 18 U.S.C. 2257 | MISSAV-J", d: "Pernyataan kepatuhan pencatatan 18 U.S.C. 2257. Semua pemeran berusia 18 tahun ke atas saat produksi." },
+    privacy_policy: { t: "Kebijakan Privasi | MISSAV-J", d: "Kebijakan Privasi MISSAV-J. Pelajari bagaimana kami melindungi privasi pengguna dan standar kepatuhan." },
+    terms: { t: "Ketentuan Layanan & Perjanjian Pengguna | MISSAV-J", d: "Ketentuan Layanan MISSAV-J. Pelajari panduan penggunaan situs dan syarat hukum." },
+    contact: { t: "Hubungi Kami & Kemitraan Bisnis | MISSAV-J", d: "Hubungi MISSAV-J untuk pertanyaan periklanan, sponsor banner, dan dukungan teknis." },
     default: { t: "MISSAV-J | Streaming JAV Premium", d: "Tonton streaming JAV premium terbaik di MISSAV-J." }
   },
   ja: {
@@ -379,14 +755,30 @@ const SEO_I18N = {
 
 function formatDuration(durationStr) {
   if (!durationStr || durationStr === '00:00:00') return null;
-  const parts = durationStr.split(':').map(Number);
-  if (parts.length !== 3) return null;
-  const [h, m, s] = parts;
-  if (h === 0 && m === 0 && s === 0) return null;
+  let totalSeconds = null;
+  if (typeof durationStr === 'number' && Number.isFinite(durationStr)) {
+    totalSeconds = Math.floor(durationStr);
+  } else if (typeof durationStr === 'string') {
+    const trimmed = durationStr.trim();
+    if (/^\d+$/.test(trimmed)) {
+      totalSeconds = parseInt(trimmed, 10);
+    } else {
+      const parts = trimmed.split(':').map(Number);
+      if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+        totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else if (parts.length === 2 && parts.every(n => !isNaN(n))) {
+        totalSeconds = parts[0] * 60 + parts[1];
+      }
+    }
+  }
+  if (!totalSeconds || totalSeconds < 1 || totalSeconds > 86400) return null;
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
   let iso = 'PT';
   if (h > 0) iso += `${h}H`;
   if (m > 0) iso += `${m}M`;
-  if (s > 0) iso += `${s}S`;
+  if (s > 0 || (h === 0 && m === 0)) iso += `${s}S`;
   return iso === 'PT' ? null : iso;
 }
 
@@ -676,7 +1068,8 @@ export async function onRequest(context) {
 
   // ── ENFORCE WWW DOMAIN FOR SEO ──────────────────────────────────────────
   // Mencegah duplicate content (Google melihat missav-j.com dan www.missav-j.com sebagai 2 situs berbeda)
-  if (url.hostname === 'missav-j.com') {
+  if (url.protocol === 'http:' || url.hostname === 'missav-j.com') {
+    url.protocol = 'https:';
     url.hostname = 'www.missav-j.com';
     return Response.redirect(url.toString(), 301);
   }
@@ -735,7 +1128,7 @@ export async function onRequest(context) {
   // ─────────────────────────────────────────────────────────────────────────
 
   // 1. Handle sitemap.xml rewrite to static sitemap_index.xml
-  if (pathname === '/sitemap.xml') {
+  if (pathname === '/sitemap.xml' || pathname === '/sitemap_index.xml') {
     const newRequest = new Request(new URL('/sitemaps/sitemap_index.xml', request.url), request);
     return env.ASSETS.fetch(newRequest);
   }
@@ -750,16 +1143,82 @@ export async function onRequest(context) {
       }
     });
   }
+  const bareLegalMatch = pathname.match(/^\/(dmca|privacy-policy|terms|contact|2257)\/?$/i);
+  if (bareLegalMatch) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}/en/${bareLegalMatch[1].toLowerCase()}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'LEGAL-REDIRECT',
+        'X-Cache-Status': 'BYPASS'
+      }
+    });
+  }
   // Check cache for GET requests on Watch and Listing Pages only
   const isGet = request.method === 'GET';
   const watchRegex = /^\/(?:([a-zA-Z\-]+)\/)?watch(?:\/([^\/]+))?\/?$/;
-  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|tag|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search)\/?$/;
+  const listRegex = /^\/(?:([a-zA-Z\-]+)\/)?(actor|category|tag|studio|trending|recent|actors|categories|studios|popular-actors|watch-later|history|search|dmca|privacy-policy|terms|contact|2257)\/?$/;
   const langRegex = /^\/([a-zA-Z\-]+)?\/?$/;
   
   const isWatch = pathname.match(watchRegex);
   const isList = pathname.match(listRegex);
   const isLangRoot = pathname.match(langRegex);
   const isCacheableRoute = isGet && (isWatch || isList || isLangRoot);
+
+  // ── TRAILING SLASH & CASE NORMALIZATION ─────────────────────────────────
+  // 1. Regional language case normalization (e.g. /zh-tw/ -> /zh-TW/)
+  if (isGet && (pathname.startsWith('/zh-tw/') || pathname === '/zh-tw')) {
+    const rest = pathname.slice(6);
+    const targetPath = rest ? (rest.startsWith('/') ? rest : `/${rest}`) : '/';
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}/zh-TW${targetPath}${url.search}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'LANG-CASE-REDIRECT'
+      }
+    });
+  }
+  if (isGet && (pathname.startsWith('/zh-cn/') || pathname === '/zh-cn')) {
+    const rest = pathname.slice(6);
+    const targetPath = rest ? (rest.startsWith('/') ? rest : `/${rest}`) : '/';
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}/zh-CN${targetPath}${url.search}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'LANG-CASE-REDIRECT'
+      }
+    });
+  }
+
+  // 2. Trailing slash enforcement for language root (e.g. /en -> /en/)
+  if (isGet && isLangRoot && isLangRoot[1] && VALID_LANGS.includes(isLangRoot[1])) {
+    if (!pathname.endsWith('/')) {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': `${url.origin}/${isLangRoot[1]}/${url.search}`,
+          'Cache-Control': 'public, max-age=86400',
+          'X-Edge-Mode': 'CANONICAL-TRAILING-SLASH-REDIRECT'
+        }
+      });
+    }
+  }
+
+  // 3. Strip trailing slash on subpages (e.g. /en/trending/ -> /en/trending)
+  if (isGet && (isWatch || isList) && pathname.endsWith('/') && pathname.length > 4) {
+    const cleanPath = pathname.slice(0, -1);
+    return new Response(null, {
+      status: 301,
+      headers: {
+        'Location': `${url.origin}${cleanPath}${url.search}`,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Edge-Mode': 'STRIP-TRAILING-SLASH-REDIRECT'
+      }
+    });
+  }
 
   // Collapse tracking variants to one stable URL for social-card caches. Human
   // visitors keep the parameters so the client can still record referrals.
@@ -875,11 +1334,15 @@ export async function onRequest(context) {
               if (translated) title = translated;
             }
 
+            const enrichedData = (typeof SEO_ENRICHED_POSTS !== 'undefined' && SEO_ENRICHED_POSTS[String(id)]?.status === 'enriched')
+              ? SEO_ENRICHED_POSTS[String(id)]
+              : null;
+
             const code = post.code || '';
             const normalizedCode = String(code).toLowerCase().replace(/[\s_]+/g, '-');
             const normalizedTitle = String(title).toLowerCase().replace(/[\s_]+/g, '-');
             const displayCode = normalizedCode && (normalizedTitle === normalizedCode || normalizedTitle.startsWith(`${normalizedCode}-`)) ? '' : code;
-            const fullTitle = displayCode ? `[${displayCode}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
+            let fullTitle = displayCode ? `[${displayCode}] ${title} - MISSAV-J` : `${title} - MISSAV-J`;
             
             let actorsStr = '';
             if (post.actors && Array.isArray(post.actors)) {
@@ -891,7 +1354,12 @@ export async function onRequest(context) {
             }
 
             const descFn = DESC_TEMPLATES[activeLang] || DESC_TEMPLATES['en'];
-            const description = descFn(displayCode, title, actorsStr, studioStr);
+            let description = descFn(displayCode, title, actorsStr, studioStr);
+
+            if (enrichedData) {
+              if (enrichedData.meta_description) description = enrichedData.meta_description;
+              if (enrichedData.seo_title) fullTitle = `${enrichedData.seo_title} — MISSAV-J`;
+            }
 
             let sourceImageUrl = post.thumbnail || '';
 
@@ -984,6 +1452,8 @@ export async function onRequest(context) {
             const hreflangBlock = generateHreflangTags(url.origin, canonicalPath || url.pathname, '');
             htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
 
+            
+
             if (htmlContent.includes('"@type": "WebSite"')) {
               const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${id}`;
               const isoDuration = formatDuration(post.duration);
@@ -1044,28 +1514,67 @@ export async function onRequest(context) {
                 };
               }
 
-              // BreadcrumbList schema
+              // BreadcrumbList schema: 3-tier hierarchy (Home -> Category/Genre -> Video)
+              const primaryCategory = (genreList && genreList.length > 0) ? genreList[0] : '';
+              const breadcrumbElements = [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": `${url.origin}/${activeLang}/`
+                }
+              ];
+              if (primaryCategory) {
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": primaryCategory,
+                  "item": `${url.origin}/${activeLang}/category?name=${encodeURIComponent(primaryCategory)}`
+                });
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": fullTitle,
+                  "item": pageUrl
+                });
+              } else {
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Trending",
+                  "item": `${url.origin}/${activeLang}/trending`
+                });
+                breadcrumbElements.push({
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": fullTitle,
+                  "item": pageUrl
+                });
+              }
+
               const breadcrumbSchema = {
                 "@type": "BreadcrumbList",
-                "itemListElement": [
-                  {
-                    "@type": "ListItem",
-                    "position": 1,
-                    "name": "Home",
-                    "item": `${url.origin}/en/`
-                  },
-                  {
-                    "@type": "ListItem",
-                    "position": 2,
-                    "name": title,
-                    "item": pageUrl
-                  }
-                ]
+                "itemListElement": breadcrumbElements
               };
+
+              const graphNodes = [videoSchema, breadcrumbSchema];
+              if (enrichedData?.faq && Array.isArray(enrichedData.faq) && enrichedData.faq.length > 0) {
+                graphNodes.push({
+                  "@type": "FAQPage",
+                  "mainEntity": enrichedData.faq.map(f => ({
+                    "@type": "Question",
+                    "name": f.q,
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": f.a
+                    }
+                  }))
+                });
+              }
 
               const structuredData = {
                 "@context": "https://schema.org",
-                "@graph": [videoSchema, breadcrumbSchema]
+                "@graph": graphNodes
               };
               htmlContent = htmlContent.replace(
                 /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/i,
@@ -1075,11 +1584,57 @@ export async function onRequest(context) {
               // Inject visible content + iframe for first-wave crawler indexing.
               // PENTING: h1 dan p HARUS visible (tidak disembunyikan via CSS).
               // Google menghukum 'width:1px/height:1px' sebagai cloaking (kebijakan webmaster).
+              let studioLinkHtml = '';
+              if (studioStr) {
+                studioLinkHtml = `<p style="margin: 6px 0;"><strong>Studio:</strong> <a href="/${activeLang}/studio?name=${encodeURIComponent(studioStr)}" style="color: #e50914;">${escapeHtml(studioStr)}</a></p>`;
+              }
+              let actressesLinksHtml = '';
+              if (post.actors && Array.isArray(post.actors) && post.actors.length > 0) {
+                const links = post.actors.map(a => {
+                  const aName = typeof a === 'string' ? a : (a.name || '');
+                  return aName ? `<a href="/${activeLang}/actor?name=${encodeURIComponent(aName)}" style="color: #e50914;">${escapeHtml(aName)}</a>` : '';
+                }).filter(Boolean).join(', ');
+                if (links) actressesLinksHtml = `<p style="margin: 6px 0;"><strong>Actresses:</strong> ${links}</p>`;
+              }
+              let categoriesLinksHtml = '';
+              if (post.categories && Array.isArray(post.categories) && post.categories.length > 0) {
+                const links = post.categories.map(c => {
+                  const cName = typeof c === 'string' ? c : (c.name || '');
+                  return cName ? `<a href="/${activeLang}/category?name=${encodeURIComponent(cName)}" style="color: #e50914;">${escapeHtml(cName)}</a>` : '';
+                }).filter(Boolean).join(', ');
+                if (links) categoriesLinksHtml = `<p style="margin: 6px 0;"><strong>Categories:</strong> ${links}</p>`;
+              }
+
+              let enrichedHtml = '';
+              if (enrichedData) {
+                const highlightsHtml = (enrichedData.highlights || []).map(h => `<li style="margin: 4px 0;">${escapeHtml(h)}</li>`).join('');
+                const faqHtml = (enrichedData.faq || []).map(f => `<dt style="font-weight: 600; color: #fff; margin-top: 8px;">${escapeHtml(f.q)}</dt><dd style="margin: 4px 0 8px 12px; color: #ccc;">${escapeHtml(f.a)}</dd>`).join('');
+
+                enrichedHtml = `
+                  <section class="video-ai-enrichment" style="margin: 20px 0; padding: 18px; background: rgba(255, 255, 255, 0.03); border-radius: 6px;">
+                    <h2 style="font-size: 1.15rem; color: #fff;">Editorial Overview</h2>
+                    <p style="line-height: 1.6; color: #ddd;">${escapeHtml(enrichedData.summary || '')}</p>
+                    <h3 style="font-size: 1rem; color: #fff; margin-top: 14px;">Feature Highlights</h3>
+                    <ul style="color: #ccc; padding-left: 20px;">
+                      ${highlightsHtml}
+                    </ul>
+                    <h3 style="font-size: 1rem; color: #fff; margin-top: 14px;">Frequently Asked Questions</h3>
+                    <dl>
+                      ${faqHtml}
+                    </dl>
+                  </section>
+                `;
+              }
+
               const seoFallbackContent = `
         <div class="seo-fallback" style="display: contents;">
           <h1>${escapeHtml(fullTitle)}</h1>
           <p>${escapeHtml(description)}</p>
-          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000;">
+          <div style="margin: 16px 0;">
+            <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(fullTitle)}" width="800" height="450" fetchpriority="high" decoding="async" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 1rem;" />
+          </div>
+          ${enrichedHtml}
+          <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 16px;">
             <iframe
               src="${escapeHtml(cleanEmbedUrl)}"
               title="${escapeHtml(fullTitle)}"
@@ -1089,6 +1644,11 @@ export async function onRequest(context) {
               referrerpolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>
+          <nav aria-label="Video Metadata" style="margin-top: 16px; font-size: 0.95rem; line-height: 1.6;">
+            ${studioLinkHtml}
+            ${actressesLinksHtml}
+            ${categoriesLinksHtml}
+          </nav>
         </div>
               `;
               htmlContent = htmlContent.replace(/<div class="seo-fallback"[^>]*>[\s\S]*?<\/div>/i, () => seoFallbackContent);
@@ -1175,7 +1735,11 @@ export async function onRequest(context) {
         let schemaType = 'CollectionPage';
         
         // Resolve actual route type from URL pattern (popular-actors falls back to actors, empty type is home)
-        const typeKey = (type === 'popular-actors') ? 'actors' : (type === 'watch-later') ? 'watch_later' : (type === 'tag') ? 'category' : (type || 'home');
+        const typeKey = (type === 'popular-actors') ? 'actors'
+          : (type === 'watch-later') ? 'watch_later'
+          : (type === 'privacy-policy') ? 'privacy_policy'
+          : (type === 'tag') ? 'category'
+          : (type || 'home');
         const langDict = SEO_I18N[activeLang] || SEO_I18N['en'];
         const pageTemplate = langDict[typeKey] || SEO_I18N['en'][typeKey] || langDict['default'] || SEO_I18N['en']['default'];
         
@@ -1190,11 +1754,46 @@ export async function onRequest(context) {
           schemaType = 'ProfilePage';
         } else if (type === 'search') {
           schemaType = 'SearchResultsPage';
+        } else if (['dmca', 'privacy-policy', 'terms', 'contact', '2257'].includes(type)) {
+          schemaType = 'AboutPage';
         }
 
-        const pageUrl = `${url.origin}${url.pathname}${url.search}`;
+        const pageUrl = getCleanListingCanonical(url.origin, activeLang, type, nameParam);
         
-        htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(pageTitle)}</title>`);
+        // Index Bloat Control & Pagination Signals
+        const pageNum = parseInt(url.searchParams.get('page') || '1', 10);
+        const isPagination = pageNum > 1;
+        const isPrivateOrInternal = ['search', 'history', 'watch-later', 'watch_later'].includes(typeKey);
+        const isNoindexRoute = isPagination || isPrivateOrInternal;
+
+        if (isNoindexRoute) {
+          htmlContent = htmlContent.replace(
+            /<meta name="robots"[^>]*>/i,
+            '<meta name="robots" content="noindex, follow">'
+          );
+        } else {
+          htmlContent = htmlContent.replace(
+            /<meta name="robots"[^>]*>/i,
+            '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">'
+          );
+        }
+
+        // Pagination rel=prev and rel=next link elements in head
+        let paginationRelTags = '';
+        if (isPagination) {
+          const prevUrl = new URL(pageUrl);
+          if (pageNum > 2) {
+            prevUrl.searchParams.set('page', String(pageNum - 1));
+          }
+          paginationRelTags += `<link rel="prev" href="${escapeHtml(prevUrl.toString())}" />\n  `;
+        }
+        if (['home', 'trending', 'recent', 'category', 'actor', 'studio', 'tag'].includes(typeKey)) {
+          const nextUrl = new URL(pageUrl);
+          nextUrl.searchParams.set('page', String(pageNum + 1));
+          paginationRelTags += `<link rel="next" href="${escapeHtml(nextUrl.toString())}" />\n  `;
+        }
+
+        htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(pageTitle)}<\/title>`);
         htmlContent = htmlContent.replace(
           /<meta name="description" id="meta-description" content="[^"]*"/i,
           () => `<meta name="description" id="meta-description" content="${escapeHtml(pageDesc)}"`
@@ -1224,62 +1823,182 @@ export async function onRequest(context) {
           () => `<meta name="twitter:description" id="twitter-description" content="${escapeHtml(pageDesc)}"`
         );
         
-        const hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search);
-        htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${hreflangBlock}\n</head>`);
+        let hreflangBlock = '';
+        if (!isNoindexRoute) {
+          hreflangBlock = generateHreflangTags(url.origin, url.pathname, url.search) + '\n  ';
+        }
+        htmlContent = htmlContent.replace(/<\/head>/i, () => `  ${paginationRelTags}${hreflangBlock}<\/head>`);
 
-        // JSON-LD ItemList / ProfilePage / CollectionPage / SearchResultsPage
-        let schemaJson = {};
-        if (schemaType === 'ProfilePage' && nameParam) {
-          schemaJson = {
-            "@context": "https://schema.org",
-            "@type": "ProfilePage",
-            "mainEntity": {
-              "@type": "Person",
-              "name": nameParam,
-              "url": pageUrl
+        let structuredData;
+        if (type === 'home') {
+          const webSiteSchema = {
+            "@type": "WebSite",
+            "name": "MISSAV-J",
+            "alternateName": "MISSAV-J Premium Video Streaming",
+            "url": `${url.origin}/${activeLang}/`,
+            "description": pageDesc,
+            "inLanguage": hreflangCode(activeLang),
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": `${url.origin}/${activeLang}/search?q={search_term_string}`
+              },
+              "query-input": "required name=search_term_string"
             }
           };
-        } else if (schemaType === 'SearchResultsPage') {
-          schemaJson = {
+
+          const organizationSchema = {
+            "@type": "Organization",
+            "name": "MISSAV-J",
+            "url": url.origin,
+            "logo": {
+              "@type": "ImageObject",
+              "url": `${url.origin}/assets/images/logo.webp`,
+              "width": 192,
+              "height": 192
+            },
+            "sameAs": [
+              "https://t.me/missav_j"
+            ]
+          };
+
+          structuredData = {
             "@context": "https://schema.org",
-            "@type": "SearchResultsPage",
-            "name": pageTitle,
-            "description": pageDesc,
-            "url": pageUrl
+            "@graph": [webSiteSchema, organizationSchema]
           };
         } else {
-          schemaJson = {
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            "name": pageTitle,
-            "description": pageDesc,
-            "url": pageUrl
-          };
-        }
-        
-        // BreadcrumbList for listing
-        const breadcrumbSchema = {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
+          // JSON-LD ItemList / ProfilePage / CollectionPage / SearchResultsPage / AboutPage
+          let schemaJson = {};
+          if (schemaType === 'ProfilePage' && nameParam) {
+            schemaJson = {
+              "@type": "ProfilePage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl,
+              "mainEntity": {
+                "@type": "Person",
+                "name": nameParam,
+                "url": pageUrl
+              }
+            };
+          } else if (schemaType === 'SearchResultsPage') {
+            schemaJson = {
+              "@type": "SearchResultsPage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+          } else if (schemaType === 'AboutPage') {
+            schemaJson = {
+              "@type": "AboutPage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+          } else {
+            schemaJson = {
+              "@type": "CollectionPage",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+          }
+
+          // Build exact 2 or 3-tier BreadcrumbList
+          const breadcrumbElements = [
             {
               "@type": "ListItem",
               "position": 1,
               "name": "Home",
-              "item": `${url.origin}/en/`
-            },
-            {
+              "item": `${url.origin}/${activeLang}/`
+            }
+          ];
+
+          if (['category', 'tag'].includes(type) && nameParam) {
+            breadcrumbElements.push({
               "@type": "ListItem",
               "position": 2,
-              "name": (nameParam ? safeName : type.charAt(0).toUpperCase() + type.slice(1)),
+              "name": "Categories",
+              "item": `${url.origin}/${activeLang}/categories`
+            });
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 3,
+              "name": nameParam,
               "item": pageUrl
-            }
-          ]
-        };
-        
-        const structuredData = {
-          "@context": "https://schema.org",
-          "@graph": [schemaJson, breadcrumbSchema]
-        };
+            });
+          } else if (type === 'actor' && nameParam) {
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Actresses",
+              "item": `${url.origin}/${activeLang}/actors`
+            });
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 3,
+              "name": nameParam,
+              "item": pageUrl
+            });
+          } else if (type === 'studio' && nameParam) {
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Studios",
+              "item": `${url.origin}/${activeLang}/studios`
+            });
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 3,
+              "name": nameParam,
+              "item": pageUrl
+            });
+          } else {
+            let hubName = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'actors') hubName = 'Actresses';
+            if (type === 'categories') hubName = 'Categories';
+            if (type === 'studios') hubName = 'Studios';
+            if (type === 'trending') hubName = 'Trending';
+            if (type === 'recent') hubName = 'Recent';
+            if (type === 'popular-actors') hubName = 'Popular Actresses';
+            if (type === 'dmca') hubName = 'DMCA Policy';
+            if (type === '2257') hubName = '18 U.S.C. 2257';
+            if (type === 'privacy-policy') hubName = 'Privacy Policy';
+            if (type === 'terms') hubName = 'Terms of Service';
+            if (type === 'contact') hubName = 'Contact Us';
+
+            breadcrumbElements.push({
+              "@type": "ListItem",
+              "position": 2,
+              "name": hubName,
+              "item": pageUrl
+            });
+          }
+
+          const breadcrumbSchema = {
+            "@type": "BreadcrumbList",
+            "itemListElement": breadcrumbElements
+          };
+
+          const graphNodes = [schemaJson, breadcrumbSchema];
+
+          // ItemList for video directory and category listing
+          if (['category', 'tag', 'categories', 'actor', 'actors', 'studio', 'studios', 'trending', 'recent'].includes(type)) {
+            const itemListSchema = {
+              "@type": "ItemList",
+              "name": pageTitle,
+              "description": pageDesc,
+              "url": pageUrl
+            };
+            graphNodes.push(itemListSchema);
+          }
+
+          structuredData = {
+            "@context": "https://schema.org",
+            "@graph": graphNodes
+          };
+        }
         
         htmlContent = htmlContent.replace(
           /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/is,
@@ -1314,12 +2033,130 @@ export async function onRequest(context) {
           }
         }
 
-        // Inject fallback h1 text (+ crawlable actor directory on /actors)
+        // Hub pages: Categories directory
+        let categoryLinksHtml = '';
+        if (type === 'categories') {
+          try {
+            const catRes = await env.ASSETS.fetch(new URL('/api/categories.json', request.url));
+            if (catRes.ok) {
+              const catNames = await catRes.json();
+              if (Array.isArray(catNames)) {
+                const items = catNames
+                  .filter(c => typeof c === 'string' && c.trim() !== '')
+                  .map(c => `<li><a href="/${activeLang}/category?name=${encodeURIComponent(c)}">${escapeHtml(c)}</a></li>`)
+                  .join('');
+                categoryLinksHtml = `<nav aria-label="All categories" style="margin-top: 16px;"><ul>${items}</ul></nav>`;
+              }
+            }
+          } catch (err) {
+            console.error('[Category Directory Error]', err);
+          }
+        }
+
+        // Hub pages: Studios directory
+        let studioLinksHtml = '';
+        if (type === 'studios') {
+          const POPULAR_STUDIOS = [
+            'S1 NO.1 STYLE', 'MOODYZ', 'PRESTIGE', 'Soft On Demand',
+            'Idea Pocket', 'FALENO', 'MUTEKI', 'Fitch',
+            'OPPAL', 'Kawaii*', 'KMP', 'Attackers', 'Premium', 'Other'
+          ];
+          const items = POPULAR_STUDIOS
+            .map(s => `<li><a href="/${activeLang}/studio?name=${encodeURIComponent(s)}">${escapeHtml(s)}</a></li>`)
+            .join('');
+          studioLinksHtml = `<nav aria-label="All studios" style="margin-top: 16px;"><ul>${items}</ul></nav>`;
+        }
+
+        // Legal content injection
+        const legalPageKey = (type === 'privacy-policy') ? 'privacy-policy'
+          : (type === 'terms') ? 'terms'
+          : (type === 'dmca') ? 'dmca'
+          : (type === 'contact') ? 'contact'
+          : (type === '2257') ? '2257'
+          : null;
+        const legalHtml = legalPageKey ? (LEGAL_SSR_HTML[legalPageKey] || '') : '';
+
+        // Crawlable Video Catalog for Listing Pages (Home, Trending, Recent, Category, Actor, Studio)
+        let videoCatalogHtml = '';
+        const isVideoListing = ['home', 'trending', 'recent', 'category', 'actor', 'studio', 'tag'].includes(typeKey);
+        if (isVideoListing && isKnownCrawler) {
+          try {
+            const apiParams = new URLSearchParams();
+            apiParams.set('per_page', '12');
+            const pageNum = parseInt(url.searchParams.get('page') || '1', 10);
+            if (pageNum > 1) apiParams.set('page', String(pageNum));
+
+            if (type === 'category' || type === 'tag') {
+              if (nameParam) apiParams.set('category', nameParam);
+            } else if (type === 'actor') {
+              if (nameParam) apiParams.set('actor', nameParam);
+            } else if (type === 'studio') {
+              if (nameParam) apiParams.set('studio', nameParam);
+            } else if (type === 'trending') {
+              apiParams.set('sort', 'views');
+              apiParams.set('order', 'desc');
+            } else if (type === 'recent') {
+              apiParams.set('sort', 'release');
+              apiParams.set('order', 'desc');
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const apiRes = await fetch(`${TARGET_BASE}/posts?${apiParams.toString()}`, {
+              headers: {
+                'Accept': 'application/json',
+                'X-Client-Site': 'https://www.missav-j.com',
+                'User-Agent': 'MISSAV-J-Edge-SSR/1.0'
+              },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (apiRes.ok) {
+              const posts = await apiRes.json();
+              if (Array.isArray(posts) && posts.length > 0) {
+                const items = posts.map(p => {
+                  const vUrl = `/${activeLang}${canonicalWatchPath(p, p.id)}`;
+                  const imgUrl = getSocialImageUrl(p.thumbnail, url.origin);
+                  const pTitle = p.title || '';
+                  const code = p.code ? `[${escapeHtml(p.code)}] ` : '';
+                  return `<li style="margin-bottom: 16px;"><article><a href="${vUrl}"><img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(pTitle)}" width="320" height="180" loading="lazy" decoding="async" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px;" /><h2 style="font-size: 0.95rem; margin: 6px 0;">${code}${escapeHtml(pTitle)}</h2></a></article></li>`;
+                }).join('');
+
+                const nextPageNum = pageNum + 1;
+                const nextUrl = new URL(url.toString());
+                nextUrl.searchParams.set('page', String(nextPageNum));
+
+                videoCatalogHtml = `
+                  <nav aria-label="Video Catalog" style="margin-top: 20px;">
+                    <ul style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
+                      ${items}
+                    </ul>
+                    <nav class="pagination-nav" aria-label="Pagination" style="margin-top: 24px; text-align: center;">
+                      <a href="${escapeHtml(nextUrl.pathname + nextUrl.search)}" rel="next" style="display: inline-block; padding: 8px 18px; background: #e50914; color: #fff; text-decoration: none; border-radius: 4px; font-weight: 600;">Next Page »</a>
+                    </nav>
+                  </nav>
+                `;
+              }
+            }
+          } catch (apiErr) {
+            console.warn('[Video Catalog SSR Fetch Error]', apiErr?.message || apiErr);
+          }
+        }
+
+        const hubGuideHtml = getHubGuideHtml(nameParam, activeLang);
+
+        // Inject fallback h1 text (+ crawlable actor/category/studio directories, legal content, video catalog)
         const seoFallbackContent = `
           <div class="seo-fallback" style="display: contents;">
             <h1>${escapeHtml(pageTitle)}</h1>
             <p>${escapeHtml(pageDesc)}</p>
+            ${hubGuideHtml}
             ${actorLinksHtml}
+            ${categoryLinksHtml}
+            ${studioLinksHtml}
+            ${legalHtml}
+            ${videoCatalogHtml}
           </div>
         `;
         // Function replacer: actor names may contain `$`, which is special in a
@@ -1345,7 +2182,7 @@ export async function onRequest(context) {
     }
   }
 
-  // 4. Fallback SPA routing
+  // 4. Fallback SPA routing & Genuine 404 Status (fixes Soft 404 traps in GSC)
   const res = await env.ASSETS.fetch(request);
 
   if (res.status === 404) {
@@ -1353,12 +2190,28 @@ export async function onRequest(context) {
     const hasExtension = pathname.includes('.') && ext.length < 5;
 
     if (!pathname.startsWith('/api') && !hasExtension) {
-      const indexResponse = await env.ASSETS.fetch(new URL('/index.html', request.url));
-      return new Response(indexResponse.body, {
+      // Check if this might be a root legal route without lang prefix: e.g. /dmca, /2257, /privacy-policy, /terms, /contact
+      const legalMatch = pathname.match(/^\/(dmca|privacy-policy|terms|contact|2257)\/?$/i);
+      if (legalMatch) {
+        return new Response(null, {
+          status: 301,
+          headers: {
+            'Location': `${url.origin}/en/${legalMatch[1].toLowerCase()}`,
+            'Cache-Control': 'public, max-age=86400',
+            'X-Edge-Mode': 'LEGAL-REDIRECT',
+            'X-Cache-Status': 'BYPASS'
+          }
+        });
+      }
+
+      // Return genuine 404 HTTP status for unknown routes so Googlebot drops them
+      return new Response(generate404Html(url.origin, 'en'), {
+        status: 404,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400',
-          'CDN-Cache-Control': 'public, max-age=604800'
+          'Cache-Control': 'public, max-age=3600',
+          'X-Edge-Mode': 'NOT-FOUND-404',
+          'X-Cache-Status': 'BYPASS'
         }
       });
     }

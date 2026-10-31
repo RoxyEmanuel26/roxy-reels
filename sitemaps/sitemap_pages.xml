@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.missav-j.com/en</loc>
+    <loc>https://www.missav-j.com/en/</loc>
   </url>
   <url>
     <loc>https://www.missav-j.com/en/trending</loc>
@@ -20,5 +20,20 @@
   </url>
   <url>
     <loc>https://www.missav-j.com/en/popular-actors</loc>
+  </url>
+  <url>
+    <loc>https://www.missav-j.com/en/dmca</loc>
+  </url>
+  <url>
+    <loc>https://www.missav-j.com/en/2257</loc>
+  </url>
+  <url>
+    <loc>https://www.missav-j.com/en/privacy-policy</loc>
+  </url>
+  <url>
+    <loc>https://www.missav-j.com/en/terms</loc>
+  </url>
+  <url>
+    <loc>https://www.missav-j.com/en/contact</loc>
   </url>
 </urlset>

@@ -97,13 +97,13 @@
   <link rel="dns-prefetch" href="https://benchform.org">
   <link rel="dns-prefetch" href="https://biomanos.org">
 
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
   <!-- Premium Modular Stylesheets -->
-  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.88">
-  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.88">
-  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.88">
-  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.88">
+  <link rel="stylesheet" href="/assets/css/base.css?v=2.8.93">
+  <link rel="stylesheet" href="/assets/css/layout.css?v=2.8.93">
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.8.93">
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.8.93">
 
   <!-- FIX: Analytics & non-critical scripts SETELAH semua meta SEO dan stylesheet -->
   <!-- Sebelumnya di baris 17 (sebelum <title>), sehingga mendahului 1024 byte pertama head -->
@@ -232,20 +232,28 @@
 
         <div class="sidebar-divider"></div>
 
-        <!-- Section Legal Kepatuhan ExoClick -->
+        <!-- Section Legal Kepatuhan & E-E-A-T -->
         <div class="sidebar-section-title" data-i18n="legal_section_title">Legal</div>
-        <button id="sidebar-legal-2257-btn">
+        <a href="/2257" id="sidebar-legal-2257-btn" class="nav-item">
           <span class="nav-icon">📜</span>
           <span class="nav-text" data-i18n="legal_2257_link">18 U.S.C. 2257</span>
-        </button>
-        <button id="sidebar-legal-dmca-btn">
+        </a>
+        <a href="/dmca" id="sidebar-legal-dmca-btn" class="nav-item">
           <span class="nav-icon">🛡️</span>
           <span class="nav-text" data-i18n="legal_dmca_link">DMCA Policy</span>
-        </button>
-        <button id="sidebar-legal-contact-btn">
+        </a>
+        <a href="/privacy-policy" id="sidebar-legal-privacy-btn" class="nav-item">
+          <span class="nav-icon">🔒</span>
+          <span class="nav-text" data-i18n="legal_privacy_link">Privacy Policy</span>
+        </a>
+        <a href="/terms" id="sidebar-legal-terms-btn" class="nav-item">
+          <span class="nav-icon">⚖️</span>
+          <span class="nav-text" data-i18n="legal_terms_link">Terms of Service</span>
+        </a>
+        <a href="/contact" id="sidebar-legal-contact-btn" class="nav-item">
           <span class="nav-icon">✉️</span>
           <span class="nav-text" data-i18n="legal_contact_link">Contact Us</span>
-        </button>
+        </a>
       </nav>
     </aside>
 
@@ -305,7 +313,7 @@
 
 
   <!-- Modular SPA Script Bootstrap -->
-  <script type="module" src="/assets/js/app.js?v=2.8.88"></script>
+  <script type="module" src="/assets/js/app.js?v=2.8.93"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>

@@ -1,0 +1,19 @@
+{
+  "name": "missav-j",
+  "version": "2.8.93",
+  "description": "MISSAV-J High Performance Video Streaming Platform",
+  "scripts": {
+    "test": "node --test tests/worker-efficiency.test.mjs tests/sitemap-generator.test.mjs",
+    "seo:enrich": "node scripts/seo-enrich.mjs",
+    "seo:report": "node scripts/seo-status-report.mjs",
+    "seo:indexnow": "node scripts/indexnow.mjs",
+    "sitemap": "node generate_sitemap.js"
+  },
+  "keywords": [
+    "seo",
+    "video-streaming",
+    "cloudflare-pages"
+  ],
+  "author": "MISSAV-J",
+  "license": "UNLICENSED"
+}

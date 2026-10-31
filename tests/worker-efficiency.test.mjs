@@ -596,3 +596,347 @@ test('versioned caches stay synchronized and private routes bypass Functions', a
   assert.ok(routes.exclude.includes('/watch-later*'));
   assert.ok(routes.exclude.includes('/*/watch-later*'));
 });
+
+
+test('bare legal routes redirect to localized paths', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/dmca', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('not found', { status: 404 }) } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/en/dmca');
+});
+
+test('legal routes render full compliance SSR metadata and AboutPage schema', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const cache = new MemoryCache();
+  globalThis.caches = { default: cache };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/dmca', {
+      headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const text = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(text, /DMCA Copyright Notice/);
+  assert.match(text, /compliance@missav-j\.com/);
+  assert.match(text, /"@type":\s*"AboutPage"/);
+});
+
+test('unknown routes return genuine HTTP 404 with noindex metadata', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/non-existent-broken-url', {
+      headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response('not found', { status: 404 }) } }
+  });
+  const response = await onRequest(context);
+  const text = await response.text();
+  assert.equal(response.status, 404);
+  assert.match(text, /404 - Page Not Found/);
+  assert.match(text, /name="robots" content="noindex, follow"/);
+});
+
+test('category and studio hubs render crawlable directory links in SSR', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const cache = new MemoryCache();
+  globalThis.caches = { default: cache };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const categoriesJson = JSON.stringify(['Uncensored', 'Amateur', 'Drama']);
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/categories', {
+      headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' }
+    }),
+    env: {
+      ASSETS: {
+        fetch: async req => {
+          const u = String(req.url || req);
+          if (u.includes('categories.json')) return new Response(categoriesJson, { status: 200 });
+          return new Response(indexHtml);
+        }
+      }
+    }
+  });
+  const response = await onRequest(context);
+  const text = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(text, /aria-label="All categories"/);
+  assert.match(text, /href="\/en\/category\?name=Uncensored"/);
+});
+
+
+test('language root without trailing slash redirects to trailing slash (/en -> /en/)', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('shell') } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/en/');
+});
+
+test('subpages with trailing slash redirect to stripped slash (/en/trending/ -> /en/trending)', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/trending/', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('shell') } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/en/trending');
+});
+
+test('regional language codes normalize case (/zh-tw/ -> /zh-TW/)', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/zh-tw/', { method: 'GET' }),
+    env: { ASSETS: { fetch: async () => new Response('shell') } }
+  });
+  const response = await onRequest(context);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://www.missav-j.com/zh-TW/');
+});
+
+test('listing canonical strips sorting and pagination parameters', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/trending?sort=views&order=desc&page=1', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /<link rel="canonical" id="canonical-url" href="https:\/\/www\.missav-j\.com\/en\/trending"/);
+  assert.doesNotMatch(html, /href="https:\/\/www\.missav-j\.com\/en\/trending\?sort=/);
+});
+
+test('pagination pages (page > 1) receive noindex, follow and pagination links', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Drama&page=2', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /<meta name="robots" content="noindex, follow">/);
+  assert.match(html, /<link rel="prev"/);
+  assert.match(html, /<link rel="next"/);
+  // No hreflang on noindex page
+  assert.doesNotMatch(html, /hreflang="ja"/);
+});
+
+test('homepage SSR renders WebSite and Organization schema with SearchAction and no breadcrumbs', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /"@type":\s*"WebSite"/);
+  assert.match(html, /"@type":\s*"Organization"/);
+  assert.match(html, /"@type":\s*"SearchAction"/);
+  // Homepage should not emit BreadcrumbList
+  assert.doesNotMatch(html, /"@type":\s*"BreadcrumbList"/);
+});
+
+test('sub-category and sub-actor SSR render 3-tier BreadcrumbList and ItemList', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  
+  // Test category subpage
+  const catContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Uncensored', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const catRes = await onRequest(catContext);
+  const catHtml = await catRes.text();
+  assert.equal(catRes.status, 200);
+  assert.match(catHtml, /"@type":\s*"BreadcrumbList"/);
+  assert.match(catHtml, /"name":\s*"Categories"/);
+  assert.match(catHtml, /"name":\s*"Uncensored"/);
+  assert.match(catHtml, /"@type":\s*"ItemList"/);
+
+  // Test actor subpage
+  const actorContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/actor?name=Yua%20Mikami', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const actorRes = await onRequest(actorContext);
+  const actorHtml = await actorRes.text();
+  assert.equal(actorRes.status, 200);
+  assert.match(actorHtml, /"@type":\s*"ProfilePage"/);
+  assert.match(actorHtml, /"name":\s*"Actresses"/);
+  assert.match(actorHtml, /"name":\s*"Yua Mikami"/);
+});
+
+test('video watch page SSR renders 3-tier BreadcrumbList with primary category and valid VideoObject', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const post = {
+    id: 888123,
+    code: 'SSIS-888',
+    title: 'SSIS-888 Test Title',
+    duration: '01:45:30',
+    categories: ['Uncensored', 'Drama'],
+    actors: ['Yua Mikami'],
+    studio: 'S1',
+    thumbnail: 'https://image.apijav.com/thumb/888.jpg',
+    embed_url: 'https://server.apijav.com/embed/888123'
+  };
+  globalThis.fetch = async input => {
+    return new Response(JSON.stringify(post), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  };
+  const env = {
+    ASSETS: { fetch: async () => new Response(indexHtml) }
+  };
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/ssis-888-test-title-888123', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env
+  });
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /"@type":\s*"VideoObject"/);
+  assert.match(html, /"duration":\s*"PT1H45M30S"/);
+  assert.match(html, /"@type":\s*"BreadcrumbList"/);
+  assert.match(html, /"name":\s*"Uncensored"/);
+  assert.match(html, /"name":\s*"SSIS-888 Test Title [-—] MISSAV-J"/);
+});
+
+test('category and studio hubs render rich editorial guide (Hub Content) in SSR', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  
+  // Category guide check
+  const catContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Uncensored', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const catRes = await onRequest(catContext);
+  const catHtml = await catRes.text();
+  assert.equal(catRes.status, 200);
+  assert.match(catHtml, /hub-editorial-guide/);
+  assert.match(catHtml, /Uncensored JAV Streaming Guide/);
+  assert.match(catHtml, /Caribbeancom/);
+
+  // Studio guide check
+  const studioContext = makeContext({
+    request: new Request('https://www.missav-j.com/en/studio?name=S1', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml) } }
+  });
+  const studioRes = await onRequest(studioContext);
+  const studioHtml = await studioRes.text();
+  assert.equal(studioRes.status, 200);
+  assert.match(studioHtml, /hub-editorial-guide/);
+  assert.match(studioHtml, /S1 No.1 Style Official Studio Archive/);
+});
+
+test('enriched video watch page SSR injects FAQPage schema and AI editorial highlights', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const post = {
+    id: 999123,
+    code: 'SSIS-999',
+    title: 'SSIS-999 Enriched Title',
+    duration: '01:30:00',
+    categories: ['Drama'],
+    actors: ['Yua Mikami'],
+    studio: 'S1',
+    thumbnail: 'https://image.apijav.com/thumb/999.jpg',
+    embed_url: 'https://server.apijav.com/embed/999123'
+  };
+  const enrichedPostsDb = {
+    _meta: { version: '1.0.0' },
+    posts: {
+      '999123': {
+        video_id: '999123',
+        seo_title: 'SSIS-999 Exclusive Yua Mikami Feature',
+        meta_description: 'Stream SSIS-999 starring Yua Mikami in full HD. Read our exclusive overview and FAQs.',
+        summary: 'SSIS-999 is a cinematic drama presentation featuring award-winning performances.',
+        highlights: ['Exclusive S1 4K release', 'Starring Yua Mikami', 'Cinematic narrative pacing'],
+        tags: ['Drama', 'S1', 'SSIS-999'],
+        faq: [
+          { q: 'Who is the lead actress in SSIS-999?', a: 'SSIS-999 stars popular actress Yua Mikami.' },
+          { q: 'Is SSIS-999 available in HD?', a: 'Yes, full high definition streaming is supported.' }
+        ],
+        status: 'enriched'
+      }
+    }
+  };
+
+  globalThis.fetch = async input => {
+    return new Response(JSON.stringify(post), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  };
+
+  const env = {
+    ASSETS: {
+      fetch: async url => {
+        const u = String(url);
+        if (u.includes('seo-enriched-posts.json')) {
+          return new Response(JSON.stringify(enrichedPostsDb), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return new Response(indexHtml);
+      }
+    }
+  };
+
+  const context = makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/ssis-999-enriched-title-999123', {
+      headers: { 'User-Agent': 'Googlebot/2.1' }
+    }),
+    env
+  });
+
+  const response = await onRequest(context);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /Who is the lead actress in SSIS-999?/);
+  assert.match(html, /video-ai-enrichment/);
+  assert.match(html, /Feature Highlights/);
+});

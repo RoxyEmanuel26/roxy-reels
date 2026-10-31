@@ -5,13 +5,13 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.88';
-import ui from './ui.js?v=2.8.88';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.88';
-import i18n from './i18n.js?v=2.8.88';
-import ReferralSystem from './referral.js?v=2.8.88';
-import { Analytics } from './analytics.js?v=2.8.88';
-import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.88';
+import api from './api.js?v=2.8.93';
+import ui from './ui.js?v=2.8.93';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.93';
+import i18n from './i18n.js?v=2.8.93';
+import ReferralSystem from './referral.js?v=2.8.93';
+import { Analytics } from './analytics.js?v=2.8.93';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.93';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -322,7 +322,18 @@ export async function init(id) {
           
           playerContainer.innerHTML = `
             <div class="player-custom-poster" id="player-custom-poster">
-              <div class="poster-bg" style="background-image: url('${secureThumb}');"></div>
+              <div class="poster-bg" style="background-image: url('${secureThumb}');">
+                <img 
+                  src="${secureThumb}" 
+                  alt="${secureTitle}" 
+                  class="poster-img" 
+                  fetchpriority="high" 
+                  decoding="async" 
+                  width="1280" 
+                  height="720"
+                  onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
+                />
+              </div>
               <div class="poster-overlay"></div>
               <div class="poster-play-btn-wrapper">
                 <button class="poster-play-btn" id="poster-play-btn" aria-label="${i18n.t('play_video') || 'Play Video'}">
@@ -930,6 +941,9 @@ function renderRelatedRowCard(post, index) {
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
           alt="${safeTitle}" 
           loading="lazy"
+          decoding="async"
+          width="168"
+          height="94"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
         >
         ${uncensoredBadge}

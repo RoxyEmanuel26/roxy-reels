@@ -13,7 +13,20 @@ const MAX_SITEMAP_BYTES = 50 * 1024 * 1024;
 const MAX_SITEMAP_URLS = 50_000;
 const VIDEO_BUCKET_SIZE = 1000;
 
-const STATIC_ROUTES = ['', 'trending', 'recent', 'actors', 'categories', 'studios', 'popular-actors'];
+const STATIC_ROUTES = [
+  '',
+  'trending',
+  'recent',
+  'actors',
+  'categories',
+  'studios',
+  'popular-actors',
+  'dmca',
+  '2257',
+  'privacy-policy',
+  'terms',
+  'contact'
+];
 const STUDIOS = [
   'S1 NO.1 STYLE', 'MOODYZ', 'PRESTIGE', 'Soft On Demand',
   'Idea Pocket', 'FALENO', 'MUTEKI', 'Fitch',
@@ -22,6 +35,36 @@ const STUDIOS = [
 
 const VIDEO_FILE_PATTERN = /^sitemap_videos_(\d+)-(\d+)\.xml$/;
 const SITEMAP_FILE_PATTERN = /^sitemap(?:_[A-Za-z0-9-]+)*\.xml$/;
+
+function decodeHtmlEntities(value) {
+  if (!value) return '';
+  return String(value)
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&hellip;/g, '…')
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#(\d+);/g, (_, dec) => {
+      const code = parseInt(dec, 10);
+      return code >= 32 ? String.fromCharCode(code) : '';
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      const code = parseInt(hex, 16);
+      return code >= 32 ? String.fromCharCode(code) : '';
+    })
+    .replace(/<[^>]*>/g, '')
+    .trim();
+}
 
 function escXml(value) {
   return String(value ?? '')
@@ -158,16 +201,16 @@ function normalizePost(post) {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error(`Invalid post ID: ${post?.id}`);
   return {
     id,
-    title: String(post.title || '').trim(),
+    title: decodeHtmlEntities(post.title),
     slug: String(post.slug || '').trim(),
     date: String(post.date || '').trim(),
     thumbnail: String(post.thumbnail || '').trim(),
     duration: post.duration,
-    categories: labels(post.categories),
-    tags: labels(post.tags),
-    actors: labels(post.actors),
-    studio: labels(post.studio),
-    code: String(post.code || '').trim(),
+    categories: labels(post.categories).map(decodeHtmlEntities),
+    tags: labels(post.tags).map(decodeHtmlEntities),
+    actors: labels(post.actors).map(decodeHtmlEntities),
+    studio: labels(post.studio).map(decodeHtmlEntities),
+    code: decodeHtmlEntities(post.code),
     embed_url: String(post.embed_url || '').trim(),
     iframe_html: String(post.iframe_html || '')
   };
@@ -239,7 +282,7 @@ function buildSitemapSet(posts, options = {}) {
 
   const files = new Map();
   files.set('sitemap_pages.xml', standardUrlset(STATIC_ROUTES.map(route =>
-    `${BASE_URL}/en${route ? `/${route}` : ''}`
+    `${BASE_URL}/en${route ? `/${route}` : '/'}`
   )));
   for (const [name, xml] of actorFiles(actors)) files.set(name, xml);
   files.set('sitemap_categories.xml', standardUrlset(

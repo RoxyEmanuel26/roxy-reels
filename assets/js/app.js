@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.88';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.88';
-import i18n from './i18n.js?v=2.8.88';
-import { Analytics } from './analytics.js?v=2.8.88';
-import ReferralSystem from './referral.js?v=2.8.88';
-import './ads.js?v=2.8.88';
+import ui from './ui.js?v=2.8.93';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.93';
+import i18n from './i18n.js?v=2.8.93';
+import { Analytics } from './analytics.js?v=2.8.93';
+import ReferralSystem from './referral.js?v=2.8.93';
+import './ads.js?v=2.8.93';
 
 // Initialize Global In-Memory SPA States
 // FIX: Validate Array type — JSON.parse() doesn't throw on non-array values (e.g. string/number),
@@ -253,27 +253,136 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
   i18n.translateStaticUI();
 }
 
+
+/**
+ * Renders static compliance and legal pages (DMCA, 2257, Privacy Policy, Terms, Contact)
+ * as full crawlable and indexable views inside the main application container.
+ */
+function renderStaticLegal(key) {
+  const mainApp = document.getElementById('app-content');
+  if (!mainApp) return;
+
+  const titles = {
+    '2257': i18n.t('legal_2257_title') || '18 U.S.C. § 2257 Record-Keeping Compliance Statement',
+    'dmca': i18n.t('legal_dmca_title') || 'DMCA Copyright Notice & Policy',
+    'privacy-policy': i18n.t('legal_privacy_title') || 'Privacy Policy',
+    'terms': i18n.t('legal_terms_title') || 'Terms of Service',
+    'contact': i18n.t('legal_contact_title') || 'Contact Us & Business Partnerships'
+  };
+
+  const title = titles[key] || 'Legal Information';
+  let htmlBody = '';
+
+  if (key === 'dmca') {
+    htmlBody = `
+      <p style="margin-bottom: 1rem;">MISSAV-J respects the intellectual property rights of others. We are an automated search and indexing portal for third-party videos and do not host, store, or broadcast any video files on our own servers. All videos are embedded directly from external third-party sources.</p>
+      <p style="margin-bottom: 1rem;">If you believe that your copyrighted work has been linked to or displayed on this website in a way that constitutes copyright infringement, please submit a formal DMCA take-down notice.</p>
+      <h3 style="font-size: 1.15rem; margin: 1.5rem 0 0.5rem; color: #fff;">Notice Requirements</h3>
+      <ul style="padding-left: 1.5rem; margin-bottom: 1.5rem; line-height: 1.8;">
+        <li>A physical or electronic signature of the copyright owner or authorized representative.</li>
+        <li>Identification of the copyrighted work claimed to have been infringed.</li>
+        <li>Specific URL links on our site containing the link you wish to have removed.</li>
+        <li>Your contact details including Name, Email, and Phone number.</li>
+        <li>A statement that you have a good faith belief that use of the material is unauthorized.</li>
+      </ul>
+      <div style="background: rgba(229, 9, 20, 0.1); border-left: 4px solid #e50914; padding: 12px 16px; border-radius: 4px; margin: 1.5rem 0;">
+        <p style="margin: 0; font-weight: 500;">Official DMCA & Compliance Email: <a href="mailto:compliance@missav-j.com" style="color: #e50914; font-weight: 700;">compliance@missav-j.com</a></p>
+      </div>
+      <p style="color: #888; font-size: 0.9rem;">We process all legitimate complaints within 24 to 48 business hours.</p>
+    `;
+  } else if (key === '2257') {
+    htmlBody = `
+      <p style="margin-bottom: 1rem;">All visual materials displayed on this website (including images, preview clips, and video players) are produced and hosted by third-party content providers. Pursuant to Federal Law (18 U.S.C. § 2257), all actors, models, and performers appearing in these materials were of the age of majority (18 years of age or older) at the time the content was produced.</p>
+      <p style="margin-bottom: 1rem;">Age verification and record-keeping compliance documentation for all performers are maintained by the original content producers and publishers of said content. This website does not produce, shoot, or upload any materials directly, and acts solely as an index/search interface for embedded external content.</p>
+      <div style="background: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 6px; margin: 1.5rem 0;">
+        <h3 style="font-size: 1rem; margin: 0 0 0.5rem; color: #fff;">Custodian of Records</h3>
+        <p style="margin: 0; color: #aaa; font-size: 0.95rem;">Records required under 18 U.S.C. § 2257 are kept by the individual producers. Inquiries regarding custodians may be directed to: <a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></p>
+      </div>
+    `;
+  } else if (key === 'privacy-policy') {
+    htmlBody = `
+      <p style="margin-bottom: 1rem;">At MISSAV-J (accessible from https://www.missav-j.com/), the privacy of our visitors is of paramount importance. This Privacy Policy document outlines the types of information collected and how it is utilized.</p>
+      <h3 style="font-size: 1.15rem; margin: 1.5rem 0 0.5rem; color: #fff;">Cookies and Local Storage</h3>
+      <p style="margin-bottom: 1rem;">We utilize localStorage to store your UI preferences (dark/light theme, language selection, playback options) locally on your device. We do not use persistent tracking cookies to profile individual visitors.</p>
+      <h3 style="font-size: 1.15rem; margin: 1.5rem 0 0.5rem; color: #fff;">Third-Party Advertisers</h3>
+      <p style="margin-bottom: 1rem;">Third-party ad networks may use cookies, JavaScript, or Web Beacons in their advertisements on MISSAV-J. They automatically receive your IP address when this occurs. MISSAV-J has no control over these third-party cookies.</p>
+      <h3 style="font-size: 1.15rem; margin: 1.5rem 0 0.5rem; color: #fff;">Contacting Us</h3>
+      <p>If you have questions or require more information about our Privacy Policy, please contact us at: <a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></p>
+    `;
+  } else if (key === 'terms') {
+    htmlBody = `
+      <p style="margin-bottom: 1rem;">Welcome to MISSAV-J. By accessing and using https://www.missav-j.com/, you agree to comply with and be bound by the following terms and conditions.</p>
+      <h3 style="font-size: 1.15rem; margin: 1.5rem 0 0.5rem; color: #fff;">Age Restriction (18+ Only)</h3>
+      <p style="margin-bottom: 1rem;">This website contains adult-oriented material. You must be at least 18 years old, or the age of legal majority in your jurisdiction, to enter and view content. If you are a minor, you must leave this website immediately.</p>
+      <h3 style="font-size: 1.15rem; margin: 1.5rem 0 0.5rem; color: #fff;">Disclaimer of Content Hosting</h3>
+      <p style="margin-bottom: 1rem;">MISSAV-J is an indexer and search aggregator. We do not host, store, or transmit video files on our servers. All videos and previews are hosted on third-party services.</p>
+      <h3 style="font-size: 1.15rem; margin: 1.5rem 0 0.5rem; color: #fff;">Governing Terms</h3>
+      <p>Questions regarding our Terms of Service should be sent to: <a href="mailto:compliance@missav-j.com" style="color: #e50914;">compliance@missav-j.com</a></p>
+    `;
+  } else if (key === 'contact') {
+    htmlBody = `
+      <p style="margin-bottom: 1.5rem;">We welcome inquiries regarding advertising partnerships, sponsorships, and technical feedback.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 2rem;">
+        <div style="background: rgba(255, 255, 255, 0.04); padding: 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+          <h3 style="font-size: 1.1rem; margin: 0 0 0.5rem; color: #fff;">📢 Advertising & Sponsorships</h3>
+          <p style="color: #aaa; font-size: 0.95rem; line-height: 1.6; margin: 0 0 1rem;">For banner placements, native ad spots, and direct sponsorship opportunities.</p>
+          <a href="mailto:compliance@missav-j.com" style="color: #e50914; font-weight: 600;">compliance@missav-j.com</a>
+        </div>
+        <div style="background: rgba(255, 255, 255, 0.04); padding: 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+          <h3 style="font-size: 1.1rem; margin: 0 0 0.5rem; color: #fff;">🛡️ Content & DMCA Compliance</h3>
+          <p style="color: #aaa; font-size: 0.95rem; line-height: 1.6; margin: 0 0 1rem;">For copyright notices, broken video reports, and 2257 inquiries.</p>
+          <a href="mailto:compliance@missav-j.com" style="color: #e50914; font-weight: 600;">compliance@missav-j.com</a>
+        </div>
+      </div>
+      <p style="color: #888; font-size: 0.9rem;">Response turnaround: 24 to 48 business hours.</p>
+    `;
+  }
+
+  mainApp.innerHTML = `
+    <div class="legal-page-container" style="max-width: 820px; margin: 0 auto; padding: var(--space-6) var(--space-4); color: var(--color-text, #ddd); line-height: 1.7;">
+      <div style="margin-bottom: var(--space-6);">
+        <button onclick="window.missavJNavigate('/')" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: var(--space-4); cursor: pointer; padding: 6px 14px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+          ← Back to Home
+        </button>
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #fff; margin: 0 0 var(--space-2);">${title}</h1>
+      </div>
+      <div class="legal-page-body" style="background: rgba(20, 20, 22, 0.7); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 24px;">
+        ${htmlBody}
+      </div>
+    </div>
+  `;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.88').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.88').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.88').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.88').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.88').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.88').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.88').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.88').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.88').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.93').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.93').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.93').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.93').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.93').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.93').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.93').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.93').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.93').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.88').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.88').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.88').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.88').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.93').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.93').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.93').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.93').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
-  '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')))
+  '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc'))),
+
+  // Legal and compliance static routes
+  '/dmca':            () => Promise.resolve(renderStaticLegal('dmca')),
+  '/2257':            () => Promise.resolve(renderStaticLegal('2257')),
+  '/privacy-policy':  () => Promise.resolve(renderStaticLegal('privacy-policy')),
+  '/terms':           () => Promise.resolve(renderStaticLegal('terms')),
+  '/contact':         () => Promise.resolve(renderStaticLegal('contact'))
 };
 
 /**
@@ -292,20 +401,29 @@ function updateSEOTags(routePath, targetId) {
   // stick on every localized route -> "Hreflang and HTML lang mismatch").
   document.documentElement.lang = i18n.hreflangCode(currentLang);
 
+  const pageNum = parseInt(getParam('page') || '1', 10);
+  const isNoindex = pageNum > 1 || ['/search', '/history', '/watch-later'].includes(routePath);
+
+  let robotsMeta = document.querySelector('meta[name="robots"]');
+  if (!robotsMeta) {
+    robotsMeta = document.createElement('meta');
+    robotsMeta.name = 'robots';
+    document.head.appendChild(robotsMeta);
+  }
+  robotsMeta.content = isNoindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+
   let cleanRoutePath = routePath;
   if (routePath === '/watch' && window.missavJState.activeVideo) {
     const post = window.missavJState.activeVideo;
     cleanRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+  } else if (['/category', '/actor', '/studio', '/tag'].includes(routePath)) {
+    const nameParam = getParam('name');
+    cleanRoutePath = nameParam ? `${routePath}?name=${encodeURIComponent(nameParam)}` : (routePath === '/actor' ? '/actors' : (routePath === '/studio' ? '/studios' : '/categories'));
   } else {
-    // For listing and browsing pages
-    const parsed = parseUrl(window.location.pathname);
-    cleanRoutePath = parsed.routePath;
-    if (window.location.search) {
-      cleanRoutePath += window.location.search;
-    }
+    cleanRoutePath = routePath;
   }
 
-  const canonicalUrl = `${baseDomain}/${currentLang}${cleanRoutePath === '/' ? '' : cleanRoutePath}`;
+  const canonicalUrl = `${baseDomain}/${currentLang}${cleanRoutePath === '/' ? '/' : cleanRoutePath}`;
 
   // 1. Add canonical link
   const canonicalLink = document.createElement('link');
@@ -313,33 +431,33 @@ function updateSEOTags(routePath, targetId) {
   canonicalLink.href = canonicalUrl;
   document.head.appendChild(canonicalLink);
 
-  // 2. Add alternate links for all 13 languages
-  i18n.LANGS.forEach(lang => {
-    let langRoutePath = cleanRoutePath;
+  // 2. Add alternate links ONLY on indexable routes
+  if (!isNoindex) {
+    i18n.LANGS.forEach(lang => {
+      let langRoutePath = cleanRoutePath;
+      if (routePath === '/watch' && window.missavJState.activeVideo) {
+        const post = window.missavJState.activeVideo;
+        langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+      }
+      const altLink = document.createElement('link');
+      altLink.rel = 'alternate';
+      altLink.hreflang = i18n.hreflangCode(lang.code);
+      altLink.href = `${baseDomain}/${lang.code}${langRoutePath === '/' ? '/' : langRoutePath}`;
+      document.head.appendChild(altLink);
+    });
     
+    // Add x-default alternate pointing to English
+    const xDefaultLink = document.createElement('link');
+    xDefaultLink.rel = 'alternate';
+    xDefaultLink.hreflang = 'x-default';
+    let enWatchPath = cleanRoutePath;
     if (routePath === '/watch' && window.missavJState.activeVideo) {
       const post = window.missavJState.activeVideo;
-      langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+      enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
     }
-    
-    const altLink = document.createElement('link');
-    altLink.rel = 'alternate';
-    altLink.hreflang = i18n.hreflangCode(lang.code);
-    altLink.href = `${baseDomain}/${lang.code}${langRoutePath}`;
-    document.head.appendChild(altLink);
-  });
-  
-  // Add x-default alternate pointing to English
-  const xDefaultLink = document.createElement('link');
-  xDefaultLink.rel = 'alternate';
-  xDefaultLink.hreflang = 'x-default';
-  let enWatchPath = cleanRoutePath;
-  if (routePath === '/watch' && window.missavJState.activeVideo) {
-    const post = window.missavJState.activeVideo;
-    enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+    xDefaultLink.href = `${baseDomain}/en${enWatchPath === '/' ? '/' : enWatchPath}`;
+    document.head.appendChild(xDefaultLink);
   }
-  xDefaultLink.href = `${baseDomain}/en${enWatchPath}`;
-  document.head.appendChild(xDefaultLink);
 
   // 3. Update dynamic Meta Description, OG Tags, Twitter Cards, and JSON-LD
   updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath);
@@ -397,7 +515,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
     setMetaContent('twitter-description', description);
     setMetaContent('twitter-image', thumbnail);
 
-    // JSON-LD: VideoObject schema
+    // JSON-LD: VideoObject & BreadcrumbList schema (@graph)
     const jsonLdEl = document.getElementById('json-ld-data');
     if (jsonLdEl) {
       let uploadDate = new Date().toISOString();
@@ -408,16 +526,15 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
         }
       }
       const viewCount = post.views ? parseInt(post.views, 10) : 0;
-      
       const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${post.id}`;
       
       const videoSchema = {
-        '@context': 'https://schema.org',
         '@type': 'VideoObject',
         'name': translatedTitle,
         'description': description,
-        'thumbnailUrl': thumbnail.startsWith('http') ? thumbnail : `${baseDomain}${thumbnail}`,
+        'thumbnailUrl': [thumbnail.startsWith('http') ? thumbnail : `${baseDomain}${thumbnail}`],
         'uploadDate': uploadDate,
+        'url': canonicalUrl,
         'embedUrl': cleanEmbedUrl,
         'interactionStatistic': {
           '@type': 'InteractionCounter',
@@ -430,34 +547,99 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
           'url': baseDomain,
           'logo': {
             '@type': 'ImageObject',
-            'url': `${baseDomain}/assets/images/logo.webp`
+            'url': `${baseDomain}/assets/images/logo.webp`,
+            'width': 192,
+            'height': 192
           }
         },
         'inLanguage': 'ja'
       };
 
       if (post.duration) {
-        // Parse "HH:MM:SS" to ISO 8601 duration "PT...H...M...S" if possible
-        const parts = String(post.duration).split(':').map(Number);
-        if (parts.length === 3) {
-          videoSchema.duration = `PT${parts[0]}H${parts[1]}M${parts[2]}S`;
+        const trimmed = String(post.duration).trim();
+        let totalSeconds = null;
+        if (/^\d+$/.test(trimmed)) {
+          totalSeconds = parseInt(trimmed, 10);
+        } else {
+          const parts = trimmed.split(':').map(Number);
+          if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+            totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+          } else if (parts.length === 2 && parts.every(n => !isNaN(n))) {
+            totalSeconds = parts[0] * 60 + parts[1];
+          }
+        }
+        if (totalSeconds && totalSeconds > 0 && totalSeconds <= 86400) {
+          const h = Math.floor(totalSeconds / 3600);
+          const m = Math.floor((totalSeconds % 3600) / 60);
+          const s = totalSeconds % 60;
+          let iso = 'PT';
+          if (h > 0) iso += `${h}H`;
+          if (m > 0) iso += `${m}M`;
+          if (s > 0 || (h === 0 && m === 0)) iso += `${s}S`;
+          videoSchema.duration = iso;
         }
       }
 
-      // Add actor/performer info if available
       if (post.actors && post.actors.length > 0) {
         videoSchema.actor = post.actors.map(name => ({
           '@type': 'Person',
-          'name': name
+          'name': typeof name === 'string' ? name : (name.name || '')
         }));
       }
 
-      // Add genre if categories available
       if (post.categories && post.categories.length > 0) {
-        videoSchema.genre = post.categories.slice(0, 5).join(', ');
+        videoSchema.genre = post.categories.map(c => typeof c === 'string' ? c : (c.name || '')).filter(Boolean);
       }
 
-      jsonLdEl.textContent = JSON.stringify(videoSchema);
+      // BreadcrumbList for watch page (Home -> Category -> Video)
+      const primaryCat = (post.categories && post.categories.length > 0)
+        ? (typeof post.categories[0] === 'string' ? post.categories[0] : (post.categories[0]?.name || ''))
+        : '';
+      const breadcrumbElements = [
+        {
+          '@type': 'ListItem',
+          'position': 1,
+          'name': 'Home',
+          'item': `${baseDomain}/${currentLang}/`
+        }
+      ];
+      if (primaryCat) {
+        breadcrumbElements.push({
+          '@type': 'ListItem',
+          'position': 2,
+          'name': primaryCat,
+          'item': `${baseDomain}/${currentLang}/category?name=${encodeURIComponent(primaryCat)}`
+        });
+        breadcrumbElements.push({
+          '@type': 'ListItem',
+          'position': 3,
+          'name': translatedTitle,
+          'item': canonicalUrl
+        });
+      } else {
+        breadcrumbElements.push({
+          '@type': 'ListItem',
+          'position': 2,
+          'name': 'Trending',
+          'item': `${baseDomain}/${currentLang}/trending`
+        });
+        breadcrumbElements.push({
+          '@type': 'ListItem',
+          'position': 3,
+          'name': translatedTitle,
+          'item': canonicalUrl
+        });
+      }
+
+      const breadcrumbSchema = {
+        '@type': 'BreadcrumbList',
+        'itemListElement': breadcrumbElements
+      };
+
+      jsonLdEl.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [videoSchema, breadcrumbSchema]
+      });
     }
 
   } else {
@@ -470,6 +652,11 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
       '/categories':`${i18n.t('nav_all_categories') || 'All Categories'} — MISSAV-J`,
       '/studios':   `${i18n.t('nav_studios') || 'Studios'} — MISSAV-J`,
       '/search':    `${i18n.t('nav_search') || 'Search'} — MISSAV-J`,
+      '/dmca':           `${i18n.t('legal_dmca_title') || 'DMCA Policy'} — MISSAV-J`,
+      '/2257':           `${i18n.t('legal_2257_title') || '18 U.S.C. 2257'} — MISSAV-J`,
+      '/privacy-policy': `${i18n.t('legal_privacy_title') || 'Privacy Policy'} — MISSAV-J`,
+      '/terms':          `${i18n.t('legal_terms_title') || 'Terms of Service'} — MISSAV-J`,
+      '/contact':        `${i18n.t('legal_contact_title') || 'Contact Us'} — MISSAV-J`,
     };
 
     const pageDescriptions = {
@@ -479,7 +666,12 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
       '/actors':    i18n.t('meta_actors_desc') || 'Browse all actors and actresses.',
       '/categories':i18n.t('meta_categories_desc') || 'Explore video categories and genres.',
       '/studios':   i18n.t('meta_studios_desc') || 'Discover popular production studios.',
-      '/search':    i18n.t('meta_search_desc') || 'Search for videos, actors, studios, and more.',
+      '/search':         i18n.t('meta_search_desc') || 'Search for videos, actors, studios, and more.',
+      '/dmca':           'MISSAV-J DMCA copyright infringement notification and takedown policy.',
+      '/2257':           '18 U.S.C. § 2257 record-keeping compliance statement and notices.',
+      '/privacy-policy': 'MISSAV-J Privacy Policy regarding log files, cookies, and user preferences.',
+      '/terms':          'MISSAV-J Terms of Service, age requirement agreements, and acceptable use.',
+      '/contact':        'Contact MISSAV-J for advertising inquiries, partnerships, and support.',
     };
 
     const title = pageTitles[routePath] || 'MISSAV-J — Premium Video Streaming Feed';
@@ -504,24 +696,159 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
     setMetaContent('twitter-description', desc);
     setMetaContent('twitter-image', '/assets/images/logo.webp');
 
-    // JSON-LD: WebSite schema with SearchAction
+    // JSON-LD: Route-specific schema (WebSite/Organization, CollectionPage, ProfilePage, AboutPage, BreadcrumbList, ItemList)
     const jsonLdEl = document.getElementById('json-ld-data');
     if (jsonLdEl) {
-      const websiteSchema = {
-        '@context': 'https://schema.org',
-        '@type': 'WebSite',
-        'name': 'MISSAV-J',
-        'url': baseDomain,
-        'potentialAction': {
-          '@type': 'SearchAction',
-          'target': {
-            '@type': 'EntryPoint',
-            'urlTemplate': `${baseDomain}/en/search?q={search_term_string}`
+      if (routePath === '/') {
+        const websiteSchema = {
+          '@type': 'WebSite',
+          'name': 'MISSAV-J',
+          'alternateName': 'MISSAV-J Premium Video Streaming',
+          'url': `${baseDomain}/${currentLang}/`,
+          'description': desc,
+          'inLanguage': i18n.hreflangCode(currentLang),
+          'potentialAction': {
+            '@type': 'SearchAction',
+            'target': {
+              '@type': 'EntryPoint',
+              'urlTemplate': `${baseDomain}/${currentLang}/search?q={search_term_string}`
+            },
+            'query-input': 'required name=search_term_string'
+          }
+        };
+        const organizationSchema = {
+          '@type': 'Organization',
+          'name': 'MISSAV-J',
+          'url': baseDomain,
+          'logo': {
+            '@type': 'ImageObject',
+            'url': `${baseDomain}/assets/images/logo.webp`,
+            'width': 192,
+            'height': 192
           },
-          'query-input': 'required name=search_term_string'
+          'sameAs': [
+            'https://t.me/missav_j'
+          ]
+        };
+        jsonLdEl.textContent = JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [websiteSchema, organizationSchema]
+        });
+      } else {
+        const nameParam = getParam('name') || '';
+        let pageSchema;
+        if (routePath === '/actor' && nameParam) {
+          pageSchema = {
+            '@type': 'ProfilePage',
+            'name': title,
+            'description': desc,
+            'url': canonicalUrl,
+            'mainEntity': {
+              '@type': 'Person',
+              'name': nameParam,
+              'url': canonicalUrl
+            }
+          };
+        } else if (['/dmca', '/2257', '/privacy-policy', '/terms', '/contact'].includes(routePath)) {
+          pageSchema = {
+            '@type': 'AboutPage',
+            'name': title,
+            'description': desc,
+            'url': canonicalUrl
+          };
+        } else if (routePath === '/search') {
+          pageSchema = {
+            '@type': 'SearchResultsPage',
+            'name': title,
+            'description': desc,
+            'url': canonicalUrl
+          };
+        } else {
+          pageSchema = {
+            '@type': 'CollectionPage',
+            'name': title,
+            'description': desc,
+            'url': canonicalUrl
+          };
         }
-      };
-      jsonLdEl.textContent = JSON.stringify(websiteSchema);
+
+        const breadcrumbElements = [
+          {
+            '@type': 'ListItem',
+            'position': 1,
+            'name': 'Home',
+            'item': `${baseDomain}/${currentLang}/`
+          }
+        ];
+
+        if (['/category', '/tag'].includes(routePath) && nameParam) {
+          breadcrumbElements.push({
+            '@type': 'ListItem',
+            'position': 2,
+            'name': 'Categories',
+            'item': `${baseDomain}/${currentLang}/categories`
+          });
+          breadcrumbElements.push({
+            '@type': 'ListItem',
+            'position': 3,
+            'name': nameParam,
+            'item': canonicalUrl
+          });
+        } else if (routePath === '/actor' && nameParam) {
+          breadcrumbElements.push({
+            '@type': 'ListItem',
+            'position': 2,
+            'name': 'Actresses',
+            'item': `${baseDomain}/${currentLang}/actors`
+          });
+          breadcrumbElements.push({
+            '@type': 'ListItem',
+            'position': 3,
+            'name': nameParam,
+            'item': canonicalUrl
+          });
+        } else if (routePath === '/studio' && nameParam) {
+          breadcrumbElements.push({
+            '@type': 'ListItem',
+            'position': 2,
+            'name': 'Studios',
+            'item': `${baseDomain}/${currentLang}/studios`
+          });
+          breadcrumbElements.push({
+            '@type': 'ListItem',
+            'position': 3,
+            'name': nameParam,
+            'item': canonicalUrl
+          });
+        } else {
+          breadcrumbElements.push({
+            '@type': 'ListItem',
+            'position': 2,
+            'name': title.split('—')[0].trim(),
+            'item': canonicalUrl
+          });
+        }
+
+        const breadcrumbSchema = {
+          '@type': 'BreadcrumbList',
+          'itemListElement': breadcrumbElements
+        };
+
+        const graphNodes = [pageSchema, breadcrumbSchema];
+        if (['/category', '/categories', '/tag', '/actor', '/actors', '/studio', '/studios', '/trending', '/recent'].includes(routePath)) {
+          graphNodes.push({
+            '@type': 'ItemList',
+            'name': title,
+            'description': desc,
+            'url': canonicalUrl
+          });
+        }
+
+        jsonLdEl.textContent = JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': graphNodes
+        });
+      }
     }
   }
 
@@ -602,7 +929,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.88').then(m => {
+    import('./player.js?v=2.8.93').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -613,7 +940,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.88').then(m => {
+    import('./player.js?v=2.8.93').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -696,7 +1023,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.88').then(m => {
+  import('./player.js?v=2.8.93').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -889,7 +1216,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.88').then(m => {
+      import('./player.js?v=2.8.93').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }

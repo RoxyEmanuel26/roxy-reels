@@ -5,7 +5,7 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
-const POSTS_CACHE_VERSION = 'v2.8.88';
+const POSTS_CACHE_VERSION = 'v2.8.93';
 const LIST_FRESH_TTL_SECONDS = 15 * 60;
 const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
 const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -437,7 +437,7 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': `public, max-age=0, s-maxage=${cacheTtl}`,
+      'Cache-Control': `public, max-age=0, s-maxage=${cacheTtl}, stale-while-revalidate=86400`,
       'X-Cache-Status': isGet ? 'MISS' : 'BYPASS',
       'X-Edge-Mode': 'API-POSTS'
     };
