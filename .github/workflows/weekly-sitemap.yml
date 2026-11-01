@@ -53,6 +53,15 @@ jobs:
         run: |
           node scripts/indexnow.mjs || echo "IndexNow submission completed with soft fallback"
 
+      - name: Auto-post daily featured highlight to Twitter/X
+        env:
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
+        run: |
+          node scripts/twitter-poster.mjs --limit=1 || echo "Twitter posting completed with soft fallback"
+
       - name: Validate every sitemap
         run: >-
           python scripts/validate_sitemaps.py
@@ -67,9 +76,9 @@ jobs:
         id: changes
         shell: bash
         run: |
-          if git diff --quiet -- sitemaps data/seo-enriched-posts.json; then
+          if git diff --quiet -- sitemaps data/seo-enriched-posts.json data/twitter-history.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Sitemap and enriched data are already current."
+            echo "Sitemap, enriched data, and Twitter history are already current."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
@@ -80,8 +89,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- sitemaps data/seo-enriched-posts.json
-          git commit -m "chore(catalog): daily sitemap & AI SEO update $(date -u +%F)"
+          git add -- sitemaps data/seo-enriched-posts.json data/twitter-history.json
+          git commit -m "chore(catalog): daily sitemap, AI SEO & Twitter update $(date -u +%F)"
           git push origin HEAD:main
 
       - name: Verify Cloudflare Pages deployment

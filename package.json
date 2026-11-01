@@ -3,10 +3,11 @@
   "version": "2.8.94",
   "description": "MISSAV-J High Performance Video Streaming Platform",
   "scripts": {
-    "test": "node --test tests/worker-efficiency.test.mjs tests/sitemap-generator.test.mjs",
+    "test": "node --test tests/worker-efficiency.test.mjs tests/sitemap-generator.test.mjs tests/twitter-poster.test.mjs",
     "seo:enrich": "node scripts/seo-enrich.mjs",
     "seo:report": "node scripts/seo-status-report.mjs",
     "seo:indexnow": "node scripts/indexnow.mjs",
+    "twitter:post": "node scripts/twitter-poster.mjs",
     "sitemap": "node generate_sitemap.js"
   },
   "keywords": [
