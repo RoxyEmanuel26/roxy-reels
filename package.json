@@ -1,6 +1,6 @@
 {
   "name": "missav-j",
-  "version": "2.8.93",
+  "version": "2.8.94",
   "description": "MISSAV-J High Performance Video Streaming Platform",
   "scripts": {
     "test": "node --test tests/worker-efficiency.test.mjs tests/sitemap-generator.test.mjs",

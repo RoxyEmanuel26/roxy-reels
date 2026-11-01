@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.93';
+const SSR_CACHE_VERSION = 'v2.8.94';
 
 // Match the canonical English slug emitted by generate_sitemap.js. Locale
 // prefixes carry the language; a stable slug avoids 13 competing aliases.
@@ -1475,6 +1475,7 @@ export async function onRequest(context) {
                 "@type": "VideoObject",
                 "name": title,
                 "description": description,
+                "isFamilyFriendly": false,
                 // Array thumbnailUrl: gunakan URL proxy stabil /img/ agar Googlebot
                 // selalu bisa akses thumbnail (domain kita sendiri, tidak di-block CDN).
                 "thumbnailUrl": [proxiedImageUrl],

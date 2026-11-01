@@ -831,6 +831,7 @@ test('video watch page SSR renders 3-tier BreadcrumbList with primary category a
   assert.equal(response.status, 200);
   assert.match(html, /"@type":\s*"VideoObject"/);
   assert.match(html, /"duration":\s*"PT1H45M30S"/);
+  assert.match(html, /"isFamilyFriendly":\s*false/);
   assert.match(html, /"@type":\s*"BreadcrumbList"/);
   assert.match(html, /"name":\s*"Uncensored"/);
   assert.match(html, /"name":\s*"SSIS-888 Test Title [-—] MISSAV-J"/);

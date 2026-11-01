@@ -82,6 +82,7 @@
     "/.well-known/*",
     "/robots.txt",
     "/llms.txt",
+    "/llms-full.txt",
     "/ads.txt",
     "/favicon.ico",
     "/_headers",
