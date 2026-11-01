@@ -775,6 +775,11 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
   border-color: #ffffff;
 }
 
+.opt-x-viral:hover {
+  border-color: #ff5722;
+  color: #ff7043;
+}
+
 .opt-pinterest:hover {
   border-color: #bd081c;
 }

@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.8.94';
+import ui from './ui.js?v=--help';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -625,6 +625,9 @@ const TITLE_DICTIONARY = {
   },
   share_modal_title: {
     en: 'Share Video', id: 'Bagikan Video', 'zh-TW': '分享影片', 'zh-CN': '分享视频', ja: '動画を共有', ko: '비디오 공유', ms: 'Kongsi Video', th: 'แชร์วิดีโอ', de: 'Video teilen', fr: 'Partager la vidéo', vi: 'Chia sẻ Video', fil: 'Ibahagi ang Video', pt: 'Compartilhar Vídeo'
+  },
+  share_modal_x_viral: {
+    en: 'X (Viral Format)', id: 'X (Format Viral)', 'zh-TW': 'X (爆款格式)', 'zh-CN': 'X (爆款格式)', ja: 'X (バイラル形式)', ko: 'X (바이럴 형식)', ms: 'X (Format Viral)', th: 'X (รูปแบบไวรัล)', de: 'X (Viral-Format)', fr: 'X (Format viral)', vi: 'X (Định dạng Viral)', fil: 'X (Viral Format)', pt: 'X (Formato Viral)'
   },
   share_modal_copy: {
     en: 'Copy Link', id: 'Salin Tautan', 'zh-TW': '複製連結', 'zh-CN': '复制链接', ja: 'リンクをコピー', ko: '링크 복사', ms: 'Salin Pautan', th: 'คัดลอกลิงก์', de: 'Link kopieren', fr: 'Copier le lien', vi: 'Sao chép liên kết', fil: 'Kopyahin ang Link', pt: 'Copiar Link'

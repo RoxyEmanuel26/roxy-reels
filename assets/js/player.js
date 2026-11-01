@@ -5,13 +5,13 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.94';
-import ui from './ui.js?v=2.8.94';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.8.94';
-import i18n from './i18n.js?v=2.8.94';
-import ReferralSystem from './referral.js?v=2.8.94';
-import { Analytics } from './analytics.js?v=2.8.94';
-import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.94';
+import api from './api.js?v=--help';
+import ui from './ui.js?v=--help';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=--help';
+import i18n from './i18n.js?v=--help';
+import ReferralSystem from './referral.js?v=--help';
+import { Analytics } from './analytics.js?v=--help';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=--help';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -528,7 +528,7 @@ export function renderPostMeta(post, id) {
       const translatedTitle = titleElement ? titleElement.textContent : (post.title ? i18n.translateVideoTitle(post.title) : i18n.t('btn_share'));
       const proxiedThumbnail = post.thumbnail ? ui.getProxiedThumbnail(post.thumbnail) : '/assets/images/logo.webp';
       const thumbnailUrl = proxiedThumbnail.startsWith('http') ? proxiedThumbnail : window.location.origin + proxiedThumbnail;
-      showShareModal(translatedTitle, shareUrl, thumbnailUrl);
+      showShareModal(translatedTitle, shareUrl, thumbnailUrl, post);
       Analytics.trackShare(id, 'modal');
     });
   }
@@ -1056,9 +1056,97 @@ export function disconnectPlaceholderObserver() {
 }
 
 /**
+ * Menghasilkan teks tweet dengan format viral (hook quote, emoji, metadata, bookmark CTA, hashtags)
+ * yang mematuhi batas karakter X (Twitter) dan menghindari sensor kata vulgar.
+ */
+export function generateViralTweetText(title, shareUrl, post = null) {
+  let code = post?.code || '';
+  if (!code && title) {
+    const codeMatch = title.match(/([a-zA-Z]+[-_]\d+)/i) || title.match(/^([a-zA-Z0-9]+[-_][a-zA-Z0-9]+)/i);
+    if (codeMatch) code = codeMatch[1];
+  }
+  code = (code || '').toUpperCase().trim();
+
+  let actress = '';
+  if (post && Array.isArray(post.actors) && post.actors.length > 0) {
+    actress = post.actors[0].trim();
+  } else if (title) {
+    const actressMatch = title.match(/[–—\-]\s*([a-zA-Z\s\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)$/i);
+    if (actressMatch) {
+      const candidate = actressMatch[1].trim();
+      if (candidate.length < 30 && !candidate.toLowerCase().includes('missav')) {
+        actress = candidate;
+      }
+    }
+  }
+
+  let studio = post?.studio || '';
+
+  // Extract hook quote or clean snippet
+  let hook = '';
+  const quoteMatch = title.match(/"([^"]+)"/) || title.match(/“([^”]+)”/);
+  if (quoteMatch) {
+    hook = quoteMatch[1].trim();
+  } else {
+    let clean = title.replace(code, '').replace(/^[–—\-:\s]+/, '').trim();
+    if (actress) {
+      clean = clean.replace(new RegExp('[–—\\-]\\s*' + actress + '\\s*$', 'i'), '').trim();
+    }
+    hook = clean.slice(0, 90).trim();
+  }
+
+  // Sanitize hook to prevent Twitter NSFW shadowban filters
+  hook = hook
+    .replace(/\b(cum|cumming|semen)\b/gi, '***')
+    .replace(/\b(creampie)\b/gi, 'cream-pie')
+    .replace(/\b(dick|cock|pussy)\b/gi, '***')
+    .replace(/\b(slutty|bitch)\b/gi, 'sassy')
+    .replace(/\b(orgasm)\b/gi, 'climax');
+
+  // Hashtags
+  const hashtags = new Set(['#JavStreaming', '#MissAV']);
+  if (code) {
+    hashtags.add('#' + code.replace(/[^a-zA-Z0-9]/g, ''));
+  }
+  if (actress) {
+    const cleanActress = actress.replace(/[^a-zA-Z0-9]/g, '');
+    if (cleanActress) hashtags.add('#' + cleanActress);
+  }
+  const hashtagStr = Array.from(hashtags).join(' ');
+
+  // Header
+  let header = code ? `🔥 [${code}]` : '🔥 [Featured Video]';
+  if (actress) header += ` ${actress}`;
+
+  // Metadata block
+  let metaLines = [];
+  if (code) metaLines.push(`✨ Code: #${code.replace(/[^a-zA-Z0-9]/g, '')}`);
+  if (actress) metaLines.push(`🌟 Actress: ${actress}`);
+  if (studio && (!hook || hook.length < 50)) metaLines.push(`🏢 Studio: ${studio}`);
+  const metaBlock = metaLines.join('\n');
+
+  // Dynamic length guard to guarantee tweet <= 275 chars on Twitter (23-char t.co URL)
+  const fixedLength = header.length + 2 + (metaBlock ? metaBlock.length + 2 : 0) + 30 + 23 + 2 + 25 + hashtagStr.length;
+  const maxHookLen = Math.max(0, 275 - fixedLength - 6);
+
+  let hookBlock = '';
+  if (hook && maxHookLen >= 20) {
+    let cleanHook = hook;
+    if (cleanHook.length > maxHookLen) {
+      cleanHook = cleanHook.slice(0, maxHookLen - 3).trim() + '...';
+    }
+    hookBlock = `"${cleanHook}" 😈\n\n`;
+  }
+
+  const tweet = `${header}\n\n${hookBlock}${metaBlock ? metaBlock + '\n\n' : ''}▶️ Watch Full HD on MISSAV-J:\n${shareUrl}\n\n📌 Bookmark for tonight!\n${hashtagStr}`.trim();
+
+  return tweet;
+}
+
+/**
  * Menampilkan modal popup Share Premium dengan dukungan sosial media (Pinterest, X, Facebook, Copy Link)
  */
-export function showShareModal(title, shareUrl, thumbnailUrl) {
+export function showShareModal(title, shareUrl, thumbnailUrl, post = null) {
   let modal = document.getElementById('share-modal-overlay');
   if (!modal) {
     modal = document.createElement('div');
@@ -1083,6 +1171,10 @@ export function showShareModal(title, shareUrl, thumbnailUrl) {
             <a href="#" target="_blank" class="share-option-btn opt-x">
               <span class="share-icon">𝕏</span>
               <span>X (Twitter)</span>
+            </a>
+            <a href="#" target="_blank" class="share-option-btn opt-x-viral">
+              <span class="share-icon">🔥</span>
+              <span data-i18n="share_modal_x_viral">X (Viral Format)</span>
             </a>
             <a href="#" target="_blank" class="share-option-btn opt-pinterest">
               <span class="share-icon">📌</span>
@@ -1120,12 +1212,17 @@ export function showShareModal(title, shareUrl, thumbnailUrl) {
   const tgBtn = modal.querySelector('.opt-telegram');
   const fbBtn = modal.querySelector('.opt-facebook');
   const xBtn = modal.querySelector('.opt-x');
+  const xViralBtn = modal.querySelector('.opt-x-viral');
   const pinBtn = modal.querySelector('.opt-pinterest');
   const copyBtn = modal.querySelector('.opt-copy');
 
   tgBtn.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
   fbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
   xBtn.href = `https://x.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
+  if (xViralBtn) {
+    const viralText = generateViralTweetText(title, shareUrl, post);
+    xViralBtn.href = `https://x.com/intent/tweet?text=${encodeURIComponent(viralText)}`;
+  }
   pinBtn.href = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&media=${encodeURIComponent(thumbnailUrl)}&description=${encodeURIComponent(title)}`;
 
   copyBtn.onclick = (e) => {

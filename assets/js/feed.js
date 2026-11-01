@@ -5,11 +5,11 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.94';
-import ui from './ui.js?v=2.8.94';
-import filter from './filter.js?v=2.8.94';
-import i18n from './i18n.js?v=2.8.94';
-import { getHubContent } from './hub-content.js?v=2.8.94';
+import api from './api.js?v=2.8.95';
+import ui from './ui.js?v=2.8.95';
+import filter from './filter.js?v=2.8.95';
+import i18n from './i18n.js?v=2.8.95';
+import { getHubContent } from './hub-content.js?v=2.8.95';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
