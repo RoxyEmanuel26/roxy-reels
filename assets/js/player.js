@@ -1173,8 +1173,8 @@ export function showShareModal(title, shareUrl, thumbnailUrl, post = null) {
               <span>X (Twitter)</span>
             </a>
             <a href="#" target="_blank" class="share-option-btn opt-x-viral">
-              <span class="share-icon">🔥</span>
-              <span data-i18n="share_modal_x_viral">X (Viral Format)</span>
+              <span class="share-icon">𝕏</span>
+              <span data-i18n="share_modal_x_viral">X (Twitter 2)</span>
             </a>
             <a href="#" target="_blank" class="share-option-btn opt-pinterest">
               <span class="share-icon">📌</span>
