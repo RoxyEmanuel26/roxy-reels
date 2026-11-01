@@ -286,16 +286,19 @@ export async function runTwitterPoster() {
     }
   }
 
-  // Fetch latest candidate posts from live APIJAV feed
+  // Fetch freshest release videos from live APIJAV feed (newest first)
   let candidates = [];
   try {
-    const res = await fetch('https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=30&orderby=views');
+    const res = await fetch('https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50');
     if (res.ok) {
       candidates = await res.json();
     }
   } catch (e) {
     console.warn('[Twitter Poster] Failed to fetch live APIJAV posts:', e.message);
   }
+
+  // Sort strictly by newest video ID descending (freshest releases first)
+  candidates.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
 
   // Merge enriched posts that aren't in candidates
   for (const [vId, enrichedItem] of Object.entries(enrichedMap)) {
