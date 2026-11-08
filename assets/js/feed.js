@@ -5,11 +5,11 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.96';
-import ui from './ui.js?v=2.8.96';
-import filter from './filter.js?v=2.8.96';
-import i18n from './i18n.js?v=2.8.96';
-import { getHubContent } from './hub-content.js?v=2.8.96';
+import api from './api.js?v=2.8.97';
+import ui from './ui.js?v=2.8.97';
+import filter from './filter.js?v=2.8.97';
+import i18n from './i18n.js?v=2.8.97';
+import { getHubContent } from './hub-content.js?v=2.8.97';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -554,7 +554,9 @@ async function fetchAndRenderFeed(isInitial = false) {
       const maintTitle = i18n.t('maintenance_title') || 'Server Maintenance';
       const maintDesc = i18n.t('maintenance_desc') || 'We are currently upgrading our core video servers to provide you with a faster and better experience.<br>Please check back again in a few hours.';
       const maintBtn = i18n.t('maintenance_btn') || 'Refresh Page';
-      const maintAltBtn = i18n.t('maintenance_alt_btn') || 'Watch on Alternative Site';
+      const maintAltBtn1 = i18n.t('maintenance_alt_btn_1') || 'Watch on Alternative 1';
+      const maintAltBtn2 = i18n.t('maintenance_alt_btn_2') || 'Watch on Alternative 2';
+      const maintAltBtn3 = i18n.t('maintenance_alt_btn_3') || 'Watch on Alternative 3';
 
       grid.innerHTML = `
         <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem 1rem; text-align: center;">
@@ -563,9 +565,13 @@ async function fetchAndRenderFeed(isInitial = false) {
           <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.6; max-width: 500px; margin-left: auto; margin-right: auto;">
             ${maintDesc}
           </p>
-          <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+          <div style="display: flex; flex-direction: column; gap: 0.85rem; align-items: center; width: 100%; max-width: 600px; margin: 0 auto;">
             <button onclick="window.location.reload()" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px; transition: opacity 0.2s;">🔄 ${maintBtn}</button>
-            <a href="https://nicevx.com/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.85rem 2rem; border-radius: 8px; background: #10b981; color: white; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; letter-spacing: 0.5px; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4); transition: transform 0.2s, background 0.2s;">🎥 ${maintAltBtn}</a>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; width: 100%; margin-top: 0.5rem;">
+              <a href="https://nicevx.com/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.75rem 1.25rem; border-radius: 8px; background: #10b981; color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4); transition: transform 0.2s, background 0.2s;">🎥 ${maintAltBtn1}</a>
+              <a href="https://www.lusthub.web.id/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.75rem 1.25rem; border-radius: 8px; background: #059669; color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.4); transition: transform 0.2s, background 0.2s;">🎥 ${maintAltBtn2}</a>
+              <a href="https://www.lusthub.my.id/" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 0.75rem 1.25rem; border-radius: 8px; background: #047857; color: white; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 600; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(4, 120, 87, 0.4); transition: transform 0.2s, background 0.2s;">🎥 ${maintAltBtn3}</a>
+            </div>
           </div>
         </div>
       `;

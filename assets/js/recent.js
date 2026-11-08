@@ -4,7 +4,7 @@
  * Menggunakan sistem feed utama secara modular.
  */
 
-import { init as initFeed } from './feed.js?v=2.8.96';
+import { init as initFeed } from './feed.js?v=2.8.97';
 
 /**
  * Inisialisasi Halaman Terbaru

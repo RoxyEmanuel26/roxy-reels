@@ -83,6 +83,15 @@ const DICTIONARY = {
   maintenance_alt_btn: {
     en: 'Watch on Alternative Site', id: 'Nonton di Web Alternatif', 'zh-TW': '在替代網站上觀看', 'zh-CN': '在替代网站上观看', ja: '代替サイトで見る', ko: '대체 사이트에서 보기', ms: 'Tonton di Laman Alternatif', th: 'ดูบนเว็บไซต์สำรอง', de: 'Auf alternativer Seite ansehen', fr: 'Regarder sur le site alternatif', vi: 'Xem trên trang web thay thế', fil: 'Manood sa Alternatibong Site', pt: 'Assistir no Site Alternativo'
   },
+  maintenance_alt_btn_1: {
+    en: 'Watch on Alternative 1', id: 'Nonton di Web Alternatif 1', 'zh-TW': '在替代網站 1 觀看', 'zh-CN': '在替代网站 1 观看', ja: '代替サイト 1 で見る', ko: '대체 사이트 1에서 보기', ms: 'Tonton di Laman Alternatif 1', th: 'ดูบนเว็บไซต์สำรอง 1', de: 'Auf alternativer Seite 1 ansehen', fr: 'Regarder sur le site alternatif 1', vi: 'Xem trên trang web thay thế 1', fil: 'Manood sa Alternatibong Site 1', pt: 'Assistir no Site Alternativo 1'
+  },
+  maintenance_alt_btn_2: {
+    en: 'Watch on Alternative 2', id: 'Nonton di Web Alternatif 2', 'zh-TW': '在替代網站 2 觀看', 'zh-CN': '在替代网站 2 观看', ja: '代替サイト 2 で見る', ko: '대체 사이트 2에서 보기', ms: 'Tonton di Laman Alternatif 2', th: 'ดูบนเว็บไซต์สำรอง 2', de: 'Auf alternativer Seite 2 ansehen', fr: 'Regarder sur le site alternatif 2', vi: 'Xem trên trang web thay thế 2', fil: 'Manood sa Alternatibong Site 2', pt: 'Assistir no Site Alternativo 2'
+  },
+  maintenance_alt_btn_3: {
+    en: 'Watch on Alternative 3', id: 'Nonton di Web Alternatif 3', 'zh-TW': '在替代網站 3 觀看', 'zh-CN': '在替代网站 3 观看', ja: '代替サイト 3 で見る', ko: '대체 사이트 3에서 보기', ms: 'Tonton di Laman Alternatif 3', th: 'ดูบนเว็บไซต์สำรอง 3', de: 'Auf alternativer Seite 3 ansehen', fr: 'Regarder sur le site alternatif 3', vi: 'Xem trên trang web thay thế 3', fil: 'Manood sa Alternatibong Site 3', pt: 'Assistir no Site Alternativo 3'
+  },
 
   // Judul Pembagi / Section Titles
   sidebar_main_categories: {
