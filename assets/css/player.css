@@ -394,6 +394,13 @@
   overflow: hidden;
 }
 
+.player-container-placeholder iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: none;
+}
+
 /* ==========================================
    4. PERSISTENT MINI FLOATING PLAYER (PiP)
    ========================================== */

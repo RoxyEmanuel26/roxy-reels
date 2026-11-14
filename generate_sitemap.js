@@ -28,9 +28,10 @@ const STATIC_ROUTES = [
   'contact'
 ];
 const STUDIOS = [
-  'S1 NO.1 STYLE', 'MOODYZ', 'PRESTIGE', 'Soft On Demand',
-  'Idea Pocket', 'FALENO', 'MUTEKI', 'Fitch',
-  'OPPAL', 'Kawaii*', 'KMP', 'Attackers', 'Premium', 'Other'
+  'S1', 'Madonna', "Moody's", 'SOD',
+  'Attackers', 'IdeaPocket', 'Fitch', 'FALENO',
+  'Premium', 'kawaii', 'Wanz Factory', 'E-BODY',
+  'PRESTIGE', 'FALENO TUBE'
 ];
 
 const VIDEO_FILE_PATTERN = /^sitemap_videos_(\d+)-(\d+)\.xml$/;
@@ -133,6 +134,47 @@ function uniqueStrings(values) {
   return result;
 }
 
+const EDITION_RULES = [
+  { key: 'uncensored-leak', suffixRegex: /-uncensored-leak$/i, label: 'Uncensored Leak', titleRegex: /uncensored[\s-]*leak/i },
+  { key: 'english-subtitle', suffixRegex: /-(?:english-subtitle|eng-sub)$/i, label: 'English Subtitle', titleRegex: /english[\s-]*sub(?:title)?s?/i },
+  { key: 'chinese-subtitle', suffixRegex: /-(?:chinese-subtitle|chinese-sub|chinesesub)$/i, label: 'Chinese Subtitle', titleRegex: /chinese[\s-]*sub(?:title)?s?/i },
+  { key: 'uncensored', suffixRegex: /-uncensored$/i, label: 'Uncensored', titleRegex: /\buncensored\b/i }
+];
+
+function extractCodeAndEdition(codeValue) {
+  const rawCode = String(codeValue ?? '').trim();
+  if (!rawCode) {
+    return { rawCode: '', baseCode: '', editionKey: 'standard', editionLabel: '' };
+  }
+  for (const rule of EDITION_RULES) {
+    if (rule.suffixRegex.test(rawCode)) {
+      return {
+        rawCode,
+        baseCode: rawCode.replace(rule.suffixRegex, '').trim(),
+        editionKey: rule.key,
+        editionLabel: rule.label
+      };
+    }
+  }
+  return { rawCode, baseCode: rawCode, editionKey: 'standard', editionLabel: '' };
+}
+
+function titleHasEditionMarker(title, editionKey) {
+  if (!title || !editionKey || editionKey === 'standard') return false;
+  const rule = EDITION_RULES.find(r => r.key === editionKey);
+  return Boolean(rule && rule.titleRegex.test(title));
+}
+
+function formatEditionVideoTitle(post) {
+  const title = String(post?.title || '').trim();
+  if (!title) return '';
+  const { editionKey, editionLabel } = extractCodeAndEdition(post?.code);
+  if (editionKey === 'standard' || !editionLabel || titleHasEditionMarker(title, editionKey)) {
+    return title;
+  }
+  return `${title} (${editionLabel})`;
+}
+
 function buildVideoSlug(post) {
   const code = slugify(post.code);
   let base = slugify(post.slug || post.title) || 'video';
@@ -142,17 +184,20 @@ function buildVideoSlug(post) {
 }
 
 function buildDescription(post) {
-  const title = String(post.title || '').trim();
-  const code = String(post.code || '').trim();
+  const rawTitle = String(post.title || '').trim();
+  const displayTitle = formatEditionVideoTitle(post) || rawTitle;
+  const { baseCode } = extractCodeAndEdition(post.code);
   const actor = labels(post.actors).slice(0, 3).join(', ');
   const studio = labels(post.studio)[0] || '';
-  const codePrefix = code && !title.toLocaleLowerCase('en-US').startsWith(code.toLocaleLowerCase('en-US'))
-    ? `${code} `
+  const normalizedBase = slugify(baseCode);
+  const normalizedTitle = slugify(rawTitle);
+  const codePrefix = baseCode && (!normalizedBase || (normalizedTitle !== normalizedBase && !normalizedTitle.startsWith(`${normalizedBase}-`)))
+    ? `${baseCode} `
     : '';
   let extra = '';
   if (actor) extra += ` starring ${actor}`;
   if (studio) extra += ` by ${studio}`;
-  return `Watch ${codePrefix}${title}${extra} for free in premium HD streaming quality on MISSAV-J.`
+  return `Watch ${codePrefix}${displayTitle}${extra} for free in premium HD streaming quality on MISSAV-J.`
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 2048);
@@ -225,13 +270,38 @@ function standardUrlset(entries) {
   return `${xml}</urlset>\n`;
 }
 
+const SITEMAP_VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
+
+function sitemapHreflangCode(lang) {
+  return lang === 'fil' ? 'tl' : lang;
+}
+
+function buildLocalizedPagesUrlset(routes) {
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
+  for (const route of routes) {
+    const suffix = route ? `/${route}` : '/';
+    const enLoc = `${BASE_URL}/en${suffix}`;
+    xml += '  <url>\n';
+    xml += `    <loc>${escXml(enLoc)}</loc>\n`;
+    for (const lang of SITEMAP_VALID_LANGS) {
+      const href = `${BASE_URL}/${lang}${suffix}`;
+      xml += `    <xhtml:link rel="alternate" hreflang="${sitemapHreflangCode(lang)}" href="${escXml(href)}" />\n`;
+    }
+    xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(enLoc)}" />\n`;
+    xml += '  </url>\n';
+  }
+  return `${xml}</urlset>\n`;
+}
+
 function buildVideoUrlXml(post) {
   const location = `${BASE_URL}/en/watch/${buildVideoSlug(post)}`;
   const date = normalizeDate(post.date);
   const thumbnail = buildImageProxyUrl(post.thumbnail);
   const player = buildPlayerUrl(post);
-  const title = String(post.title || '').trim();
-  const description = title ? buildDescription(post) : '';
+  const rawTitle = String(post.title || '').trim();
+  const title = formatEditionVideoTitle(post);
+  const description = rawTitle ? buildDescription(post) : '';
   const eligible = Boolean(title && description && thumbnail && player && player !== location);
 
   let xml = `  <url>\n    <loc>${escXml(location)}</loc>\n`;
@@ -269,21 +339,9 @@ function actorFiles(actors) {
   return files;
 }
 
-function buildSitemapSet(posts, options = {}) {
-  const actors = options.actors || [];
-  const categories = options.categories || [];
-  const studios = options.studios || STUDIOS;
-  const uniquePosts = new Map();
-  for (const rawPost of posts) {
-    const post = normalizePost(rawPost);
-    if (uniquePosts.has(post.id)) throw new Error(`Duplicate post ID from upstream: ${post.id}`);
-    uniquePosts.set(post.id, post);
-  }
-
+function buildStaticTaxonomyFiles({ actors = [], categories = [], studios = STUDIOS } = {}) {
   const files = new Map();
-  files.set('sitemap_pages.xml', standardUrlset(STATIC_ROUTES.map(route =>
-    `${BASE_URL}/en${route ? `/${route}` : '/'}`
-  )));
+  files.set('sitemap_pages.xml', buildLocalizedPagesUrlset(STATIC_ROUTES));
   for (const [name, xml] of actorFiles(actors)) files.set(name, xml);
   files.set('sitemap_categories.xml', standardUrlset(
     uniqueStrings(categories)
@@ -295,9 +353,100 @@ function buildSitemapSet(posts, options = {}) {
       .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
       .map(studio => `${BASE_URL}/en/studio?name=${encodeURIComponent(studio)}`)
   ));
+  return files;
+}
+
+function scoreCloneCandidate(post, preferredIds) {
+  let score = 0;
+  if (buildPlayerUrl(post)) score += 100;
+  if (buildImageProxyUrl(post.thumbnail)) score += 100;
+  if (preferredIds && preferredIds.has(String(post.id))) score += 50;
+  if (labels(post.actors).length > 0) score += 20;
+  if (labels(post.studio).length > 0) score += 10;
+  if (labels(post.categories).length > 0) score += 5;
+  if (parseDuration(post.duration)) score += 5;
+  return score;
+}
+
+function deduplicateExactVideoClones(posts, options = {}) {
+  const preferredIds = options.preferredIds instanceof Set ? options.preferredIds : new Set();
+  const groups = new Map();
+  const ungrouped = [];
+
+  for (const post of posts) {
+    const { baseCode, editionKey } = extractCodeAndEdition(post.code);
+    const normalizedBase = slugify(baseCode);
+    const normalizedTitle = decodeHtmlEntities(post.title || '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+    const slugBodyNoDup = slugify(post.slug || post.title || '').replace(/-\d+$/, '');
+    let key = null;
+    if (normalizedBase && normalizedTitle) {
+      key = `code||${normalizedBase}||${editionKey}||${normalizedTitle}`;
+    } else if (slugBodyNoDup.length >= 20 && normalizedTitle.length >= 20) {
+      key = `nocode||${editionKey}||${normalizedTitle}||${slugBodyNoDup}`;
+    }
+    if (!key) {
+      ungrouped.push(post);
+      continue;
+    }
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(post);
+  }
+
+  const kept = [...ungrouped];
+  const canonicalPairs = [];
+  let skippedCount = 0;
+
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      kept.push(group[0]);
+      continue;
+    }
+    const sorted = [...group].sort((a, b) => {
+      const diff = scoreCloneCandidate(b, preferredIds) - scoreCloneCandidate(a, preferredIds);
+      return diff !== 0 ? diff : a.id - b.id;
+    });
+    const winner = sorted[0];
+    const winnerSlug = buildVideoSlug(winner);
+    kept.push(winner);
+    for (const dup of sorted.slice(1)) {
+      canonicalPairs.push([dup.id, winnerSlug]);
+      skippedCount += 1;
+    }
+  }
+
+  kept.sort((a, b) => a.id - b.id);
+  canonicalPairs.sort((a, b) => a[0] - b[0]);
+  const canonicalMap = {};
+  for (const [dupId, targetSlug] of canonicalPairs) {
+    canonicalMap[String(dupId)] = targetSlug;
+  }
+
+  return { posts: kept, canonicalMap, skippedCount };
+}
+
+function buildSitemapSet(posts, options = {}) {
+  const actors = options.actors || [];
+  const categories = options.categories || [];
+  const studios = options.studios || STUDIOS;
+  const uniquePosts = new Map();
+  for (const rawPost of posts) {
+    const post = normalizePost(rawPost);
+    if (uniquePosts.has(post.id)) throw new Error(`Duplicate post ID from upstream: ${post.id}`);
+    uniquePosts.set(post.id, post);
+  }
+
+  const dedupResult = options.deduplicateClones === false
+    ? { posts: [...uniquePosts.values()], canonicalMap: {}, skippedCount: 0 }
+    : deduplicateExactVideoClones([...uniquePosts.values()], options);
+  const activePosts = dedupResult.posts;
+
+  const files = buildStaticTaxonomyFiles({ actors, categories, studios });
 
   const buckets = new Map();
-  for (const post of uniquePosts.values()) {
+  for (const post of activePosts) {
     const start = Math.floor(post.id / VIDEO_BUCKET_SIZE) * VIDEO_BUCKET_SIZE;
     if (!buckets.has(start)) buckets.set(start, []);
     buckets.get(start).push(post);
@@ -357,8 +506,10 @@ function buildSitemapSet(posts, options = {}) {
 
   return {
     files,
+    duplicateCanonicals: dedupResult.canonicalMap,
     summary: {
-      totalVideos: uniquePosts.size,
+      totalVideos: activePosts.length,
+      duplicateClonesSkipped: dedupResult.skippedCount,
       eligibleVideos,
       standardOnlyVideos: missingVideoMetadata.length,
       missingVideoMetadata,
@@ -375,8 +526,9 @@ function sha256(value) {
 function validateSitemapSet(result, expectedTotal) {
   const { files, summary } = result;
   if (!files.has('sitemap_index.xml')) throw new Error('Missing sitemap_index.xml');
-  if (summary.totalVideos !== expectedTotal) {
-    throw new Error(`Video count mismatch: expected ${expectedTotal}, generated ${summary.totalVideos}`);
+  const accountedTotal = summary.totalVideos + (summary.duplicateClonesSkipped || 0);
+  if (accountedTotal !== expectedTotal) {
+    throw new Error(`Video count mismatch: expected ${expectedTotal}, generated ${accountedTotal}`);
   }
   const index = files.get('sitemap_index.xml');
   const referenced = [...index.matchAll(/<loc>https:\/\/www\.missav-j\.com\/sitemaps\/([^<]+)<\/loc>/g)]
@@ -411,7 +563,7 @@ function validateSitemapSet(result, expectedTotal) {
       videoBlocks += 1;
     }
   }
-  if (watchUrls !== expectedTotal) throw new Error(`Expected ${expectedTotal} watch URLs, found ${watchUrls}`);
+  if (watchUrls !== summary.totalVideos) throw new Error(`Expected ${summary.totalVideos} watch URLs, found ${watchUrls}`);
   if (videoBlocks !== summary.eligibleVideos) throw new Error('Video enrichment count mismatch');
   if (!summary.latest || !locations.has(escXml(summary.latest.url))) throw new Error('Latest video is missing');
 }
@@ -611,21 +763,57 @@ function appendGithubOutputs(result) {
 async function main() {
   const root = __dirname;
   const outputDir = path.join(root, 'sitemaps');
+  const taxonomiesOnly = process.argv.includes('--taxonomies-only');
   console.log('MISSAV-J deterministic video sitemap generator v4.0');
-  console.log(`Source: ${API_BASE_URL}`);
-  console.log('Cloudflare Worker requests: 0');
 
   const actors = loadJson(path.join(root, 'api', 'actors.json'));
   const categories = loadJson(path.join(root, 'api', 'categories.json'));
+
+  if (taxonomiesOnly) {
+    const taxonomyFiles = buildStaticTaxonomyFiles({ actors, categories, studios: STUDIOS });
+    for (const [name, xml] of taxonomyFiles) {
+      fs.writeFileSync(path.join(outputDir, name), xml, 'utf8');
+    }
+    console.log(`[SUCCESS] Updated ${taxonomyFiles.size} static taxonomy/page sitemaps in ${outputDir}`);
+    return { files: taxonomyFiles };
+  }
+
+  console.log(`Source: ${API_BASE_URL}`);
+  console.log('Cloudflare Worker requests: 0');
+  let preferredIds = new Set();
+  const enrichedPath = path.join(root, 'data', 'seo-enriched-posts.json');
+  if (fs.existsSync(enrichedPath)) {
+    try {
+      const enrichedDb = JSON.parse(fs.readFileSync(enrichedPath, 'utf8'));
+      for (const item of Object.values(enrichedDb?.posts || {})) {
+        if (item && item.status === 'enriched' && item.video_id) {
+          preferredIds.add(String(item.video_id));
+        }
+      }
+    } catch {}
+  }
   const fetched = await fetchAllPosts();
-  console.log(`[BUILD] Building ${fetched.total.toLocaleString('en-US')} canonical video URLs...`);
-  const result = buildSitemapSet(fetched.posts, { actors, categories, studios: STUDIOS });
+  console.log(`[BUILD] Building ${fetched.total.toLocaleString('en-US')} upstream records with clone deduplication...`);
+  const result = buildSitemapSet(fetched.posts, { actors, categories, studios: STUDIOS, preferredIds });
   validateSitemapSet(result, fetched.total);
   const changes = promoteSitemapSet(result.files, outputDir);
+  const dupMapPath = path.join(root, 'api', 'duplicate-video-canonicals.json');
+  const nextDupJson = `${JSON.stringify(result.duplicateCanonicals, null, 2)}\n`;
+  if (!fs.existsSync(dupMapPath) || fs.readFileSync(dupMapPath, 'utf8') !== nextDupJson) {
+    fs.writeFileSync(dupMapPath, nextDupJson, 'utf8');
+  }
+  try {
+    const { syncWorkerSeoData } = await import('./scripts/sync-worker-seo-data.mjs');
+    const workerSync = syncWorkerSeoData(root);
+    console.log(`[Worker Sync] Updated=${workerSync.changed} duplicates=${workerSync.duplicatesCount}`);
+  } catch (syncErr) {
+    console.warn(`[WARN] Worker sync skipped: ${syncErr.message}`);
+  }
   appendGithubOutputs(result);
 
   const publicSummary = {
     totalVideos: result.summary.totalVideos,
+    duplicateClonesSkipped: result.summary.duplicateClonesSkipped,
     eligibleVideos: result.summary.eligibleVideos,
     standardOnlyVideos: result.summary.standardOnlyVideos,
     videoFiles: result.summary.videoFiles,
@@ -643,19 +831,27 @@ async function main() {
 
 module.exports = {
   BASE_URL,
+  STUDIOS,
   VIDEO_BUCKET_SIZE,
   actorFiles,
   buildDescription,
   buildImageProxyUrl,
+  buildLocalizedPagesUrlset,
   buildSitemapSet,
+  buildStaticTaxonomyFiles,
   buildVideoSlug,
   buildVideoUrlXml,
+  deduplicateExactVideoClones,
   escXml,
+  extractCodeAndEdition,
   fetchAllPosts,
   fetchPage,
+  formatEditionVideoTitle,
   normalizeDate,
   parseDuration,
   promoteSitemapSet,
+  SITEMAP_VALID_LANGS,
+  sitemapHreflangCode,
   slugify,
   validateSitemapSet
 };

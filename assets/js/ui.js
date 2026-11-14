@@ -140,11 +140,30 @@ const ui = {
   },
 
   /**
+   * Sinkronisasi tag meta[name="robots"] di browser agar status error/empty/tipis
+   * konsisten dengan SSR untuk crawler (WRS).
+   * @param {boolean} isNoindex - True untuk noindex, follow; false untuk index, follow
+   */
+  setRobotsMeta(isNoindex) {
+    if (typeof document === 'undefined' || !document.head) return;
+    let robotsMeta = document.querySelector('meta[name="robots"]');
+    if (!robotsMeta) {
+      robotsMeta = document.createElement('meta');
+      robotsMeta.name = 'robots';
+      document.head.appendChild(robotsMeta);
+    }
+    robotsMeta.content = isNoindex
+      ? 'noindex, follow'
+      : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+  },
+
+  /**
    * Menampilkan halaman error dengan tombol "Coba Lagi" (Aman XSS)
    * @param {string} message - Deskripsi kesalahan
    * @param {HTMLElement} [container] - Container opsional
    */
   showError(message, container = null) {
+    this.setRobotsMeta(true);
     const target = container || document.getElementById('app-content');
     if (!target) return;
 
@@ -189,6 +208,7 @@ const ui = {
    * @param {HTMLElement} [container] - Container opsional
    */
   showEmpty(query, container = null) {
+    this.setRobotsMeta(true);
     const target = container || document.getElementById('app-content');
     if (!target) return;
 

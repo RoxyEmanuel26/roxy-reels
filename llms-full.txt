@@ -19,7 +19,7 @@
 All links below represent canonical landing pages optimized for indexing and retrieval:
 
 ### Core Directories
-- **Homepage (Root)**: `https://www.missav-j.com/` (Default English locale redirects to `https://www.missav-j.com/en/`)
+- **Homepage (English Default)**: `https://www.missav-j.com/en/` — Default English catalog feed (`https://www.missav-j.com/` geo-redirects to locale prefixes).
 - **Trending Feed**: `https://www.missav-j.com/en/trending` — Daily and weekly trending titles sorted by community engagement and play count.
 - **Recent Uploads**: `https://www.missav-j.com/en/recent` — Newly ingested Japanese commercial releases and digital remasters.
 - **Actress Directory (A–Z Index)**: `https://www.missav-j.com/en/actors` — Complete alphabetical directory of verified Japanese actresses with filmography counts.
@@ -67,19 +67,19 @@ All links below represent canonical landing pages optimized for indexing and ret
 - **Overview**: The undisputed flagship label of the modern commercial JAV industry. Known for ultra-high-budget productions, state-of-the-art 4K cinematography, and an exclusive roster of industry contract superstars.
 
 ### MOODYZ
-- **URL**: `https://www.missav-j.com/en/studio?name=MOODYZ`
+- **URL**: `https://www.missav-j.com/en/studio?name=Moody's`
 - **Overview**: An iconic powerhouse founded in 2000 that has shaped Japanese adult entertainment for over two decades. Renowned for creative variety, blockbuster debuts, energetic pacing, and superstar ensemble features.
 
 ### Soft On Demand (SOD Create)
-- **URL**: `https://www.missav-j.com/en/studio?name=SOD+Create`
+- **URL**: `https://www.missav-j.com/en/studio?name=SOD`
 - **Overview**: The industry's premier concept laboratory, internationally famous for interactive experiments, groundbreaking variety concepts, and documentary-style productions that push creative boundaries.
 
 ### Idea Pocket
-- **URL**: `https://www.missav-j.com/en/studio?name=Idea+Pocket`
+- **URL**: `https://www.missav-j.com/en/studio?name=IdeaPocket`
 - **Overview**: Celebrated as the gold standard for romantic aesthetics, artistic lighting, and elegant visual composition designed to showcase radiant performers in cinematic beauty.
 
 ### Prestige
-- **URL**: `https://www.missav-j.com/en/studio?name=Prestige`
+- **URL**: `https://www.missav-j.com/en/studio?name=PRESTIGE`
 - **Overview**: A dynamic, style-forward powerhouse recognized for talent discovery, chic urban aesthetics, and polished commercial presentations across celebrated sub-labels.
 
 ---

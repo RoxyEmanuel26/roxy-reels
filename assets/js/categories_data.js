@@ -1,6 +1,6 @@
 /**
  * MISSAV-J — Auto-generated Categories list
- * Contains all 499 categories fetched from apijav server.
+ * Contains 479 active categories verified against apijav server.
  */
 
 export const ALL_CATEGORIES = [
@@ -63,12 +63,6 @@ export const ALL_CATEGORIES = [
     "slug": "4k",
     "icon": "📺",
     "key": "category_4k"
-  },
-  {
-    "name": "69",
-    "slug": "69",
-    "icon": "📁",
-    "key": "category_69"
   },
   {
     "name": "8Kvr",
@@ -341,12 +335,6 @@ export const ALL_CATEGORIES = [
     "key": "category_beauty_salon_and_massage"
   },
   {
-    "name": "Being Cheated On / Acts Of Being Cheated On",
-    "slug": "being-cheated-on-acts-of-being-cheated-on",
-    "icon": "📁",
-    "key": "category_being_cheated_on_acts_of_being_cheated_on"
-  },
-  {
     "name": "Best",
     "slug": "best",
     "icon": "📁",
@@ -435,12 +423,6 @@ export const ALL_CATEGORIES = [
     "slug": "blonde",
     "icon": "📁",
     "key": "category_blonde"
-  },
-  {
-    "name": "Blonde / Blonde",
-    "slug": "blonde-blonde",
-    "icon": "📁",
-    "key": "category_blonde_blonde"
   },
   {
     "name": "Bloomers",
@@ -761,12 +743,6 @@ export const ALL_CATEGORIES = [
     "key": "category_cuckold"
   },
   {
-    "name": "Cuckolding / Being Cuckolded",
-    "slug": "cuckolding-being-cuckolded",
-    "icon": "📁",
-    "key": "category_cuckolding_being_cuckolded"
-  },
-  {
     "name": "Cum In Mouth",
     "slug": "cum-in-mouth",
     "icon": "📁",
@@ -875,18 +851,6 @@ export const ALL_CATEGORIES = [
     "key": "category_distribution_only"
   },
   {
-    "name": "Dm150/en/fc2",
-    "slug": "dm150-en-fc2",
-    "icon": "📁",
-    "key": "category_dm150_en_fc2"
-  },
-  {
-    "name": "Dm29/en/xxxav",
-    "slug": "dm29-en-xxxav",
-    "icon": "📁",
-    "key": "category_dm29_en_xxxav"
-  },
-  {
     "name": "Documentary",
     "slug": "documentary",
     "icon": "📁",
@@ -957,66 +921,6 @@ export const ALL_CATEGORIES = [
     "slug": "emmanuel",
     "icon": "📁",
     "key": "category_emmanuel"
-  },
-  {
-    "name": "En/caribbeancom",
-    "slug": "en-caribbeancom",
-    "icon": "📁",
-    "key": "category_en_caribbeancom"
-  },
-  {
-    "name": "En/english subtitle",
-    "slug": "en-english-subtitle",
-    "icon": "💬",
-    "key": "category_en_english_subtitle"
-  },
-  {
-    "name": "En/fc2",
-    "slug": "en-fc2",
-    "icon": "📁",
-    "key": "category_en_fc2"
-  },
-  {
-    "name": "En/madou",
-    "slug": "en-madou",
-    "icon": "📁",
-    "key": "category_en_madou"
-  },
-  {
-    "name": "En/marriedslash",
-    "slug": "en-marriedslash",
-    "icon": "📁",
-    "key": "category_en_marriedslash"
-  },
-  {
-    "name": "En/naughty0930",
-    "slug": "en-naughty0930",
-    "icon": "📁",
-    "key": "category_en_naughty0930"
-  },
-  {
-    "name": "En/naughty4610",
-    "slug": "en-naughty4610",
-    "icon": "📁",
-    "key": "category_en_naughty4610"
-  },
-  {
-    "name": "En/tokyohot",
-    "slug": "en-tokyohot",
-    "icon": "📁",
-    "key": "category_en_tokyohot"
-  },
-  {
-    "name": "En/uncensored leak",
-    "slug": "en-uncensored-leak",
-    "icon": "🔓",
-    "key": "category_en_uncensored_leak"
-  },
-  {
-    "name": "En/xxxav",
-    "slug": "en-xxxav",
-    "icon": "📁",
-    "key": "category_en_xxxav"
   },
   {
     "name": "Enema",
@@ -1637,12 +1541,6 @@ export const ALL_CATEGORIES = [
     "key": "category_kimono"
   },
   {
-    "name": "Kimono / Yukata",
-    "slug": "kimono-yukata",
-    "icon": "👘",
-    "key": "category_kimono_yukata"
-  },
-  {
     "name": "Kimono And Yukata",
     "slug": "kimono-and-yukata",
     "icon": "👘",
@@ -1857,12 +1755,6 @@ export const ALL_CATEGORIES = [
     "slug": "mature-woman",
     "icon": "👩",
     "key": "category_mature_woman"
-  },
-  {
-    "name": "Mature Women / Married Women",
-    "slug": "mature-women-married-women",
-    "icon": "📁",
-    "key": "category_mature_women_married_women"
   },
   {
     "name": "Micro",
@@ -2157,12 +2049,6 @@ export const ALL_CATEGORIES = [
     "slug": "piledriver",
     "icon": "📁",
     "key": "category_piledriver"
-  },
-  {
-    "name": "Pissing / Incontinence",
-    "slug": "pissing-incontinence",
-    "icon": "📁",
-    "key": "category_pissing_incontinence"
   },
   {
     "name": "Planning",
@@ -2859,12 +2745,6 @@ export const ALL_CATEGORIES = [
     "slug": "urinate",
     "icon": "📁",
     "key": "category_urinate"
-  },
-  {
-    "name": "Urination / Incontinence",
-    "slug": "urination-incontinence",
-    "icon": "💦",
-    "key": "category_urination_incontinence"
   },
   {
     "name": "Uterus",

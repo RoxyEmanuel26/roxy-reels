@@ -5,11 +5,11 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.97';
-import ui from './ui.js?v=2.8.97';
-import filter from './filter.js?v=2.8.97';
-import i18n from './i18n.js?v=2.8.97';
-import { getHubContent } from './hub-content.js?v=2.8.97';
+import api from './api.js?v=2.8.102';
+import ui from './ui.js?v=2.8.102';
+import filter from './filter.js?v=2.8.102';
+import i18n from './i18n.js?v=2.8.102';
+import { getHubContent } from './hub-content.js?v=2.8.102';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -179,8 +179,9 @@ export function renderVideoCard(post, index = 0) {
   const durationBadge = safeDuration ? `<span class="card-duration">${safeDuration}</span>` : '';
 
   // Format Studio link
+  const canonicalStudio = resolveStudioAlias(post.studio || '');
   const studioMarkup = safeStudio 
-    ? `<span class="card-studio" data-studio="${encodeURIComponent(post.studio || '')}">` + safeStudio + `</span>`
+    ? `<span class="card-studio" data-studio="${encodeURIComponent(canonicalStudio)}">` + safeStudio + `</span>`
     : `<span class="card-studio text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
 
   // Format views
@@ -199,7 +200,7 @@ export function renderVideoCard(post, index = 0) {
   const fetchPriority = index === 0 ? 'fetchpriority="high"' : '';
 
   return `
-    <article class="video-card fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+    <article class="video-card fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-en-slug="${ui.escapeHTML(post.en_slug || post.localized_slugs?.en || post.slug || '')}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
       <div class="card-thumb">
         <img 
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
@@ -412,6 +413,62 @@ export async function init(filters = {}) {
   bindHoverPreviews(grid);
 }
 
+const STUDIO_ALIASES = {
+  's1 no.1 style': 'S1',
+  'soft on demand': 'SOD',
+  'sod create': 'SOD',
+  'idea pocket': 'IdeaPocket',
+  'moodyz': "Moody's",
+  'prestige': 'PRESTIGE',
+  'kawaii*': 'kawaii',
+  'unknown studio': 'Other'
+};
+
+export function resolveStudioAlias(name) {
+  if (!name) return name;
+  const trimmed = String(name).trim();
+  return STUDIO_ALIASES[trimmed.toLowerCase()] || trimmed;
+}
+
+function slugifyTaxonomyParam(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function renderUniqueFeedBatch(posts) {
+  const uniquePosts = posts.filter(p => {
+    const code = (p.code || '').trim().toUpperCase();
+    if (code && seenCodes.has(code)) return false;
+    const title = (p.title || '').trim().toLowerCase();
+    if (title && seenTitles.has(title)) return false;
+    if (code) seenCodes.add(code);
+    if (title) seenTitles.add(title);
+    return true;
+  });
+
+  let cardsHtml = '';
+  uniquePosts.forEach((post, idx) => {
+    totalRenderedVideos++;
+    cardsHtml += renderVideoCard(post, idx);
+  });
+  return cardsHtml;
+}
+
+function syncFeedRobotsMeta(data, filters) {
+  const pageNum = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10);
+  const totalCount = Number(data?.total || 0);
+  const isThinTaxonomy = (
+    Boolean(filters.actor) ||
+    Boolean(filters.tag) ||
+    Boolean(filters.category)
+  ) && totalCount > 0 && totalCount < 2;
+  const isNonIndexable = pageNum > 1 || Boolean(filters.search) || filters.studio === 'Other' || isThinTaxonomy;
+  ui.setRobotsMeta(isNonIndexable);
+}
+
 /**
  * Fetch and render listings from API endpoints
  * @param {boolean} isInitial - Overwrites existing grid list markup if true
@@ -431,6 +488,10 @@ async function fetchAndRenderFeed(isInitial = false) {
       currentPage = fetchPage;
     }
     usedPages.add(fetchPage);
+
+    if (currentFilters.studio) {
+      currentFilters.studio = resolveStudioAlias(currentFilters.studio);
+    }
 
     const requestedFilters = { ...currentFilters };
     const requestedPage = fetchPage;
@@ -468,52 +529,51 @@ async function fetchAndRenderFeed(isInitial = false) {
     }
 
     if (data.posts.length === 0 && isInitial) {
-      // Smart Name-Swap Retry: If an actor search returned 0 results and the name
-      // has 2+ words, automatically retry with the words reversed (handles
-      // Japanese name order "Kano Yura" vs Western order "Yura Kano").
+      let retryData = null;
+      let retryLabel = '';
+
+      // Smart Name-Swap Retry for actor Japanese/Western word order
       if (currentFilters.actor) {
         const nameParts = currentFilters.actor.trim().split(/\s+/);
         if (nameParts.length >= 2) {
           const swappedName = nameParts.reverse().join(' ');
           console.log(`[Feed] Actor "${currentFilters.actor}" returned 0 results, retrying with swapped name: "${swappedName}"`);
-          const retryData = await api.getPosts({ page: currentPage, ...currentFilters, actor: swappedName });
-
-          if (retryData.posts.length > 0) {
-            // Success! Update filters and UI to reflect the corrected name
+          const candidate = await api.getPosts({ page: currentPage, ...currentFilters, actor: swappedName });
+          if (candidate.posts.length > 0) {
             currentFilters.actor = swappedName;
-            totalPages = retryData.totalPages;
-            hasMore = currentPage < totalPages;
-
-            // Update banner title to show the corrected name
-            const bannerTitle = document.querySelector('.taxonomy-banner .banner-title');
-            if (bannerTitle) bannerTitle.textContent = swappedName;
-
-            if (totalCountEl) {
-              totalCountEl.textContent = i18n.t('video_available', { total: retryData.total.toLocaleString(i18n.getLang()) });
-            }
-            if (pageTrackEl) {
-              pageTrackEl.textContent = i18n.t('page_format', { current: currentPage, total: totalPages });
-            }
-
-            const uniqueRetryPosts = retryData.posts.filter(p => {
-              const code = (p.code || '').trim().toUpperCase();
-              if (code && seenCodes.has(code)) return false;
-              const title = (p.title || '').trim().toLowerCase();
-              if (title && seenTitles.has(title)) return false;
-              if (code) seenCodes.add(code);
-              if (title) seenTitles.add(title);
-              return true;
-            });
-
-            let cardsHtml = '';
-            uniqueRetryPosts.forEach((post, idx) => {
-              totalRenderedVideos++;
-              cardsHtml += renderVideoCard(post, idx);
-            });
-            grid.innerHTML = cardsHtml;
-            return;
+            retryData = candidate;
+            retryLabel = swappedName;
           }
         }
+      }
+
+      // Slugified Tag Retry: upstream WordPress tag filter expects lowercase hyphenated slugs
+      if (!retryData && currentFilters.tag) {
+        const tagSlug = slugifyTaxonomyParam(currentFilters.tag);
+        if (tagSlug && tagSlug !== currentFilters.tag) {
+          const candidate = await api.getPosts({ page: currentPage, ...currentFilters, tag: tagSlug });
+          if (candidate.posts.length > 0) {
+            currentFilters.tag = tagSlug;
+            retryData = candidate;
+            retryLabel = currentFilters.tag;
+          }
+        }
+      }
+
+      if (retryData && retryData.posts.length > 0) {
+        totalPages = retryData.totalPages;
+        hasMore = currentPage < totalPages;
+        const bannerTitle = document.querySelector('.taxonomy-banner .banner-title');
+        if (bannerTitle && retryLabel) bannerTitle.textContent = retryLabel;
+        if (totalCountEl) {
+          totalCountEl.textContent = i18n.t('video_available', { total: retryData.total.toLocaleString(i18n.getLang()) });
+        }
+        if (pageTrackEl) {
+          pageTrackEl.textContent = i18n.t('page_format', { current: currentPage, total: totalPages });
+        }
+        syncFeedRobotsMeta(retryData, currentFilters);
+        grid.innerHTML = renderUniqueFeedBatch(retryData.posts);
+        return;
       }
 
       const querySearch = currentFilters.search || '';
@@ -522,22 +582,11 @@ async function fetchAndRenderFeed(isInitial = false) {
       return;
     }
 
-    // Deduplikasi posts berdasarkan JAV code dan Title unik
-    const uniquePosts = data.posts.filter(p => {
-      const code = (p.code || '').trim().toUpperCase();
-      if (code && seenCodes.has(code)) return false;
-      const title = (p.title || '').trim().toLowerCase();
-      if (title && seenTitles.has(title)) return false;
-      if (code) seenCodes.add(code);
-      if (title) seenTitles.add(title);
-      return true;
-    });
+    if (isInitial) {
+      syncFeedRobotsMeta(data, currentFilters);
+    }
 
-    let cardsHtml = '';
-    uniquePosts.forEach((post, idx) => {
-      totalRenderedVideos++;
-      cardsHtml += renderVideoCard(post, idx);
-    });
+    const cardsHtml = renderUniqueFeedBatch(data.posts);
 
     if (isInitial) {
       grid.innerHTML = cardsHtml;
@@ -550,6 +599,7 @@ async function fetchAndRenderFeed(isInitial = false) {
     const grid = document.getElementById('video-grid');
     if (!grid) return;
     if (isInitial) {
+      ui.setRobotsMeta(true);
       hasMore = false;
       const maintTitle = i18n.t('maintenance_title') || 'Server Maintenance';
       const maintDesc = i18n.t('maintenance_desc') || 'We are currently upgrading our core video servers to provide you with a faster and better experience.<br>Please check back again in a few hours.';
@@ -680,7 +730,8 @@ function bindGridClicks(grid) {
       const postId = card.dataset.id;
       const code = card.dataset.code || '';
       const title = card.dataset.title || '';
-      window.missavJNavigateToWatch(postId, code, title);
+      const enSlug = card.dataset.enSlug || '';
+      window.missavJNavigateToWatch(postId, code, title, enSlug);
     }
   });
 }

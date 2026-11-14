@@ -5,13 +5,13 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=--help';
-import ui from './ui.js?v=--help';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=--help';
-import i18n from './i18n.js?v=--help';
-import ReferralSystem from './referral.js?v=--help';
-import { Analytics } from './analytics.js?v=--help';
-import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=--help';
+import api from './api.js?v=2.8.102';
+import ui from './ui.js?v=2.8.102';
+import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.102';
+import i18n from './i18n.js?v=2.8.102';
+import ReferralSystem from './referral.js?v=2.8.102';
+import { Analytics } from './analytics.js?v=2.8.102';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.102';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -26,6 +26,10 @@ const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.
 
 
 
+function isCrawlerUserAgent() {
+  return /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent);
+}
+
 /**
  * Mengekstrak src dari HTML iframe mentah dan membangun iframe baru dengan sandboxing ketat (Mitigasi XSS)
  */
@@ -35,13 +39,19 @@ function getSecureIframeMarkup(iframeHtml) {
   // Clean up ampersands inside the src attribute of the iframe safely to prevent token errors
   let cleanedHtml = iframeHtml
     .replace(/&#038;/g, '&')
-    .replace(/&amp;/g, '&');
+    .replace(/&amp;/g, '&')
+    .replace(/\s+loading=["'][^"']*["']/gi, '');
+
+  // Guarantee explicit intrinsic dimensions before applying responsive CSS sizing
+  if (!/\swidth\s*=/i.test(cleanedHtml)) {
+    cleanedHtml = cleanedHtml.replace('<iframe', '<iframe width="800" height="450"');
+  }
   
   // Force 100% width and height style on the iframe for fully responsive presentation inside containers
   if (cleanedHtml.includes('style=')) {
-    cleanedHtml = cleanedHtml.replace(/style=["']([^"']+)["']/i, 'style="width: 100%; height: 100%; display: block;"');
+    cleanedHtml = cleanedHtml.replace(/style=["']([^"']+)["']/i, 'style="width: 100%; height: 100%; display: block; border: none;"');
   } else {
-    cleanedHtml = cleanedHtml.replace('<iframe', '<iframe style="width: 100%; height: 100%; display: block;"');
+    cleanedHtml = cleanedHtml.replace('<iframe', '<iframe style="width: 100%; height: 100%; display: block; border: none;"');
   }
 
   // Ensure full permissions for autoplay, picture-in-picture, fullscreen, etc., are explicitly allowed
@@ -177,16 +187,22 @@ export async function init(id) {
 
   try {
     let post;
-    const isCurrentlyPlaying = window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(id);
+    const isBot = isCrawlerUserAgent();
+    const isCurrentlyPlaying = !isBot && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(id);
 
-    // Make sure global player wrapper has correct classes and is shown
+    // Keep global floating player hidden for bots so its mode-theater overlay never occludes the inline bot iframe.
     const floatWrapper = document.getElementById('floating-player-wrapper');
     if (floatWrapper) {
-      floatWrapper.classList.remove('hidden');
-      floatWrapper.classList.remove('mode-floating');
-      floatWrapper.classList.add('mode-theater');
-      alignGlobalPlayerWithPlaceholder();
-      setupPlaceholderObserver();
+      if (isBot) {
+        floatWrapper.classList.add('hidden');
+        floatWrapper.classList.remove('mode-theater', 'mode-floating');
+      } else {
+        floatWrapper.classList.remove('hidden');
+        floatWrapper.classList.remove('mode-floating');
+        floatWrapper.classList.add('mode-theater');
+        alignGlobalPlayerWithPlaceholder();
+        setupPlaceholderObserver();
+      }
     }
 
     if (isCurrentlyPlaying) {
@@ -225,7 +241,7 @@ export async function init(id) {
         // Jika post gagal, coba tunggu player info (mungkin server sedang lelah)
         const p = await playerPromise;
         if (!p) throw new Error(i18n.t('error_failed_fetch_video_player'));
-        post = { id, title: 'Video Stream', views: 0, thumbnail: '', iframe_html: p.iframe_html };
+        post = { id, title: 'Video Stream', views: 0, thumbnail: '', iframe_html: p.iframe_html, _isSeoFallback: true };
       } else {
         post = fetchedPost;
       }
@@ -241,13 +257,9 @@ export async function init(id) {
       
       window.missavJState.activeVideo = post;
       
-      // Inject secure custom poster markup into the global player container
+      // Inject secure custom poster markup into the global player container (or directly inline for bots)
       const playerContainer = document.getElementById('player-container');
-      if (playerContainer) {
-        
-        // Deteksi apakah pengakses adalah bot pencari (seperti Googlebot)
-        const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent);
-        
+      if (playerContainer || isBot) {
         let isVideoLoading = false;
         const loadRealVideo = async (playBtn = null) => {
           if (isVideoLoading) return;
@@ -273,7 +285,16 @@ export async function init(id) {
              return;
           }
 
-          const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
+          const rawFallbackEmbed = (post.embed_url || `https://server.apijav.com/?mvapm_embed=${encodeURIComponent(id)}`)
+            .replace(/&#038;/g, '&')
+            .replace(/&amp;/g, '&')
+            .trim();
+          const safeFallbackEmbed = /^https?:\/\//i.test(rawFallbackEmbed)
+            ? rawFallbackEmbed.replace(/^http:\/\//i, 'https://')
+            : `https://server.apijav.com/?mvapm_embed=${encodeURIComponent(id)}`;
+          const iframeMarkup = (player && player.iframe_html)
+            || post.iframe_html
+            || `<iframe src="${ui.escapeHTML(safeFallbackEmbed)}" title="${ui.escapeHTML(post.title || 'Video Player')}"></iframe>`;
           
           if (!iframeMarkup) {
             if (playBtn) {
@@ -281,18 +302,25 @@ export async function init(id) {
                playBtn.style.pointerEvents = 'auto';
             }
             isVideoLoading = false;
-            ui.showError(i18n.t('error_failed_fetch_video_player'), playerContainer);
+            if (playerContainer) {
+              ui.showError(i18n.t('error_failed_fetch_video_player'), playerContainer);
+            }
             return;
           }
 
           if (isBot) {
             const inlinePlaceholder = document.querySelector('.player-container-placeholder');
             if (inlinePlaceholder) {
+              if (floatWrapper) {
+                floatWrapper.classList.add('hidden');
+                floatWrapper.classList.remove('mode-theater', 'mode-floating');
+              }
               inlinePlaceholder.innerHTML = getSecureIframeMarkup(iframeMarkup);
               return;
             }
           }
-          
+
+          if (!playerContainer) return;
           playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
           
           // Hide the watch page loader shimmer when iframe is loaded
@@ -374,6 +402,7 @@ export async function init(id) {
 
   } catch (error) {
     console.error('Failed to load player page:', error);
+    ui.setRobotsMeta(true);
     ui.showError(i18n.t('error_load_watch_page', { message: error.message }));
   }
 }
@@ -469,16 +498,18 @@ export function renderPostMeta(post, id) {
   }
 
   if (studioWrapper) {
+    const lang = i18n.getLang() || 'en';
     if (post.studio) {
       const safeStudio = ui.escapeHTML(post.studio);
+      const canonicalStudio = resolveStudioAlias(post.studio) || post.studio;
       studioWrapper.innerHTML = `
-        <a href="#/studio?name=${encodeURIComponent(safeStudio)}" class="studio-link-badge">
+        <a href="/${lang}/studio?name=${encodeURIComponent(canonicalStudio)}" class="studio-link-badge">
           🎬 ${safeStudio}
         </a>
       `;
     } else {
       studioWrapper.innerHTML = `
-        <a href="#/studio?name=Other" class="studio-link-badge text-muted">
+        <a href="/${lang}/studio?name=Other" class="studio-link-badge text-muted">
           🎬 ${i18n.t('unknown_studio')}
         </a>
       `;
@@ -935,7 +966,7 @@ function renderRelatedRowCard(post, index) {
   const animationStyle = `style="animation-delay: calc(${index} * 40ms);"`;
 
   return `
-    <div class="related-video-card fadeInUp" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" ${animationStyle}>
+    <div class="related-video-card fadeInUp" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" data-en-slug="${ui.escapeHTML(post.en_slug || post.localized_slugs?.en || post.slug || '')}" ${animationStyle}>
       <div class="related-thumb">
         <img 
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
@@ -972,7 +1003,8 @@ function bindRelatedClicks(list) {
       const postId = card.dataset.id;
       const code = card.dataset.code || '';
       const title = card.dataset.title || '';
-      window.missavJNavigateToWatch(postId, code, title);
+      const enSlug = card.dataset.enSlug || '';
+      window.missavJNavigateToWatch(postId, code, title, enSlug);
     }
   });
 }

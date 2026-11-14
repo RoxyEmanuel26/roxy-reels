@@ -333,6 +333,9 @@ export async function onRequest(context) {
         translations = {};
       }
 
+      // Preserve original English title/slug before translating post.title for Telegram caption
+      const originalEnTitle = post.title || '';
+
       // Translate title dynamically from Supabase translation record if non-English
       if (lang && lang !== 'en' && translations[lang]) {
         post.title = translations[lang];
@@ -378,19 +381,20 @@ ${loc.tagline}
 
 ${hashtags.join(' ')}`;
 
-      // Construct watch link using clean routing structure and active language
-      let slug = '';
-      if (post.localized_slugs && post.localized_slugs[lang]) {
-        slug = post.localized_slugs[lang];
-      } else if (post.code && post.title) {
-        const cleanCode = post.code.toLowerCase().trim().replace(/[\s\-_]+/g, '-').replace(/[^a-z0-9\-]/g, '');
-        const cleanTitle = post.title.toLowerCase().trim().replace(/[\s\-_]+/g, '-').replace(/[^a-z0-9\-]/g, '');
-        slug = `${cleanCode}-${cleanTitle}`;
+      // Construct watch link using canonical English slug + active language prefix
+      const slugifyWatch = v => String(v || '').toLowerCase().trim()
+        .replace(/[\s_]+/g, '-')
+        .replace(/[^\p{L}\p{N}-]/gu, '')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const cleanCode = slugifyWatch(post.code || '');
+      let slugBase = slugifyWatch(post.en_slug || post.localized_slugs?.en || post.slug || originalEnTitle) || 'video';
+      if (cleanCode && slugBase !== cleanCode && !slugBase.startsWith(`${cleanCode}-`)) {
+        slugBase = `${cleanCode}-${slugBase}`;
       }
-      
-      const watchUrl = slug 
-        ? `${baseUrl}/${lang}/watch/${slug}-${id}`
-        : `${baseUrl}/${lang}/watch/${id}`;
+      const slug = slugBase.slice(0, 100).replace(/-+$/g, '') || 'video';
+
+      const watchUrl = `${baseUrl}/${lang}/watch/${encodeURIComponent(`${slug}-${id}`)}`;
 
       // Send to Telegram using sendPhoto endpoint
       let telegramSuccess = false;

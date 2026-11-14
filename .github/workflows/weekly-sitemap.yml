@@ -38,6 +38,9 @@ jobs:
       - name: Run unit & SEO tests
         run: node --test tests/worker-efficiency.test.mjs tests/sitemap-generator.test.mjs
 
+      - name: Sync curated actors and categories
+        run: node scripts/sync-taxonomies.mjs || echo "Taxonomy sync completed with soft fallback"
+
       - name: Generate deterministic sitemap set
         id: generate
         run: node generate_sitemap.js
@@ -76,7 +79,7 @@ jobs:
         id: changes
         shell: bash
         run: |
-          if git diff --quiet -- sitemaps data/seo-enriched-posts.json data/twitter-history.json; then
+          if git diff --quiet -- sitemaps api functions/[[catchall]].js data/seo-enriched-posts.json data/twitter-history.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Sitemap, enriched data, and Twitter history are already current."
           else
@@ -89,7 +92,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- sitemaps data/seo-enriched-posts.json data/twitter-history.json
+          git add -- sitemaps api functions/[[catchall]].js data/seo-enriched-posts.json data/twitter-history.json
           git commit -m "chore(catalog): daily sitemap, AI SEO & Twitter update $(date -u +%F)"
           git push origin HEAD:main
 

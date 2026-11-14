@@ -59,13 +59,32 @@ async function assertPublicResource(url, expectedType) {
   return body.toString('utf8');
 }
 
+async function assertNoRedirectHtml(url) {
+  const response = await fetch(url, {
+    headers: { 'User-Agent': googlebot, 'Accept': 'text/html,*/*' },
+    redirect: 'manual',
+    signal: AbortSignal.timeout(30_000)
+  });
+  if (response.status >= 300 && response.status < 400) {
+    throw new Error(`${url} unexpectedly redirected (${response.status} -> ${response.headers.get('location')})`);
+  }
+  if (!response.ok) {
+    throw new Error(`${url} returned HTTP ${response.status}`);
+  }
+  return response.text();
+}
+
 await waitForDeployment();
 const robots = await assertPublicResource(`${baseUrl}/robots.txt`, 'text/plain');
 if (!robots.includes(`${baseUrl}/sitemaps/sitemap_index.xml`)) throw new Error('robots.txt lacks the sitemap index');
 const alias = await assertPublicResource(`${baseUrl}/sitemap.xml`, 'xml');
 if (!alias.includes('<sitemapindex')) throw new Error('/sitemap.xml is not a sitemap index');
 await assertPublicResource(`${baseUrl}/sitemaps/${latestFile}`, 'xml');
-const watchHtml = await assertPublicResource(latestUrl, 'text/html');
+const watchHtml = await assertNoRedirectHtml(latestUrl);
+await assertNoRedirectHtml(`${baseUrl}/en/`);
+await assertNoRedirectHtml(`${baseUrl}/en/privacy-policy`);
+await assertNoRedirectHtml(`${baseUrl}/en/studios`);
+await assertNoRedirectHtml(`${baseUrl}/en/studio?name=Moody's`);
 if (!/rel=["']canonical["']/i.test(watchHtml)) throw new Error('Watch page lacks canonical metadata');
 if (!/hreflang=["']en["']/i.test(watchHtml)) throw new Error('Watch page lacks hreflang metadata');
 if (!/["']@type["']\s*:\s*["']VideoObject["']/i.test(watchHtml)) throw new Error('Watch page lacks VideoObject JSON-LD');

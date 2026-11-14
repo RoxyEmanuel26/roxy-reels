@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=--help';
+import ui from './ui.js?v=2.8.102';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -564,6 +564,203 @@ const DICTIONARY = {
   },
   category_not_found_desc: {
     en: 'No results for "{query}"', id: 'Tidak ada hasil untuk "{query}"', 'zh-TW': '沒有"{query}"的結果', 'zh-CN': '没有"{query}"的结果', ja: '「{query}」の結果はありません', ko: '"{query}" 검색 결과가 없습니다', ms: 'Tiada hasil untuk "{query}"', th: 'ไม่มีผลลัพธ์สำหรับ "{query}"', de: 'Keine Ergebnisse für „{query}"', fr: 'Aucun résultat pour « {query} »', vi: 'Không có kết quả cho "{query}"', fil: 'Walang resulta para sa "{query}"', pt: 'Nenhum resultado para "{query}"'
+  },
+
+  // SEO Meta Titles, Descriptions & Watch Prefixes (matching functions/[[catchall]].js SEO_I18N)
+  meta_home_title: {
+    en: 'MISSAV-J | Premium JAV Streaming',
+    id: 'MISSAV-J | Streaming JAV Premium',
+    'zh-TW': 'MISSAV-J | 高級 JAV 串流',
+    'zh-CN': 'MISSAV-J | 高级 JAV 流媒体',
+    ja: 'MISSAV-J | プレミアムJAVストリーミング',
+    ko: 'MISSAV-J | 프리미엄 JAV 스트리밍',
+    ms: 'MISSAV-J | Penstriman JAV Premium',
+    th: 'MISSAV-J | สตรีมมิ่ง JAV พรีเมียม',
+    de: 'MISSAV-J | Premium JAV Streaming',
+    fr: 'MISSAV-J | Streaming JAV Premium',
+    vi: 'MISSAV-J | Truyền phát JAV Cao cấp',
+    fil: 'MISSAV-J | Premium JAV Streaming',
+    pt: 'MISSAV-J | Streaming JAV Premium'
+  },
+  meta_home_desc: {
+    en: 'Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses.',
+    id: 'Tonton video JAV premium terbaik. Jelajahi rilis terbaru, video trending, dan aktris top.',
+    'zh-TW': '觀看最好的高級 JAV 串流。探索最新發布、熱門影片和頂級女優。',
+    'zh-CN': '观看最好的高级 JAV 流媒体。探索最新发布、热门视频和顶级女优。',
+    ja: '最高のプレミアムJAVストリーミングを視聴。最新リリース、トレンド動画、人気女優を探索。',
+    ko: '최고의 프리미엄 JAV 스트리밍을 시청하세요. 최신 릴리스, 인기 동영상 및 최고 여배우를 탐색하십시오.',
+    ms: 'Tonton penstriman JAV premium terbaik. Terokai keluaran terkini, video trending dan pelakon popular.',
+    th: 'ดูการสตรีม JAV พรีเมียมที่ดีที่สุด สำรวจการเปิดตัวล่าสุด วิดีโอยอดนิยม และนักแสดงหญิงชั้นนำ',
+    de: 'Sehen Sie sich die besten Premium-JAV-Streams an. Entdecken Sie die neuesten Veröffentlichungen, Trendvideos und Top-Schauspielerinnen.',
+    fr: 'Regardez le meilleur streaming JAV premium. Découvrez les dernières sorties, les vidéos tendance et les meilleures actrices.',
+    vi: 'Xem truyền phát JAV cao cấp tốt nhất. Khám phá các bản phát hành mới nhất, video thịnh hành và các nữ diễn viên hàng đầu.',
+    fil: 'Panoorin ang pinakamahusay na premium JAV streaming. Tuklasin ang mga pinakabagong release, trending videos, at top actresses.',
+    pt: 'Assista ao melhor streaming JAV premium. Explore os lançamentos mais recentes, vídeos em alta e as melhores atrizes.'
+  },
+  meta_trending_desc: {
+    en: 'Watch the most popular and trending JAV videos right now on MISSAV-J.',
+    id: 'Tonton video JAV paling populer dan trending saat ini di MISSAV-J.',
+    'zh-TW': '在 MISSAV-J 上觀看目前最受歡迎和熱門的 JAV 影片。',
+    'zh-CN': '在 MISSAV-J 上观看目前最受欢迎和热门的 JAV 视频。',
+    ja: 'MISSAV-Jで今最も人気のあるトレンドJAV動画を視聴。',
+    ko: 'MISSAV-J에서 지금 가장 인기 있고 트렌디한 JAV 동영상을 시청하세요.',
+    ms: 'Tonton video JAV paling popular dan trending sekarang di MISSAV-J.',
+    th: 'ดูวิดีโอ JAV ที่ได้รับความนิยมและเป็นกระแสที่สุดตอนนี้บน MISSAV-J',
+    de: 'Sehen Sie sich jetzt die beliebtesten und angesagtesten JAV-Videos auf MISSAV-J an.',
+    fr: 'Regardez les vidéos JAV les plus populaires en ce moment sur MISSAV-J.',
+    vi: 'Xem các video JAV phổ biến và thịnh hành nhất ngay bây giờ trên MISSAV-J.',
+    fil: 'Panoorin ang pinakasikat at trending na JAV videos ngayon sa MISSAV-J.',
+    pt: 'Assista aos vídeos JAV mais populares e em alta no momento no MISSAV-J.'
+  },
+  meta_recent_desc: {
+    en: 'Watch the newest and latest JAV video releases on MISSAV-J.',
+    id: 'Tonton rilis video JAV terbaru dan teranyar di MISSAV-J.',
+    'zh-TW': '在 MISSAV-J 上觀看最新的 JAV 影片發布。',
+    'zh-CN': '在 MISSAV-J 上观看最新的 JAV 视频发布。',
+    ja: 'MISSAV-Jで最新のJAV動画リリースを視聴。',
+    ko: 'MISSAV-J에서 최신 JAV 동영상 릴리스를 시청하세요.',
+    ms: 'Tonton keluaran video JAV terkini di MISSAV-J.',
+    th: 'ดูวิดีโอ JAV ล่าสุดที่เพิ่งเปิดตัวบน MISSAV-J',
+    de: 'Sehen Sie sich die neuesten JAV-Video-Veröffentlichungen auf MISSAV-J an.',
+    fr: 'Regardez les dernières sorties de vidéos JAV sur MISSAV-J.',
+    vi: 'Xem các bản phát hành video JAV mới nhất trên MISSAV-J.',
+    fil: 'Panoorin ang mga pinakabagong release ng JAV video sa MISSAV-J.',
+    pt: 'Assista aos lançamentos de vídeos JAV mais recentes no MISSAV-J.'
+  },
+  meta_actors_desc: {
+    en: 'Browse our complete database of JAV actresses and their full video collections.',
+    id: 'Jelajahi basis data lengkap aktris JAV kami dan koleksi video mereka.',
+    'zh-TW': '瀏覽我們完整的 JAV 女優數據庫和她們的影片收藏。',
+    'zh-CN': '浏览我们完整的 JAV 女优数据库和她们的视频收藏。',
+    ja: 'JAV女優の完全なデータベースとフルビデオコレクションを閲覧。',
+    ko: '우리의 완전한 JAV 여배우 데이터베이스를 찾아보십시오.',
+    ms: 'Semak imbas pangkalan data lengkap pelakon JAV kami.',
+    th: 'เรียกดูฐานข้อมูลนักแสดงหญิง JAV ที่สมบูรณ์ของเรา',
+    de: 'Durchsuchen Sie unsere komplette Datenbank von JAV-Schauspielerinnen.',
+    fr: 'Parcourez notre base de données complète d\'actrices JAV.',
+    vi: 'Duyệt qua cơ sở dữ liệu hoàn chỉnh của chúng tôi về các nữ diễn viên JAV.',
+    fil: 'I-browse ang aming kumpletong database ng mga JAV actresses.',
+    pt: 'Navegue pelo nosso banco de dados completo de atrizes JAV.'
+  },
+  meta_categories_desc: {
+    en: 'Explore all JAV categories, genres, and tags on MISSAV-J.',
+    id: 'Jelajahi semua kategori, genre, dan tag JAV di MISSAV-J.',
+    'zh-TW': '探索 MISSAV-J 上的所有 JAV 分類、流派和標籤。',
+    'zh-CN': '探索 MISSAV-J 上的所有 JAV 分类、流派和标签。',
+    ja: 'MISSAV-JですべてのJAVカテゴリー、ジャンル、タグを探索。',
+    ko: 'MISSAV-J에서 모든 JAV 카테고리를 탐색하십시오.',
+    ms: 'Terokai semua kategori, genre dan tag JAV di MISSAV-J.',
+    th: 'สำรวจหมวดหมู่และแนวเพลง JAV ทั้งหมดบน MISSAV-J',
+    de: 'Entdecken Sie alle JAV-Kategorien und Genres auf MISSAV-J.',
+    fr: 'Découvrez toutes les catégories et genres JAV sur MISSAV-J.',
+    vi: 'Khám phá tất cả các danh mục và thể loại JAV trên MISSAV-J.',
+    fil: 'Galugarin ang lahat ng JAV categories at genres sa MISSAV-J.',
+    pt: 'Explore todas as categorias e gêneros JAV no MISSAV-J.'
+  },
+  meta_studios_desc: {
+    en: 'Browse videos from top JAV studios and production companies on MISSAV-J.',
+    id: 'Jelajahi video dari studio dan perusahaan produksi JAV teratas di MISSAV-J.',
+    'zh-TW': '瀏覽 MISSAV-J 上頂級 JAV 片商的影片。',
+    'zh-CN': '浏览 MISSAV-J 上顶级 JAV 片商的视频。',
+    ja: 'MISSAV-JでトップJAVメーカーや制作会社の動画を閲覧。',
+    ko: 'MISSAV-J에서 인기 JAV 스튜디오의 동영상을 찾아보십시오.',
+    ms: 'Semak imbas video dari studio JAV teratas di MISSAV-J.',
+    th: 'เรียกดูวิดีโอจากสตูดิโอ JAV ชั้นนำบน MISSAV-J',
+    de: 'Durchsuchen Sie Videos von den besten JAV-Studios auf MISSAV-J.',
+    fr: 'Parcourez les vidéos des meilleurs studios JAV sur MISSAV-J.',
+    vi: 'Duyệt video từ các studio JAV hàng đầu trên MISSAV-J.',
+    fil: 'Mag-browse ng mga video mula sa nangungunang JAV studios sa MISSAV-J.',
+    pt: 'Navegue por vídeos dos principais estúdios JAV no MISSAV-J.'
+  },
+  meta_search_desc: {
+    en: 'Search results for premium JAV videos on MISSAV-J.',
+    id: 'Hasil pencarian untuk video JAV premium di MISSAV-J.',
+    'zh-TW': 'MISSAV-J 上高級 JAV 影片的搜索結果。',
+    'zh-CN': 'MISSAV-J 上高级 JAV 视频的搜索结果。',
+    ja: 'MISSAV-JのプレミアムJAV動画の検索結果。',
+    ko: 'MISSAV-J의 프리미엄 JAV 동영상 검색 결과.',
+    ms: 'Hasil carian untuk video JAV premium di MISSAV-J.',
+    th: 'ผลการค้นหาสำหรับวิดีโอ JAV พรีเมียมบน MISSAV-J',
+    de: 'Suchergebnisse für Premium-JAV-Videos auf MISSAV-J.',
+    fr: 'Résultats de recherche pour les vidéos JAV premium sur MISSAV-J.',
+    vi: 'Kết quả tìm kiếm cho các video JAV cao cấp trên MISSAV-J.',
+    fil: 'Mga resulta ng paghahanap para sa premium JAV videos sa MISSAV-J.',
+    pt: 'Resultados da pesquisa por vídeos JAV premium no MISSAV-J.'
+  },
+  meta_actor_detail_desc: {
+    en: 'Watch JAV videos starring {name} in premium HD on MISSAV-J. Explore the full filmography and profile.',
+    id: 'Tonton video JAV dari {name} dalam kualitas HD premium di MISSAV-J. Jelajahi profil lengkapnya.',
+    'zh-TW': '在 MISSAV-J 上以高級 HD 觀看由 {name} 主演的 JAV 影片。探索完整的影片庫。',
+    'zh-CN': '在 MISSAV-J 上以高级 HD 观看由 {name} 主演的 JAV 视频。探索完整的影片库。',
+    ja: 'MISSAV-Jで {name} 出演のJAV動画をプレミアムHDで視聴。完全なプロフィールを探索。',
+    ko: 'MISSAV-J에서 {name} 출연 JAV 동영상을 프리미엄 HD로 시청하세요.',
+    ms: 'Tonton video JAV yang dibintangi {name} dalam HD premium di MISSAV-J.',
+    th: 'ดูวิดีโอ JAV ที่นำแสดงโดย {name} ในรูปแบบ HD พรีเมียมบน MISSAV-J',
+    de: 'Sehen Sie sich JAV-Videos mit {name} in Premium-HD auf MISSAV-J an.',
+    fr: 'Regardez des vidéos JAV avec {name} en HD premium sur MISSAV-J.',
+    vi: 'Xem video JAV có sự tham gia của {name} với chất lượng HD cao cấp trên MISSAV-J.',
+    fil: 'Panoorin ang mga JAV video na pinagbibidahan ni {name} sa premium HD sa MISSAV-J.',
+    pt: 'Assista a vídeos JAV com {name} em HD premium no MISSAV-J.'
+  },
+  meta_category_detail_desc: {
+    en: 'Watch the latest and best {name} JAV videos online for free. Premium high-quality streaming on MISSAV-J.',
+    id: 'Tonton video JAV {name} terbaru dan terbaik secara online. Streaming kualitas tinggi premium di MISSAV-J.',
+    'zh-TW': '在線免費觀看最新最好的 {name} JAV 影片。MISSAV-J 提供高級高品質串流。',
+    'zh-CN': '在线免费观看最新最好的 {name} JAV 视频。MISSAV-J 提供高级高质量流媒体。',
+    ja: '最新かつ最高の {name} JAV動画をオンラインで無料視聴。MISSAV-Jでのプレミアム高品質ストリーミング。',
+    ko: '온라인에서 최신 및 최고의 {name} JAV 동영상을 무료로 시청하세요.',
+    ms: 'Tonton video JAV {name} terkini dan terbaik dalam talian secara percuma.',
+    th: 'ดูวิดีโอ JAV {name} ล่าสุดและดีที่สุดออนไลน์ฟรี',
+    de: 'Sehen Sie sich die neuesten und besten {name} JAV-Videos online kostenlos an.',
+    fr: 'Regardez les dernières et les meilleures vidéos JAV {name} en ligne gratuitement.',
+    vi: 'Xem video JAV {name} mới nhất và tốt nhất trực tuyến miễn phí.',
+    fil: 'Panoorin ang pinakabago at pinakamahusay na {name} JAV videos online nang libre.',
+    pt: 'Assista aos melhores e mais recentes vídeos JAV {name} online gratuitamente.'
+  },
+  meta_studio_detail_desc: {
+    en: 'Explore the official collection of {name} JAV videos. High definition streaming for {name} releases.',
+    id: 'Jelajahi koleksi resmi video JAV {name}. Streaming definisi tinggi untuk rilis {name}.',
+    'zh-TW': '探索官方的 {name} JAV 影片收藏。MISSAV-J 提供高畫質串流。',
+    'zh-CN': '探索官方的 {name} JAV 视频收藏。MISSAV-J 提供高清流媒体。',
+    ja: '公式の {name} JAV動画コレクションを探索。{name} リリースの高解像度ストリーミング。',
+    ko: '공식 {name} JAV 동영상 컬렉션을 탐색하십시오.',
+    ms: 'Terokai koleksi rasmi video JAV {name} di MISSAV-J.',
+    th: 'สำรวจคอลเลกชันอย่างเป็นทางการของวิดีโอ JAV {name} บน MISSAV-J',
+    de: 'Entdecken Sie die offizielle Sammlung von {name} JAV-Videos auf MISSAV-J.',
+    fr: 'Découvrez la collection officielle de vidéos JAV {name} sur MISSAV-J.',
+    vi: 'Khám phá bộ sưu tập chính thức của các video JAV {name} trên MISSAV-J.',
+    fil: 'Galugarin ang opisyal na koleksyon ng mga {name} JAV videos sa MISSAV-J.',
+    pt: 'Explore a coleção oficial de vídeos JAV {name} no MISSAV-J.'
+  },
+  meta_tag_detail_desc: {
+    en: 'Browse videos tagged "{name}" in HD on MISSAV-J.',
+    id: 'Jelajahi video dengan tag "{name}" dalam kualitas HD di MISSAV-J.',
+    'zh-TW': '在 MISSAV-J 上以 HD 瀏覽標記為「{name}」的影片。',
+    'zh-CN': '在 MISSAV-J 上以 HD 浏览标记为“{name}”的视频。',
+    ja: 'MISSAV-Jで「{name}」タグの動画をHDで視聴。',
+    ko: 'MISSAV-J에서 "{name}" 태그가 지정된 동영상을 HD로 시청하세요.',
+    ms: 'Layari video bertag "{name}" dalam HD di MISSAV-J.',
+    th: 'เรียกดูวิดีโอที่มีแท็ก "{name}" ในระดับ HD บน MISSAV-J',
+    de: 'Durchsuchen Sie Videos mit dem Tag "{name}" in HD auf MISSAV-J.',
+    fr: 'Parcourez les vidéos marquées « {name} » en HD sur MISSAV-J.',
+    vi: 'Xem các video có gắn thẻ "{name}" chất lượng HD trên MISSAV-J.',
+    fil: 'Mag-browse ng mga video na may tag na "{name}" sa HD sa MISSAV-J.',
+    pt: 'Navegue pelos vídeos com a tag "{name}" em HD no MISSAV-J.'
+  },
+  meta_watch_prefix: {
+    en: 'Watch',
+    id: 'Tonton',
+    'zh-TW': '觀看',
+    'zh-CN': '观看',
+    ja: '視聴',
+    ko: '시청',
+    ms: 'Tonton',
+    th: 'ดู',
+    de: 'Ansehen',
+    fr: 'Regarder',
+    vi: 'Xem',
+    fil: 'Panoorin',
+    pt: 'Assistir'
   }
 };
 

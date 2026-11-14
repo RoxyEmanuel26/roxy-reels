@@ -46,6 +46,33 @@ async function fetchWithTimeout(url, options = {}, timeout = 15000) {
   }
 }
 
+async function fetchJsonWithRetry(url, label, buildHttpError = null) {
+  let lastError;
+  const MAX_ATTEMPTS = 2;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url);
+      if (!res.ok) {
+        const msg = buildHttpError ? buildHttpError(res) : `API Error ${res.status}: ${res.statusText}`;
+        const responseError = new Error(msg);
+        responseError.status = res.status;
+        throw responseError;
+      }
+      const data = await res.json();
+      return { res, data };
+    } catch (err) {
+      lastError = err;
+      console.warn(`[API ${label}] Attempt ${attempt}/${MAX_ATTEMPTS} failed:`, err.message);
+      const isRetryable = err.name === 'TimeoutError' || [502, 503, 504].includes(err.status);
+      if (!isRetryable || attempt >= MAX_ATTEMPTS) {
+        throw err;
+      }
+      await new Promise(resolve => setTimeout(resolve, 750));
+    }
+  }
+  throw lastError;
+}
+
 const api = {
   /**
    * Mengambil daftar video (feed & listing) dengan query parameters.
@@ -78,56 +105,31 @@ const api = {
       }
       
       const fetchPromise = (async () => {
-        let lastError;
-        const MAX_ATTEMPTS = 2;
-        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-          try {
-            const res = await fetchWithTimeout(url);
-            
-            if (!res.ok) {
-              const responseError = new Error(`API Error ${res.status}: ${res.statusText}`);
-              responseError.status = res.status;
-              throw responseError;
-            }
-            
-            const posts = await res.json();
-            
-            const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
-            const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
-            
-            const result = {
-              posts: Array.isArray(posts) ? posts : (posts.posts || []),
-              total: total || (posts.total ? parseInt(posts.total, 10) : 0),
-              totalPages: totalPages || (posts.totalPages ? parseInt(posts.totalPages, 10) : 1)
-            };
-            
-            // Populate individual post cache for instant navigation!
-            if (result.posts && result.posts.length > 0) {
-              result.posts.forEach(p => {
-                if (p && p.id) {
-                  setCache(`post:${p.id}:${lang}`, p);
-                }
-              });
-            }
-            
-            setCache(url, result);
-            fetchPromises.delete(url);
-            return result;
-          } catch (err) {
-            lastError = err;
-            console.warn(`[API getPosts] Attempt ${attempt}/${MAX_ATTEMPTS} failed:`, err.message);
-            const isRetryable = err.name === 'TimeoutError' || [502, 503, 504].includes(err.status);
-            if (!isRetryable) {
-              fetchPromises.delete(url);
-              throw err;
-            }
-            if (attempt < MAX_ATTEMPTS) {
-              await new Promise(resolve => setTimeout(resolve, 750));
-            }
+        try {
+          const { res, data: posts } = await fetchJsonWithRetry(url, 'getPosts');
+          const total = parseInt(res.headers.get('X-WP-Total') || '0', 10);
+          const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+
+          const result = {
+            posts: Array.isArray(posts) ? posts : (posts.posts || []),
+            total: total || (posts.total ? parseInt(posts.total, 10) : 0),
+            totalPages: totalPages || (posts.totalPages ? parseInt(posts.totalPages, 10) : 1)
+          };
+
+          // Populate individual post cache for instant navigation!
+          if (result.posts && result.posts.length > 0) {
+            result.posts.forEach(p => {
+              if (p && p.id) {
+                setCache(`post:${p.id}:${lang}`, p);
+              }
+            });
           }
+
+          setCache(url, result);
+          return result;
+        } finally {
+          fetchPromises.delete(url);
         }
-        fetchPromises.delete(url);
-        throw lastError;
       })();
       
       fetchPromises.set(url, fetchPromise);
@@ -166,16 +168,17 @@ const api = {
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithTimeout(url);
-        
-        if (!res.ok) {
-          throw new Error(`Post dengan ID ${id} tidak ditemukan (${res.status})`);
+        try {
+          const { data: post } = await fetchJsonWithRetry(
+            url,
+            `getPost ${id}`,
+            res => `Post dengan ID ${id} tidak ditemukan (${res.status})`
+          );
+          setCache(cacheKey, post);
+          return post;
+        } finally {
+          fetchPromises.delete(cacheKey);
         }
-        
-        const post = await res.json();
-        setCache(cacheKey, post);
-        fetchPromises.delete(cacheKey);
-        return post;
       })();
       
       fetchPromises.set(cacheKey, fetchPromise);
@@ -207,16 +210,17 @@ const api = {
       }
       
       const fetchPromise = (async () => {
-        const res = await fetchWithTimeout(url);
-        
-        if (!res.ok) {
-          throw new Error(`Player untuk ID ${id} gagal dimuat (${res.status})`);
+        try {
+          const { data: player } = await fetchJsonWithRetry(
+            url,
+            `getPlayer ${id}`,
+            res => `Player untuk ID ${id} gagal dimuat (${res.status})`
+          );
+          setCache(cacheKey, player);
+          return player;
+        } finally {
+          fetchPromises.delete(cacheKey);
         }
-        
-        const player = await res.json();
-        setCache(cacheKey, player);
-        fetchPromises.delete(cacheKey);
-        return player;
       })();
       
       fetchPromises.set(cacheKey, fetchPromise);

@@ -22,6 +22,7 @@ class AnalyticsManager {
    * @param {string} measurementId - GA4 Measurement ID (G-XXXXXXXXXX)
    */
   init(measurementId) {
+    if (this._initialized) return;
     const id = measurementId || GA4_MEASUREMENT_ID;
     if (!id) {
       console.warn('[Analytics] GA4 Measurement ID not configured.');

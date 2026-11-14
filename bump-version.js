@@ -4,7 +4,7 @@ const path = require('path');
 // Ambil versi baru dari argumen terminal (contoh: node bump-version.js 2.0.2)
 const newVersion = process.argv[2];
 
-if (!newVersion) {
+if (!newVersion || !/^\d+\.\d+\.\d+$/.test(newVersion)) {
   console.error('❌ Harap masukkan versi baru. Contoh: node bump-version.js 2.0.2');
   process.exit(1);
 }
@@ -43,7 +43,7 @@ filesToUpdate.forEach(filePath => {
     
     // 1. Ganti semua parameter URL (misal: ?v=2.0.1 menjadi ?v=2.0.2)
     // Regex: mencari pola ?v=angka.angka.angka
-    let newContent = content.replace(/\?v=\d+\.\d+\.\d+/g, `?v=${newVersion}`);
+    let newContent = content.replace(/\?v=[A-Za-z0-9._-]+/g, `?v=${newVersion}`);
     
     // 2. Khusus untuk sw.js, ganti nama CACHE_NAME
     // Regex: mencari pola CACHE_NAME = 'missavj-cache-v...'

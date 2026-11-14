@@ -4,24 +4,25 @@
  * dan perutean dinamis ke feed video berbasis API.
  */
 
-import ui from './ui.js?v=2.8.97';
-import i18n from './i18n.js?v=2.8.97';
+import ui from './ui.js?v=2.8.102';
+import i18n from './i18n.js?v=2.8.102';
 
-// Daftar Studio JAV terkemuka terkurasi dengan nama singkatan/logo visual
+// Daftar Studio JAV terkemuka terkurasi (disesuaikan dengan nama studio aktif pada upstream API)
 const POPULAR_STUDIOS = [
-  { name: 'S1 NO.1 STYLE', label: 'S1' },
-  { name: 'MOODYZ', label: 'MOODYZ' },
-  { name: 'PRESTIGE', label: 'PRESTIGE' },
-  { name: 'Soft On Demand', label: 'SOD' },
-  { name: 'Idea Pocket', label: 'I.P.' },
-  { name: 'FALENO', label: 'FALENO' },
-  { name: 'MUTEKI', label: 'MUTEKI' },
-  { name: 'Fitch', label: 'FITCH' },
-  { name: 'OPPAL', label: 'OPPAL' },
-  { name: 'Kawaii*', label: 'KAWAII*' },
-  { name: 'KMP', label: 'KMP' },
+  { name: 'S1', label: 'S1' },
+  { name: 'Madonna', label: 'MADONNA' },
+  { name: "Moody's", label: 'MOODYZ' },
+  { name: 'SOD', label: 'SOD' },
   { name: 'Attackers', label: 'ATTACK' },
+  { name: 'IdeaPocket', label: 'I.P.' },
+  { name: 'Fitch', label: 'FITCH' },
+  { name: 'FALENO', label: 'FALENO' },
   { name: 'Premium', label: 'PREMIUM' },
+  { name: 'kawaii', label: 'KAWAII*' },
+  { name: 'Wanz Factory', label: 'WANZ' },
+  { name: 'E-BODY', label: 'E-BODY' },
+  { name: 'PRESTIGE', label: 'PRESTIGE' },
+  { name: 'FALENO TUBE', label: 'FALENO TUBE' },
   { name: 'Other', label: 'OTHER' }
 ];
 

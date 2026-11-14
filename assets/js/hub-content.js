@@ -119,11 +119,20 @@ export const HUB_DESCRIPTIONS = {
   }
 };
 
+const HUB_KEY_ALIASES = {
+  's1-no-1-style': 's1',
+  'moody-s': 'moodyz',
+  'sod': 'sod-create',
+  'soft-on-demand': 'sod-create',
+  'ideapocket': 'idea-pocket'
+};
+
 /**
  * Normalizes category or studio key to lookup in hub registry
  */
 export function getHubContent(type, name) {
   if (!name) return null;
-  const key = String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const rawKey = String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const key = HUB_KEY_ALIASES[rawKey] || rawKey;
   return HUB_DESCRIPTIONS[key] || null;
 }

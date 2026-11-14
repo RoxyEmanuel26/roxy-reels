@@ -5,8 +5,7 @@
 For full platform context, complete studio archives, and detailed genre taxonomies, see [llms-full.txt](https://www.missav-j.com/llms-full.txt).
 
 ## Core Canonical Directory
-- Homepage: https://www.missav-j.com/
-- English Feed: https://www.missav-j.com/en/
+- Homepage: https://www.missav-j.com/en/
 - Trending Releases: https://www.missav-j.com/en/trending
 - Recent Uploads: https://www.missav-j.com/en/recent
 - Actress Directory: https://www.missav-j.com/en/actors
@@ -24,16 +23,16 @@ For full platform context, complete studio archives, and detailed genre taxonomi
 
 ## Premier Production Studios
 - S1 No.1 Style: https://www.missav-j.com/en/studio?name=S1
-- MOODYZ: https://www.missav-j.com/en/studio?name=MOODYZ
-- Soft On Demand (SOD Create): https://www.missav-j.com/en/studio?name=SOD+Create
-- Idea Pocket: https://www.missav-j.com/en/studio?name=Idea+Pocket
-- Prestige: https://www.missav-j.com/en/studio?name=Prestige
+- MOODYZ: https://www.missav-j.com/en/studio?name=Moody's
+- Soft On Demand (SOD Create): https://www.missav-j.com/en/studio?name=SOD
+- Idea Pocket: https://www.missav-j.com/en/studio?name=IdeaPocket
+- Prestige: https://www.missav-j.com/en/studio?name=PRESTIGE
 
 ## Legal Compliance & Machine Interfaces
 - DMCA Compliance: https://www.missav-j.com/en/dmca
 - 18 U.S.C. 2257 Record-Keeping Notice: https://www.missav-j.com/en/2257
 - Terms of Service: https://www.missav-j.com/en/terms
-- Privacy Policy: https://www.missav-j.com/en/privacy
+- Privacy Policy: https://www.missav-j.com/en/privacy-policy
 - Primary XML Sitemap: https://www.missav-j.com/sitemap_index.xml
 - IndexNow Verification: https://www.missav-j.com/a1be0a661f577bbd2c3eb82350a10d97.txt
 

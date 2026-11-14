@@ -5,7 +5,7 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
-const POSTS_CACHE_VERSION = 'v2.8.97';
+const POSTS_CACHE_VERSION = 'v2.8.102';
 const LIST_FRESH_TTL_SECONDS = 15 * 60;
 const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
 const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -18,6 +18,29 @@ const VALID_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr',
 const LANG_BY_LOWER = new Map(VALID_LANGS.map(lang => [lang.toLowerCase(), lang]));
 const FILTER_PARAMS = new Set(['actor', 'studio', 'category', 'tag', 'search']);
 const ORDER_BY_VALUES = new Set(['date', 'modified', 'likes', 'views']);
+const STUDIO_ALIASES = {
+  's1 no.1 style': 'S1',
+  'soft on demand': 'SOD',
+  'sod create': 'SOD',
+  'idea pocket': 'IdeaPocket',
+  'moodyz': "Moody's",
+  'kawaii*': 'kawaii',
+  'unknown studio': 'Other'
+};
+
+function resolveStudioAlias(value) {
+  if (!value) return value;
+  const trimmed = String(value).trim();
+  return STUDIO_ALIASES[trimmed.toLowerCase()] || trimmed;
+}
+
+function slugifyTaxonomyTag(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
 
 function normalizeRequest(request, routeId) {
   const source = new URL(request.url);
@@ -90,7 +113,7 @@ function slugify(text) {
     .replace(/-+$/, '');
 }
 
-function generateLocalizedSlugs(code, title, translations, sourceSlug = '') {
+function generateLocalizedSlugs(code, title, _translations, sourceSlug = '') {
   const supportedLangs = ['zh-TW', 'zh-CN', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
   const cleanCode = slugify(code || '');
   const withCode = value => {
@@ -100,11 +123,25 @@ function generateLocalizedSlugs(code, title, translations, sourceSlug = '') {
   };
   const enSlug = withCode(sourceSlug || title);
 
+  // Every language route shares the canonical English slug (differing only by
+  // /<lang>/ prefix) so non-ASCII translated slugs can never compete in GSC.
   const slugs = { en: enSlug };
   supportedLangs.forEach(lang => {
-    slugs[lang] = translations[lang] ? withCode(translations[lang]) : enSlug;
+    slugs[lang] = enSlug;
   });
   return slugs;
+}
+
+const VALID_HREFLANG_ORDER = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
+
+function getAvailableWatchHreflangs(targetLang, translations) {
+  if (!translations || typeof translations !== 'object') {
+    return (!targetLang || targetLang === 'en') ? ['en'] : [];
+  }
+  if (targetLang && targetLang !== 'en' && !translations[targetLang]) {
+    return [];
+  }
+  return VALID_HREFLANG_ORDER.filter(code => code === 'en' || Boolean(translations[code]));
 }
 
 async function getTranslationFromDb(id, supabaseUrl, supabaseKey) {
@@ -197,7 +234,8 @@ async function translateTitle(title, lang) {
       if (res.ok) {
         const data = await res.json();
         if (data && data[0]) {
-          return data[0].map(segment => segment[0]).join('').trim();
+          const translated = data[0].map(segment => segment[0]).join('').trim();
+          if (translated) return translated;
         }
       }
     } catch (e) {
@@ -205,7 +243,7 @@ async function translateTitle(title, lang) {
       console.error(`Google Translate error via ${domain}:`, e);
     }
   }
-  return title;
+  return '';
 }
 
 async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey, eagerTranslateAll = false) {
@@ -222,8 +260,11 @@ async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey, ea
   // Eager translation ke 12 bahasa dihapus karena Google Translate 
   // memblokir IP Cloudflare, menyebabkan loop gagal yang memakan CPU.
   if (targetLang && targetLang !== 'en' && !translations[targetLang]) {
-    translations[targetLang] = await translateTitle(post.title, targetLang);
-    needsSave = true;
+    const translated = await translateTitle(post.title, targetLang);
+    if (translated && translated !== String(post.title || '').trim()) {
+      translations[targetLang] = translated;
+      needsSave = true;
+    }
   }
 
   if (needsSave && Object.keys(translations).length > 0) {
@@ -233,12 +274,123 @@ async function getOrTranslatePost(post, targetLang, supabaseUrl, supabaseKey, ea
   return translations;
 }
 
+const STALE_BACKUP_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Determine whether an upstream HTTP status or thrown error warrants a transient retry.
+ */
+function isRetryableStatus(status) {
+  return status === 429 || status >= 500;
+}
+
+/**
+ * Perform an HTTP GET expecting JSON with bounded timeout and 1 transient retry.
+ */
+async function fetchUpstreamJsonWithRetry(targetUrl, requestHeaders, {
+  timeoutMs = 10000,
+  retryTimeoutMs = 8000,
+  retryDelayMs = 150,
+  expectArray = false
+} = {}) {
+  const attempts = [timeoutMs, retryTimeoutMs];
+  let lastError = null;
+
+  for (let i = 0; i < attempts.length; i++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), attempts[i]);
+    try {
+      const response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: requestHeaders,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const status = response.status;
+        const statusText = response.statusText;
+        try { await response.body?.cancel?.(); } catch {}
+        if (isRetryableStatus(status) && i + 1 < attempts.length) {
+          await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+          continue;
+        }
+        return { ok: false, timedOut: false, status, statusText };
+      }
+
+      const data = await response.json();
+      if (expectArray && !Array.isArray(data)) {
+        throw new Error('Unexpected non-array list payload from upstream');
+      }
+      return {
+        ok: true,
+        status: response.status,
+        data,
+        total: response.headers.get('X-WP-Total'),
+        totalPages: response.headers.get('X-WP-TotalPages')
+      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = err;
+      const isAbort = err?.name === 'AbortError';
+      if (i + 1 < attempts.length) {
+        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        continue;
+      }
+      return {
+        ok: false,
+        timedOut: isAbort,
+        status: isAbort ? 504 : 502,
+        statusText: err?.message || 'Upstream fetch error'
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    timedOut: false,
+    status: 502,
+    statusText: lastError?.message || 'Upstream fetch error'
+  };
+}
+
+/**
+ * Build a stale backup cache key scoped away from the fresh cache key.
+ */
+function buildStaleCacheKey(freshCacheKey) {
+  if (!freshCacheKey) return null;
+  const staleUrl = new URL(freshCacheKey.url);
+  staleUrl.searchParams.set('__stale_backup', '1');
+  return new Request(staleUrl.toString(), { method: 'GET' });
+}
+
+/**
+ * Read a stale cached JSON response when live upstream attempts fail.
+ */
+async function readStaleResponse(cache, staleCacheKey, corsHeaders) {
+  if (!cache || !staleCacheKey) return null;
+  try {
+    const stale = await cache.match(staleCacheKey);
+    if (!stale || !stale.ok) return null;
+    const headers = new Headers(stale.headers);
+    for (const [k, v] of Object.entries(corsHeaders)) headers.set(k, v);
+    headers.set('Cache-Control', 'public, max-age=60, s-maxage=120');
+    headers.set('Warning', '110 - "Response is Stale"');
+    headers.set('X-Data-Freshness', 'stale');
+    headers.set('X-Cache-Status', 'STALE');
+    headers.set('X-Edge-Mode', 'API-POSTS');
+    return new Response(stale.body, { status: 200, headers });
+  } catch (err) {
+    console.warn('[Stale Posts Cache Read Error]', err);
+    return null;
+  }
+}
+
 export async function onRequest(context) {
   const { request, env, params } = context;
   
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-API-Key, X-Client-Site',
   };
 
@@ -246,7 +398,9 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const isGet = request.method === 'GET';
+  try {
+  const isHead = request.method === 'HEAD';
+  const isRead = request.method === 'GET' || isHead;
   const routeId = params.id && params.id.length > 0 ? params.id[0] : null;
   const normalized = normalizeRequest(request, routeId);
   if (normalized.error) {
@@ -264,10 +418,11 @@ export async function onRequest(context) {
   const requestUrl = normalized.url;
   const requestedId = normalized.id;
   const cacheTtl = getCacheTtl(requestUrl, requestedId);
-  const cacheKey = isGet ? normalized.cacheKey : null;
+  const cacheKey = isRead ? normalized.cacheKey : null;
+  const staleCacheKey = (isRead && !requestUrl.searchParams.has('search')) ? buildStaleCacheKey(cacheKey) : null;
   let cache = null;
   let cachedResponse = null;
-  if (isGet) {
+  if (isRead) {
     try {
       cache = caches.default;
       cachedResponse = await cache.match(cacheKey);
@@ -292,11 +447,22 @@ export async function onRequest(context) {
       targetUrl = new URL(`${TARGET_BASE}/posts`);
     }
 
-    const isOtherStudio = url.searchParams.get('studio') === 'Other' || url.searchParams.get('studio') === 'Unknown Studio';
+    const rawStudio = url.searchParams.get('studio');
+    const resolvedStudio = rawStudio ? resolveStudioAlias(rawStudio) : '';
+    const isOtherStudio = resolvedStudio === 'Other';
 
     url.searchParams.forEach((value, key) => {
       if (key === 'id' || key === 'lang') return;
-      if (isOtherStudio && key === 'studio') return;
+      if (key === 'studio') {
+        if (!isOtherStudio && resolvedStudio) {
+          targetUrl.searchParams.append('studio', resolvedStudio);
+        }
+        return;
+      }
+      if (key === 'tag') {
+        targetUrl.searchParams.append('tag', slugifyTaxonomyTag(value) || value);
+        return;
+      }
       targetUrl.searchParams.append(key, value);
     });
 
@@ -304,7 +470,15 @@ export async function onRequest(context) {
     let total = null;
     let totalPages = null;
 
-    const clientSite = request.headers.get('x-client-site') || 'https://www.missav-j.com';
+    const clientIp = request.headers.get('cf-connecting-ip') || '';
+    const upstreamHeaders = {
+      'Accept': 'application/json',
+      'X-Client-Site': 'https://www.missav-j.com',
+      'Referer': 'https://www.missav-j.com/',
+      'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'X-Forwarded-For': clientIp,
+      'CF-Connecting-IP': clientIp
+    };
 
     if (isOtherStudio) {
       const requestedPage = parseInt(url.searchParams.get('page') || '1', 10) || 1;
@@ -312,91 +486,63 @@ export async function onRequest(context) {
       const pageUrl = new URL(targetUrl.toString());
       pageUrl.searchParams.set('per_page', '100');
       pageUrl.searchParams.set('page', String(requestedPage));
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 14000);
-
-      let response;
-      try {
-        response = await fetch(pageUrl.toString(), {
-          method: 'GET',
+      const upstreamRes = await fetchUpstreamJsonWithRetry(pageUrl.toString(), upstreamHeaders, { expectArray: true });
+      if (!upstreamRes.ok) {
+        console.error(`Failed to fetch page ${requestedPage} for Other Studio:`, upstreamRes.status, upstreamRes.statusText);
+        const staleResp = await readStaleResponse(cache, staleCacheKey, corsHeaders);
+        if (staleResp) return staleResp;
+        return new Response(JSON.stringify({
+          error: upstreamRes.timedOut ? 'Gateway Timeout' : 'WordPress REST API Error',
+          message: upstreamRes.statusText
+        }), {
+          status: upstreamRes.status || 503,
           headers: {
-            'Accept': 'application/json',
-            'X-Client-Site': 'https://www.missav-j.com',
-            'Referer': 'https://www.missav-j.com/',
-            'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'X-Forwarded-For': request.headers.get('cf-connecting-ip') || '',
-            'CF-Connecting-IP': request.headers.get('cf-connecting-ip') || ''
-          },
-          signal: controller.signal
+            ...corsHeaders,
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store'
+          }
         });
-        clearTimeout(timeoutId);
-      } catch (err) {
-        clearTimeout(timeoutId);
-        console.error(`Failed to fetch page ${requestedPage} for Other Studio:`, err);
-        response = null;
       }
 
-      const allPosts = response && response.ok ? await response.json() : [];
+      const allPosts = Array.isArray(upstreamRes.data) ? upstreamRes.data : [];
       data = allPosts
         .filter(post => post && post.id && !post.studio)
         .slice(0, requestedPerPage);
       total = '120';
       totalPages = '10';
     } else {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 14000);
-
-      let response;
-      try {
-        response = await fetch(targetUrl.toString(), {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'X-Client-Site': 'https://www.missav-j.com',
-            'Referer': 'https://www.missav-j.com/',
-            'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'X-Forwarded-For': request.headers.get('cf-connecting-ip') || '',
-            'CF-Connecting-IP': request.headers.get('cf-connecting-ip') || ''
-          },
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-      } catch (err) {
-        clearTimeout(timeoutId);
+      const upstreamRes = await fetchUpstreamJsonWithRetry(targetUrl.toString(), upstreamHeaders, { expectArray: !id });
+      if (!upstreamRes.ok) {
+        if (upstreamRes.timedOut || isRetryableStatus(upstreamRes.status)) {
+          const staleResp = await readStaleResponse(cache, staleCacheKey, corsHeaders);
+          if (staleResp) return staleResp;
+        }
         return new Response(JSON.stringify({
-          error: 'Gateway Timeout',
-          message: 'Upstream API server did not respond in time.'
+          error: upstreamRes.timedOut ? 'Gateway Timeout' : 'WordPress REST API Error',
+          message: upstreamRes.statusText
         }), {
-          status: 504,
+          status: upstreamRes.timedOut ? 504 : (upstreamRes.status || 502),
           headers: {
             ...corsHeaders,
-            'Content-Type': 'application/json; charset=utf-8'
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store',
+            ...(isRetryableStatus(upstreamRes.status) || upstreamRes.timedOut ? { 'Retry-After': '60' } : {})
           }
         });
       }
 
-      if (!response.ok) {
-        return new Response(JSON.stringify({
-          error: 'WordPress REST API Error',
-          message: response.statusText
-        }), {
-          status: response.status,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json; charset=utf-8'
-          }
-        });
-      }
-
-      data = await response.json();
-      total = response.headers.get('X-WP-Total');
-      totalPages = response.headers.get('X-WP-TotalPages');
+      data = upstreamRes.data;
+      total = upstreamRes.total;
+      totalPages = upstreamRes.totalPages;
     }
 
     if (data) {
       if (id && !Array.isArray(data) && lang === 'en') {
         data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {}, data.slug);
+        data.en_slug = data.localized_slugs.en;
       } else if (id && !Array.isArray(data)) {
+        // Preserve canonical English title/slug before overwriting data.title for display
+        const originalEnTitle = data.title;
         // Single post: apply translation with a strict 5-second timeout cap
         const translationTimeout = new Promise(resolve => setTimeout(() => resolve(null), 5000));
         const translationResult = await Promise.race([
@@ -407,28 +553,37 @@ export async function onRequest(context) {
           if (lang && lang !== 'en' && translationResult[lang]) {
             data.title = translationResult[lang];
           }
-          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, translationResult, data.slug);
+          data.localized_slugs = generateLocalizedSlugs(data.code, originalEnTitle, translationResult, data.slug);
+          data.en_slug = data.localized_slugs.en;
+          data.available_hreflangs = getAvailableWatchHreflangs(lang, translationResult);
         } else {
-          // Timeout — return with English title, generate slugs from English title
-          data.localized_slugs = generateLocalizedSlugs(data.code, data.title, {}, data.slug);
+          // Timeout — keep canonical English slug and avoid advertising untranslated hreflangs
+          data.localized_slugs = generateLocalizedSlugs(data.code, originalEnTitle, {}, data.slug);
+          data.en_slug = data.localized_slugs.en;
+          data.available_hreflangs = [];
         }
       } else if (Array.isArray(data) && lang === 'en') {
         data.forEach(post => {
           post.localized_slugs = generateLocalizedSlugs(post.code, post.title, {}, post.slug);
+          post.en_slug = post.localized_slugs.en;
         });
       } else if (Array.isArray(data)) {
         // LIST: Only apply CACHED translations (fast Supabase lookup, max 6s timeout)
         // Never block the response for real-time translation of new posts.
         // Background translation will populate the cache for subsequent requests.
-        const ids = data.map(p => p.id);
+        const ids = data.filter(p => p && p.id).map(p => p.id);
         const translationsMap = await getBatchTranslationsFromDb(ids, SUPABASE_URL, SUPABASE_KEY).catch(() => ({}));
         
         data.forEach(post => {
+          if (!post) return;
+          const originalEnTitle = post.title;
           const translations = translationsMap[post.id] || {};
           if (lang && lang !== 'en' && translations[lang]) {
             post.title = translations[lang];
           }
-          post.localized_slugs = generateLocalizedSlugs(post.code, post.title, translations, post.slug);
+          post.localized_slugs = generateLocalizedSlugs(post.code, originalEnTitle, translations, post.slug);
+          post.en_slug = post.localized_slugs.en;
+          post.available_hreflangs = getAvailableWatchHreflangs(lang, translations);
         });
 
       }
@@ -438,7 +593,7 @@ export async function onRequest(context) {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': `public, max-age=0, s-maxage=${cacheTtl}, stale-while-revalidate=86400`,
-      'X-Cache-Status': isGet ? 'MISS' : 'BYPASS',
+      'X-Cache-Status': isRead ? 'MISS' : 'BYPASS',
       'X-Edge-Mode': 'API-POSTS'
     };
 
@@ -455,19 +610,32 @@ export async function onRequest(context) {
     // server-rendered social card so the first Twitterbot request is warm.
     if (id && data && !Array.isArray(data) && data.title) {
       try {
+        const socialBody = JSON.stringify(data);
         const socialMetadataKey = new Request(
           `${url.origin}/__og-metadata/posts/${encodeURIComponent(id)}`,
           { method: 'GET' }
         );
-        const socialMetadataResponse = new Response(JSON.stringify(data), {
+        const socialStaleKey = new Request(
+          `${url.origin}/__og-metadata-stale/posts/${encodeURIComponent(id)}`,
+          { method: 'GET' }
+        );
+        const socialMetadataResponse = new Response(socialBody, {
           headers: {
             'Content-Type': 'application/json; charset=utf-8',
             'Cache-Control': 'public, max-age=604800'
           }
         });
-        context.waitUntil(
-          caches.default.put(socialMetadataKey, socialMetadataResponse)
-            .catch(err => console.warn('[Social Metadata Prewarm Error]', err))
+        const socialStaleResponse = new Response(socialBody, {
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': `public, max-age=${STALE_BACKUP_TTL_SECONDS}`
+          }
+        });
+        context.waitUntil?.(
+          Promise.allSettled([
+            caches.default.put(socialMetadataKey, socialMetadataResponse),
+            caches.default.put(socialStaleKey, socialStaleResponse)
+          ]).catch(err => console.warn('[Social Metadata Prewarm Error]', err))
         );
       } catch (err) {
         console.warn('[Social Metadata Prewarm Error]', err);
@@ -478,6 +646,8 @@ export async function onRequest(context) {
 
   } catch (error) {
     console.error('[Cloudflare Worker posts Error]', error);
+    const staleResp = await readStaleResponse(cache, staleCacheKey, corsHeaders);
+    if (staleResp) return staleResp;
     return new Response(JSON.stringify({
       error: 'Gateway Proxy Error',
       message: error.message
@@ -485,24 +655,29 @@ export async function onRequest(context) {
       status: 502,
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/json; charset=utf-8'
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store'
       }
     });
   }
   };
 
+  const toClientResponse = (resp) => isHead
+    ? new Response(null, { status: resp.status, headers: resp.headers })
+    : resp;
+
   if (cachedResponse && cachedResponse.ok) {
-    const finalResp = new Response(cachedResponse.body, cachedResponse);
+    const finalResp = new Response(isHead ? null : cachedResponse.body, cachedResponse);
     finalResp.headers.set('X-Cache-Status', 'HIT');
     finalResp.headers.set('X-Edge-Mode', 'API-POSTS');
     return finalResp;
   }
 
-  if (!isGet) {
+  if (!isRead) {
     const response = await processUpstream();
     response.headers.set('X-Cache-Status', 'BYPASS');
     response.headers.set('X-Edge-Mode', 'API-POSTS');
-    return response;
+    return toClientResponse(response);
   }
 
   const inFlightKey = cacheKey.url;
@@ -510,8 +685,14 @@ export async function onRequest(context) {
   if (!responsePromise) {
     responsePromise = processUpstream()
       .then(response => {
-        if (response.ok && cache) {
-          context.waitUntil(cache.put(cacheKey, response.clone()));
+        if (response.ok && cache && response.headers.get('X-Data-Freshness') !== 'stale') {
+          const writes = [cache.put(cacheKey, response.clone())];
+          if (staleCacheKey) {
+            const staleHeaders = new Headers(response.headers);
+            staleHeaders.set('Cache-Control', `public, max-age=${STALE_BACKUP_TTL_SECONDS}`);
+            writes.push(cache.put(staleCacheKey, new Response(response.clone().body, { status: 200, headers: staleHeaders })));
+          }
+          context.waitUntil?.(Promise.allSettled(writes));
         }
         return response;
       })
@@ -520,7 +701,25 @@ export async function onRequest(context) {
   }
 
   const response = (await responsePromise).clone();
-  response.headers.set('X-Cache-Status', 'MISS');
+  if (response.headers.get('X-Data-Freshness') !== 'stale') {
+    response.headers.set('X-Cache-Status', 'MISS');
+  }
   response.headers.set('X-Edge-Mode', 'API-POSTS');
-  return response;
+  return toClientResponse(response);
+  } catch (fatalErr) {
+    console.error('[API Posts Fatal Error]', fatalErr);
+    return new Response(JSON.stringify({
+      error: 'Service Temporarily Unavailable',
+      message: fatalErr?.message || 'Unexpected posts proxy error'
+    }), {
+      status: 503,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Retry-After': '60',
+        'X-Edge-Mode': 'API-POSTS-503'
+      }
+    });
+  }
 }

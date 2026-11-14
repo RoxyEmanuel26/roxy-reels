@@ -2,7 +2,7 @@
   "name": "MISSAV-J",
   "short_name": "MISSAV-J",
   "description": "Free Asia Video Streaming Directory. Super Fast SPA.",
-  "start_url": "/",
+  "start_url": "/en/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",

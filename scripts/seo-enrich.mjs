@@ -17,6 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { syncWorkerSeoData } from './sync-worker-seo-data.mjs';
 
 // Load .env manual jika ada
 if (fs.existsSync('.env')) {
@@ -361,6 +362,10 @@ export async function runEnrichmentPipeline() {
 
     if (!isDryRun) {
       saveDatabase(db);
+      if (!isMock && enrichedCount > 0) {
+        const syncRes = syncWorkerSeoData();
+        console.log(`[Worker Sync] Updated=${syncRes.changed} enriched=${syncRes.enrichedCount}`);
+      }
     }
   }
 

@@ -73,6 +73,9 @@ export async function onRequest(context) {
 
   const cache = caches.default;
   const cacheKey = new Request(request.url, { method: 'GET' });
+  const staleUrl = new URL(request.url);
+  staleUrl.searchParams.set('__stale_backup', '1');
+  const staleCacheKey = new Request(staleUrl.toString(), { method: 'GET' });
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
@@ -87,23 +90,75 @@ export async function onRequest(context) {
     console.warn('[Social Image Cache Read Error]', err);
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const serveStaleImage = async () => {
+    try {
+      const stale = await cache.match(staleCacheKey);
+      if (!stale || !stale.ok) return null;
+      const headers = new Headers(stale.headers);
+      headers.set('Cache-Control', 'public, max-age=300');
+      headers.set('X-Cache-Status', 'STALE');
+      headers.set('X-Data-Freshness', 'stale');
+      headers.set('X-Edge-Mode', 'IMAGE-PROXY');
+      return request.method === 'HEAD'
+        ? new Response(null, { status: 200, headers })
+        : new Response(stale.body, { status: 200, headers });
+    } catch {
+      return null;
+    }
+  };
+
+  const timeouts = [10000, 6000];
+  let upstream = null;
+  let lastError = null;
+  for (let i = 0; i < timeouts.length; i++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeouts[i]);
+    try {
+      const res = await fetch(target.toString(), {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; MISSAV-J-ImageProxy/1.0)',
+          'Accept': 'image/jpeg,image/png,image/webp,image/gif,*/*;q=0.1',
+          'Referer': target.origin
+        },
+        signal: controller.signal,
+        // Never follow a redirect to a host that bypasses the allowlist.
+        redirect: 'manual'
+      });
+      clearTimeout(timeoutId);
+      if ((res.status === 429 || res.status >= 500) && i + 1 < timeouts.length) {
+        try { await res.body?.cancel?.(); } catch {}
+        await new Promise(resolve => setTimeout(resolve, 150));
+        continue;
+      }
+      upstream = res;
+      break;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = err;
+      if (i + 1 < timeouts.length) {
+        await new Promise(resolve => setTimeout(resolve, 150));
+        continue;
+      }
+    }
+  }
+
   try {
-    const upstream = await fetch(target.toString(), {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; MISSAV-J-ImageProxy/1.0)',
-        'Accept': 'image/jpeg,image/png,image/webp,image/gif,*/*;q=0.1',
-        'Referer': target.origin
-      },
-      signal: controller.signal,
-      // Never follow a redirect to a host that bypasses the allowlist.
-      redirect: 'manual'
-    });
-    clearTimeout(timeoutId);
+    if (!upstream) {
+      console.error('[Social Image Proxy Error]', lastError);
+      const staleResp = await serveStaleImage();
+      if (staleResp) return staleResp;
+      return new Response('Image proxy temporarily unavailable', {
+        status: 503,
+        headers: { 'Cache-Control': 'no-store', 'Retry-After': '120' }
+      });
+    }
 
     if (!upstream.ok || upstream.status >= 300) {
+      if (upstream.status === 429 || upstream.status >= 500) {
+        const staleResp = await serveStaleImage();
+        if (staleResp) return staleResp;
+      }
       return new Response('Upstream image unavailable', {
         status: upstream.status >= 400 && upstream.status <= 599 ? upstream.status : 502,
         headers: { 'Cache-Control': 'no-store' }
@@ -128,32 +183,41 @@ export async function onRequest(context) {
       'X-Edge-Mode': 'IMAGE-PROXY'
     });
     if (!upstream.body) {
+      const staleResp = await serveStaleImage();
+      if (staleResp) return staleResp;
       return new Response('Upstream image body unavailable', {
         status: 502,
         headers: { 'Cache-Control': 'no-store' }
       });
     }
 
-    if (request.method === 'HEAD') {
+    const writeStaleAndFresh = (bodyStream) => {
+      const [freshStream, staleStream] = bodyStream.tee();
+      const staleHeaders = new Headers(responseHeaders);
+      staleHeaders.set('Cache-Control', 'public, max-age=31536000');
       context.waitUntil(
-        cache.put(cacheKey, new Response(upstream.body, { status: 200, headers: responseHeaders }))
-          .catch(err => console.warn('[Social Image Cache Write Error]', err))
+        Promise.allSettled([
+          cache.put(cacheKey, new Response(freshStream, { status: 200, headers: responseHeaders })),
+          cache.put(staleCacheKey, new Response(staleStream, { status: 200, headers: staleHeaders }))
+        ]).catch(err => console.warn('[Social Image Cache Write Error]', err))
       );
+    };
+
+    if (request.method === 'HEAD') {
+      writeStaleAndFresh(upstream.body);
       return new Response(null, { status: 200, headers: responseHeaders });
     }
 
     const [streamForClient, streamForCache] = upstream.body.tee();
     const clientResponse = new Response(streamForClient, { status: 200, headers: responseHeaders });
-    context.waitUntil(
-      cache.put(cacheKey, new Response(streamForCache, { status: 200, headers: responseHeaders }))
-        .catch(err => console.warn('[Social Image Cache Write Error]', err))
-    );
+    writeStaleAndFresh(streamForCache);
     return clientResponse;
   } catch (err) {
-    clearTimeout(timeoutId);
     console.error('[Social Image Proxy Error]', err);
+    const staleResp = await serveStaleImage();
+    if (staleResp) return staleResp;
     return new Response('Image proxy temporarily unavailable', {
-      status: 502,
+      status: 503,
       headers: { 'Cache-Control': 'no-store', 'Retry-After': '120' }
     });
   }

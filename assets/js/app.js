@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.97';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.97';
-import i18n from './i18n.js?v=2.8.97';
-import { Analytics } from './analytics.js?v=2.8.97';
-import ReferralSystem from './referral.js?v=2.8.97';
-import './ads.js?v=2.8.97';
+import ui from './ui.js?v=2.8.102';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.102';
+import i18n from './i18n.js?v=2.8.102';
+import { Analytics } from './analytics.js?v=2.8.102';
+import ReferralSystem from './referral.js?v=2.8.102';
+import './ads.js?v=2.8.102';
 
 // Initialize Global In-Memory SPA States
 // FIX: Validate Array type — JSON.parse() doesn't throw on non-array values (e.g. string/number),
@@ -57,6 +57,54 @@ function safeDecodeURIComponent(str) {
   try { return decodeURIComponent(str || ''); } catch(e) { return str || ''; }
 }
 
+const EDITION_LABELS = {
+  en: { 'uncensored-leak': 'Uncensored Leak', 'english-subtitle': 'English Subtitle', 'chinese-subtitle': 'Chinese Subtitle', uncensored: 'Uncensored' },
+  id: { 'uncensored-leak': 'Bocoran Tanpa Sensor', 'english-subtitle': 'Subtitle Inggris', 'chinese-subtitle': 'Subtitle Mandarin', uncensored: 'Tanpa Sensor' },
+  'zh-TW': { 'uncensored-leak': '無碼流出', 'english-subtitle': '英文字幕', 'chinese-subtitle': '中文字幕', uncensored: '無碼版' },
+  'zh-CN': { 'uncensored-leak': '无码流出', 'english-subtitle': '英文字幕', 'chinese-subtitle': '中文字幕', uncensored: '无码版' },
+  ja: { 'uncensored-leak': '無修正リーク', 'english-subtitle': '英語字幕', 'chinese-subtitle': '中国語字幕', uncensored: '無修正' },
+  ko: { 'uncensored-leak': '무수정 유출', 'english-subtitle': '영어 자막', 'chinese-subtitle': '중국어 자막', uncensored: '무수정' },
+  ms: { 'uncensored-leak': 'Bocor Tanpa Penapis', 'english-subtitle': 'Sarikata Inggeris', 'chinese-subtitle': 'Sarikata Cina', uncensored: 'Tanpa Penapis' },
+  th: { 'uncensored-leak': 'หลุดไม่เซ็นเซอร์', 'english-subtitle': 'ซับอังกฤษ', 'chinese-subtitle': 'ซับจีน', uncensored: 'ไม่เซ็นเซอร์' },
+  de: { 'uncensored-leak': 'Unzensierter Leak', 'english-subtitle': 'Englische Untertitel', 'chinese-subtitle': 'Chinesische Untertitel', uncensored: 'Unzensiert' },
+  fr: { 'uncensored-leak': 'Fuite non censurée', 'english-subtitle': 'Sous-titres anglais', 'chinese-subtitle': 'Sous-titres chinois', uncensored: 'Non censuré' },
+  vi: { 'uncensored-leak': 'Không che rò rỉ', 'english-subtitle': 'Phụ đề tiếng Anh', 'chinese-subtitle': 'Phụ đề tiếng Trung', uncensored: 'Không che' },
+  fil: { 'uncensored-leak': 'Uncensored Leak', 'english-subtitle': 'English Subtitle', 'chinese-subtitle': 'Chinese Subtitle', uncensored: 'Uncensored' },
+  pt: { 'uncensored-leak': 'Vazamento Sem Censura', 'english-subtitle': 'Legenda em Inglês', 'chinese-subtitle': 'Legenda em Chinês', uncensored: 'Sem Censura' }
+};
+
+const EDITION_SUFFIX_DEFS = [
+  { key: 'uncensored-leak', suffixRegex: /-uncensored-leak$/i, titleRegex: /uncensored[\s-]*leak|無修正リーク|無碼流出|无码流出|bocoran tanpa sensor/i },
+  { key: 'english-subtitle', suffixRegex: /-(?:english-subtitle|eng-sub)$/i, titleRegex: /english[\s-]*sub(?:title)?s?|英語字幕|영어\s*자막|英文字幕|subtitle\s*inggris/i },
+  { key: 'chinese-subtitle', suffixRegex: /-(?:chinese-subtitle|chinese-sub|chinesesub)$/i, titleRegex: /chinese[\s-]*sub(?:title)?s?|中国語字幕|중국어\s*자막|中文字幕|subtitle\s*mandarin/i },
+  { key: 'uncensored', suffixRegex: /-uncensored$/i, titleRegex: /\buncensored\b|無修正|無碼|无码|tanpa\s*sensor/i }
+];
+
+function extractCodeAndEdition(codeValue) {
+  const rawCode = String(codeValue ?? '').trim();
+  if (!rawCode) return { rawCode: '', baseCode: '', editionKey: 'standard' };
+  for (const def of EDITION_SUFFIX_DEFS) {
+    if (def.suffixRegex.test(rawCode)) {
+      return {
+        rawCode,
+        baseCode: rawCode.replace(def.suffixRegex, '').trim(),
+        editionKey: def.key
+      };
+    }
+  }
+  return { rawCode, baseCode: rawCode, editionKey: 'standard' };
+}
+
+function formatWatchEditionTitle(title, editionKey, lang = 'en') {
+  const cleanTitle = String(title || '').trim();
+  if (!cleanTitle || !editionKey || editionKey === 'standard') return cleanTitle;
+  const def = EDITION_SUFFIX_DEFS.find(d => d.key === editionKey);
+  if (def && def.titleRegex.test(cleanTitle)) return cleanTitle;
+  const dict = EDITION_LABELS[lang] || EDITION_LABELS.en;
+  const label = dict[editionKey] || EDITION_LABELS.en[editionKey] || '';
+  return label ? `${cleanTitle} (${label})` : cleanTitle;
+}
+
 // FIX: Optimized slugify using unified entity map + single regex pass (reduces 16 regex calls to 2)
 const _HTML_ENTITY_MAP = {
   '&quot;': '"', '&apos;': "'", '&#039;': "'", '&#39;': "'",
@@ -97,8 +145,8 @@ window.missavJGetWatchUrl = function(id, code, title, sourceSlug = '') {
   return `/watch/${encodeURIComponent(`${slug}-${id}`)}`;
 };
 
-window.missavJNavigateToWatch = function(id, code, title) {
-  const watchPath = window.missavJGetWatchUrl(id, code, title);
+window.missavJNavigateToWatch = function(id, code, title, sourceSlug = '') {
+  const watchPath = window.missavJGetWatchUrl(id, code, title, sourceSlug);
   window.missavJNavigate(watchPath);
 };
 
@@ -127,14 +175,24 @@ function parseUrl(urlPath) {
   const segments = cleanPath.split('?')[0].split('/'); // ["en", "trending"]
   
   let lang = segments[0] || '';
-  const isValidLang = i18n.LANGS.some(l => l.code === lang);
+  const matchedLang = i18n.LANGS.find(l => l.code.toLowerCase() === lang.toLowerCase());
+  const isValidLang = Boolean(matchedLang);
   
   let routePath = '/';
   if (isValidLang) {
-    routePath = '/' + segments.slice(1).join('/');
+    lang = matchedLang.code;
+    const rest = segments.slice(1);
+    if (rest.length > 0 && rest[0]) {
+      rest[0] = rest[0].toLowerCase();
+    }
+    routePath = '/' + rest.join('/');
   } else {
     lang = i18n.getLang();
-    routePath = '/' + segments.join('/');
+    const rest = [...segments];
+    if (rest.length > 0 && rest[0]) {
+      rest[0] = rest[0].toLowerCase();
+    }
+    routePath = '/' + rest.join('/');
   }
   
   // Clean trailing slashes on routing paths
@@ -158,7 +216,7 @@ window.missavJNavigate = function(routePath) {
   
   // FIX: Strip existing lang prefix from pathPart before prepending currentLang.
   // Without this, navigate('/en/trending') → fullPath = '/en/en/trending' (double prefix bug).
-  const langPattern = new RegExp(`^\/(${i18n.LANGS.map(l => l.code.replace('-', '\\-')).join('|')})(?=\/|$)`);
+  const langPattern = new RegExp(`^\/(${i18n.LANGS.map(l => l.code.replace('-', '\\-')).join('|')})(?=\/|$)`, 'i');
   const cleanPathPart = pathPart.replace(langPattern, '') || '/';
   
   const fullPath = `/${currentLang}${cleanPathPart === '/' ? '' : cleanPathPart}` + (queryPart ? `?${queryPart}` : '');
@@ -180,7 +238,7 @@ document.body.addEventListener('click', (e) => {
     // Old code assumed 3-segment URLs always had /<lang>/<route> format — wrong for
     // /watch/slug-123 (no lang prefix), causing strip of 'watch' → broken 404 route.
     const segments = url.pathname.replace(/^\//, '').split('/');
-    const firstSegmentIsLang = i18n.LANGS.some(l => l.code === segments[0]);
+    const firstSegmentIsLang = i18n.LANGS.some(l => l.code.toLowerCase() === (segments[0] || '').toLowerCase());
     const relativePath = '/' + (firstSegmentIsLang ? segments.slice(1).join('/') : segments.join('/')) + url.search;
     window.missavJNavigate(relativePath);
   }
@@ -242,7 +300,8 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
         const postId = card.dataset.id;
         const code = card.dataset.code || '';
         const title = card.dataset.title || '';
-        window.missavJNavigateToWatch(postId, code, title);
+        const enSlug = card.dataset.enSlug || '';
+        window.missavJNavigateToWatch(postId, code, title, enSlug);
       }
     });
 
@@ -357,21 +416,21 @@ function renderStaticLegal(key) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.97').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.97').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.97').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.97').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.97').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.97').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.97').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.97').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.97').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.102').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.102').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.102').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.102').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.102').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.102').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.102').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.102').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.102').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.97').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.97').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.97').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.97').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.102').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.102').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.102').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.102').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -390,6 +449,12 @@ const routes = {
  * and JSON-LD Structured Data inside the document head — dynamically per route.
  */
 function updateSEOTags(routePath, targetId) {
+  // Capture SSR watch hreflang state before wiping link tags so WRS on /en/watch/...
+  // (where /api/posts/:id?lang=en skips Supabase) stays in sync with Worker SSR.
+  const existingCanonicalEl = document.getElementById('canonical-url') || document.querySelector('link[rel="canonical"]');
+  const ssrWatchId = existingCanonicalEl ? (existingCanonicalEl.getAttribute('data-ssr-watch-id') || '') : '';
+  const ssrWatchHreflangsRaw = existingCanonicalEl ? existingCanonicalEl.getAttribute('data-watch-hreflangs') : null;
+
   // Remove existing canonical and alternate link elements
   document.querySelectorAll('link[rel="canonical"], link[rel="alternate"]').forEach(el => el.remove());
 
@@ -401,8 +466,24 @@ function updateSEOTags(routePath, targetId) {
   // stick on every localized route -> "Hreflang and HTML lang mismatch").
   document.documentElement.lang = i18n.hreflangCode(currentLang);
 
+  const isUnknownRoute = !Object.prototype.hasOwnProperty.call(routes, routePath);
+  const activeVideo = window.missavJState.activeVideo;
+  let watchHreflangs = [];
+  if (routePath === '/watch') {
+    const watchIdStr = String(targetId || activeVideo?.id || '');
+    if (activeVideo && Array.isArray(activeVideo.available_hreflangs)) {
+      watchHreflangs = activeVideo.available_hreflangs.includes(currentLang) ? activeVideo.available_hreflangs : [];
+    } else if (ssrWatchId && watchIdStr && ssrWatchId === watchIdStr && ssrWatchHreflangsRaw !== null) {
+      const parsed = ssrWatchHreflangsRaw ? ssrWatchHreflangsRaw.split(',').filter(Boolean) : [];
+      watchHreflangs = parsed.includes(currentLang) ? parsed : [];
+    } else if (currentLang === 'en') {
+      watchHreflangs = ['en'];
+    }
+  }
+
   const pageNum = parseInt(getParam('page') || '1', 10);
-  const isNoindex = pageNum > 1 || ['/search', '/history', '/watch-later'].includes(routePath);
+  const isUntranslatedWatch = routePath === '/watch' && currentLang !== 'en' && watchHreflangs.length === 0;
+  const isNoindex = isUnknownRoute || isUntranslatedWatch || pageNum > 1 || ['/search', '/history', '/watch-later'].includes(routePath);
 
   let robotsMeta = document.querySelector('meta[name="robots"]');
   if (!robotsMeta) {
@@ -413,9 +494,18 @@ function updateSEOTags(routePath, targetId) {
   robotsMeta.content = isNoindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 
   let cleanRoutePath = routePath;
-  if (routePath === '/watch' && window.missavJState.activeVideo) {
-    const post = window.missavJState.activeVideo;
-    cleanRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+  if (routePath === '/watch') {
+    const langPattern = new RegExp(`^\/(${i18n.LANGS.map(l => l.code.replace('-', '\\-')).join('|')})(?=\/|$)`);
+    const currentSubPath = '/' + window.location.pathname.replace(langPattern, '').replace(/^\/+/, '');
+    if (activeVideo && !activeVideo._isSeoFallback) {
+      // Always lock Watch canonical slug to canonical English slug, never translated title!
+      const canonicalEnSlug = activeVideo.en_slug || (activeVideo.localized_slugs && activeVideo.localized_slugs.en) || activeVideo.slug || '';
+      cleanRoutePath = window.missavJGetWatchUrl(activeVideo.id, activeVideo.code, activeVideo.title, canonicalEnSlug);
+    } else if (currentSubPath.startsWith('/watch/')) {
+      cleanRoutePath = currentSubPath;
+    } else {
+      cleanRoutePath = `/watch/${targetId || ''}`;
+    }
   } else if (['/category', '/actor', '/studio', '/tag'].includes(routePath)) {
     const nameParam = getParam('name');
     cleanRoutePath = nameParam ? `${routePath}?name=${encodeURIComponent(nameParam)}` : (routePath === '/actor' ? '/actors' : (routePath === '/studio' ? '/studios' : '/categories'));
@@ -428,39 +518,52 @@ function updateSEOTags(routePath, targetId) {
   // 1. Add canonical link
   const canonicalLink = document.createElement('link');
   canonicalLink.rel = 'canonical';
+  canonicalLink.id = 'canonical-url';
   canonicalLink.href = canonicalUrl;
   document.head.appendChild(canonicalLink);
 
   // 2. Add alternate links ONLY on indexable routes
   if (!isNoindex) {
-    i18n.LANGS.forEach(lang => {
-      let langRoutePath = cleanRoutePath;
-      if (routePath === '/watch' && window.missavJState.activeVideo) {
-        const post = window.missavJState.activeVideo;
-        langRoutePath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+    if (routePath === '/watch') {
+      const watchIdStr = String(targetId || activeVideo?.id || '');
+      if (watchHreflangs.length > 0) {
+        if (watchIdStr) {
+          canonicalLink.setAttribute('data-ssr-watch-id', watchIdStr);
+          canonicalLink.setAttribute('data-watch-hreflangs', watchHreflangs.join(','));
+        }
+        watchHreflangs.forEach(langCode => {
+          const altLink = document.createElement('link');
+          altLink.rel = 'alternate';
+          altLink.hreflang = i18n.hreflangCode(langCode);
+          altLink.href = `${baseDomain}/${langCode}${cleanRoutePath}`;
+          document.head.appendChild(altLink);
+        });
+        const xDefaultLink = document.createElement('link');
+        xDefaultLink.rel = 'alternate';
+        xDefaultLink.hreflang = 'x-default';
+        xDefaultLink.href = `${baseDomain}/en${cleanRoutePath}`;
+        document.head.appendChild(xDefaultLink);
       }
-      const altLink = document.createElement('link');
-      altLink.rel = 'alternate';
-      altLink.hreflang = i18n.hreflangCode(lang.code);
-      altLink.href = `${baseDomain}/${lang.code}${langRoutePath === '/' ? '/' : langRoutePath}`;
-      document.head.appendChild(altLink);
-    });
-    
-    // Add x-default alternate pointing to English
-    const xDefaultLink = document.createElement('link');
-    xDefaultLink.rel = 'alternate';
-    xDefaultLink.hreflang = 'x-default';
-    let enWatchPath = cleanRoutePath;
-    if (routePath === '/watch' && window.missavJState.activeVideo) {
-      const post = window.missavJState.activeVideo;
-      enWatchPath = window.missavJGetWatchUrl(post.id, post.code, post.title, post.slug);
+    } else {
+      i18n.LANGS.forEach(lang => {
+        const altLink = document.createElement('link');
+        altLink.rel = 'alternate';
+        altLink.hreflang = i18n.hreflangCode(lang.code);
+        altLink.href = `${baseDomain}/${lang.code}${cleanRoutePath === '/' ? '/' : cleanRoutePath}`;
+        document.head.appendChild(altLink);
+      });
+
+      // Add x-default alternate pointing to English
+      const xDefaultLink = document.createElement('link');
+      xDefaultLink.rel = 'alternate';
+      xDefaultLink.hreflang = 'x-default';
+      xDefaultLink.href = `${baseDomain}/en${cleanRoutePath === '/' ? '/' : cleanRoutePath}`;
+      document.head.appendChild(xDefaultLink);
     }
-    xDefaultLink.href = `${baseDomain}/en${enWatchPath === '/' ? '/' : enWatchPath}`;
-    document.head.appendChild(xDefaultLink);
   }
 
   // 3. Update dynamic Meta Description, OG Tags, Twitter Cards, and JSON-LD
-  updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath);
+  updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoindex);
 }
 
 /**
@@ -475,10 +578,10 @@ function setMetaContent(id, content) {
  * Dynamically updates Meta Description, Open Graph, Twitter Card, and JSON-LD
  * based on the currently active route and video data.
  */
-function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
+function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoindex = false) {
   const baseDomain = window.location.origin;
   const currentLang = i18n.getLang();
-  const isWatchPage = routePath === '/watch' && window.missavJState.activeVideo;
+  const isWatchPage = routePath === '/watch' && window.missavJState.activeVideo && !window.missavJState.activeVideo._isSeoFallback;
   
   // Map locale codes to OG locale format
   const localeMap = {
@@ -490,13 +593,19 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
   if (isWatchPage) {
     const post = window.missavJState.activeVideo;
     const translatedTitle = i18n.translateVideoTitle(post.title);
-    const pageTitle = `${translatedTitle} — MISSAV-J`;
-    const normalizedCode = slugify(post.code || '');
-    const normalizedTitle = slugify(translatedTitle);
-    const displayCode = normalizedCode && (normalizedTitle === normalizedCode || normalizedTitle.startsWith(`${normalizedCode}-`)) ? '' : (post.code || '');
-    const description = `${i18n.t('meta_watch_prefix') || 'Watch'} ${displayCode} ${translatedTitle}`.replace(/\s+/g, ' ').trim();
+    const { baseCode, editionKey } = extractCodeAndEdition(post.code);
+    const formattedTitle = formatWatchEditionTitle(translatedTitle, editionKey, currentLang);
+    const pageTitle = `${formattedTitle} — MISSAV-J`;
+    const normalizedCode = slugify(baseCode || '');
+    const normalizedTitle = slugify(formattedTitle);
+    const displayCode = normalizedCode && (normalizedTitle === normalizedCode || normalizedTitle.startsWith(`${normalizedCode}-`)) ? '' : (baseCode || '');
+    const description = `${i18n.t('meta_watch_prefix') || 'Watch'} ${displayCode} ${formattedTitle}`.replace(/\s+/g, ' ').trim();
     // Gunakan image proxy internal untuk konsistensi dengan [[catchall]].js agar terhindar dari hotlink protection CDN
-    const thumbnail = post.thumbnail ? ui.getProxiedThumbnail(post.thumbnail) : '/assets/images/logo.webp';
+    const hasValidThumbnail = Boolean(post.thumbnail && String(post.thumbnail).trim());
+    const proxiedThumb = hasValidThumbnail ? ui.getProxiedThumbnail(post.thumbnail) : '';
+    const thumbnail = (proxiedThumb && !proxiedThumb.endsWith('/assets/images/logo.webp'))
+      ? proxiedThumb
+      : '/assets/images/logo.webp';
 
     // Meta Description
     setMetaContent('meta-description', description);
@@ -518,78 +627,91 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
     // JSON-LD: VideoObject & BreadcrumbList schema (@graph)
     const jsonLdEl = document.getElementById('json-ld-data');
     if (jsonLdEl) {
-      let uploadDate = new Date().toISOString();
+      let uploadDate = '';
       if (post.date) {
         const parsedDate = new Date(post.date);
         if (!isNaN(parsedDate.getTime())) {
           uploadDate = parsedDate.toISOString();
         }
       }
+      if (!uploadDate) {
+        uploadDate = '2026-01-01T00:00:00.000Z';
+      }
       const viewCount = post.views ? parseInt(post.views, 10) : 0;
-      const cleanEmbedUrl = post.embed_url ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&') : `https://server.apijav.com/embed/${post.id}`;
-      
-      const videoSchema = {
-        '@type': 'VideoObject',
-        'name': translatedTitle,
-        'description': description,
-        'isFamilyFriendly': false,
-        'thumbnailUrl': [thumbnail.startsWith('http') ? thumbnail : `${baseDomain}${thumbnail}`],
-        'uploadDate': uploadDate,
-        'url': canonicalUrl,
-        'embedUrl': cleanEmbedUrl,
-        'interactionStatistic': {
-          '@type': 'InteractionCounter',
-          'interactionType': { '@type': 'WatchAction' },
-          'userInteractionCount': viewCount
-        },
-        'publisher': {
-          '@type': 'Organization',
-          'name': 'MISSAV-J',
-          'url': baseDomain,
-          'logo': {
-            '@type': 'ImageObject',
-            'url': `${baseDomain}/assets/images/logo.webp`,
-            'width': 192,
-            'height': 192
-          }
-        },
-        'inLanguage': 'ja'
-      };
+      const fallbackEmbedUrl = `https://server.apijav.com/?mvapm_embed=${encodeURIComponent(post.id)}`;
+      const rawEmbedUrl = post.embed_url
+        ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&').trim()
+        : fallbackEmbedUrl;
+      const cleanEmbedUrl = /^https?:\/\//i.test(rawEmbedUrl)
+        ? rawEmbedUrl.replace(/^http:\/\//i, 'https://')
+        : fallbackEmbedUrl;
+      const shouldEmitVideoObject = Boolean(!isNoindex && hasValidThumbnail && thumbnail !== '/assets/images/logo.webp' && cleanEmbedUrl);
 
-      if (post.duration) {
-        const trimmed = String(post.duration).trim();
-        let totalSeconds = null;
-        if (/^\d+$/.test(trimmed)) {
-          totalSeconds = parseInt(trimmed, 10);
-        } else {
-          const parts = trimmed.split(':').map(Number);
-          if (parts.length === 3 && parts.every(n => !isNaN(n))) {
-            totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-          } else if (parts.length === 2 && parts.every(n => !isNaN(n))) {
-            totalSeconds = parts[0] * 60 + parts[1];
+      let videoSchema = null;
+      if (shouldEmitVideoObject) {
+        videoSchema = {
+          '@type': 'VideoObject',
+          'name': formattedTitle,
+          'description': description,
+          'isFamilyFriendly': false,
+          'thumbnailUrl': [thumbnail.startsWith('http') ? thumbnail : `${baseDomain}${thumbnail}`],
+          'uploadDate': uploadDate,
+          'url': canonicalUrl,
+          'embedUrl': cleanEmbedUrl,
+          'interactionStatistic': {
+            '@type': 'InteractionCounter',
+            'interactionType': { '@type': 'WatchAction' },
+            'userInteractionCount': viewCount
+          },
+          'publisher': {
+            '@type': 'Organization',
+            'name': 'MISSAV-J',
+            'url': `${baseDomain}/${currentLang}/`,
+            'logo': {
+              '@type': 'ImageObject',
+              'url': `${baseDomain}/assets/images/logo.webp`,
+              'width': 192,
+              'height': 192
+            }
+          },
+          'inLanguage': i18n.hreflangCode(currentLang)
+        };
+
+        if (post.duration) {
+          const trimmed = String(post.duration).trim();
+          let totalSeconds = null;
+          if (/^\d+$/.test(trimmed)) {
+            totalSeconds = parseInt(trimmed, 10);
+          } else {
+            const parts = trimmed.split(':').map(Number);
+            if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+              totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+            } else if (parts.length === 2 && parts.every(n => !isNaN(n))) {
+              totalSeconds = parts[0] * 60 + parts[1];
+            }
+          }
+          if (totalSeconds && totalSeconds > 0 && totalSeconds <= 86400) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            let iso = 'PT';
+            if (h > 0) iso += `${h}H`;
+            if (m > 0) iso += `${m}M`;
+            if (s > 0 || (h === 0 && m === 0)) iso += `${s}S`;
+            videoSchema.duration = iso;
           }
         }
-        if (totalSeconds && totalSeconds > 0 && totalSeconds <= 86400) {
-          const h = Math.floor(totalSeconds / 3600);
-          const m = Math.floor((totalSeconds % 3600) / 60);
-          const s = totalSeconds % 60;
-          let iso = 'PT';
-          if (h > 0) iso += `${h}H`;
-          if (m > 0) iso += `${m}M`;
-          if (s > 0 || (h === 0 && m === 0)) iso += `${s}S`;
-          videoSchema.duration = iso;
+
+        if (post.actors && post.actors.length > 0) {
+          videoSchema.actor = post.actors.map(name => ({
+            '@type': 'Person',
+            'name': typeof name === 'string' ? name : (name.name || '')
+          }));
         }
-      }
 
-      if (post.actors && post.actors.length > 0) {
-        videoSchema.actor = post.actors.map(name => ({
-          '@type': 'Person',
-          'name': typeof name === 'string' ? name : (name.name || '')
-        }));
-      }
-
-      if (post.categories && post.categories.length > 0) {
-        videoSchema.genre = post.categories.map(c => typeof c === 'string' ? c : (c.name || '')).filter(Boolean);
+        if (post.categories && post.categories.length > 0) {
+          videoSchema.genre = post.categories.map(c => typeof c === 'string' ? c : (c.name || '')).filter(Boolean);
+        }
       }
 
       // BreadcrumbList for watch page (Home -> Category -> Video)
@@ -600,7 +722,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
         {
           '@type': 'ListItem',
           'position': 1,
-          'name': 'Home',
+          'name': i18n.t('nav_home') || 'Home',
           'item': `${baseDomain}/${currentLang}/`
         }
       ];
@@ -621,7 +743,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
         breadcrumbElements.push({
           '@type': 'ListItem',
           'position': 2,
-          'name': 'Trending',
+          'name': i18n.t('nav_trending') || 'Trending',
           'item': `${baseDomain}/${currentLang}/trending`
         });
         breadcrumbElements.push({
@@ -637,22 +759,31 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
         'itemListElement': breadcrumbElements
       };
 
+      const graphNodes = videoSchema ? [videoSchema, breadcrumbSchema] : [breadcrumbSchema];
       jsonLdEl.textContent = JSON.stringify({
         '@context': 'https://schema.org',
-        '@graph': [videoSchema, breadcrumbSchema]
+        '@graph': graphNodes
       });
     }
 
   } else {
-    // Non-watch pages: set default/listing meta tags
+    // Non-watch pages (or watch SEO-fallback when /api/posts timed out)
+    const isFallbackWatchRoute = routePath === '/watch';
+    const taxName = (getParam('name') || '').trim();
+    const localizedHomeTitle = i18n.t('meta_home_title') || 'MISSAV-J | Premium JAV Streaming';
     const pageTitles = {
-      '/':          'MISSAV-J — Premium Video Streaming Feed',
-      '/trending':  `${i18n.t('nav_trending') || 'Trending'} — MISSAV-J`,
-      '/recent':    `${i18n.t('nav_recent') || 'Recent'} — MISSAV-J`,
-      '/actors':    `${i18n.t('nav_all_actors') || 'All Actors'} — MISSAV-J`,
-      '/categories':`${i18n.t('nav_all_categories') || 'All Categories'} — MISSAV-J`,
-      '/studios':   `${i18n.t('nav_studios') || 'Studios'} — MISSAV-J`,
-      '/search':    `${i18n.t('nav_search') || 'Search'} — MISSAV-J`,
+      '/':               localizedHomeTitle,
+      '/trending':       `${i18n.t('nav_trending') || 'Trending'} — MISSAV-J`,
+      '/recent':         `${i18n.t('nav_recent') || 'Recent'} — MISSAV-J`,
+      '/actors':         `${i18n.t('nav_all_actors') || 'All Actors'} — MISSAV-J`,
+      '/popular-actors': `${i18n.t('nav_actors') || 'Popular Actors'} — MISSAV-J`,
+      '/categories':     `${i18n.t('nav_all_categories') || 'All Categories'} — MISSAV-J`,
+      '/studios':        `${i18n.t('nav_studios') || 'Studios'} — MISSAV-J`,
+      '/search':         `${i18n.t('nav_search') || 'Search'} — MISSAV-J`,
+      '/actor':          taxName ? `${taxName} — ${i18n.t('nav_all_actors') || 'Actress'} — MISSAV-J` : `${i18n.t('nav_all_actors') || 'Actors'} — MISSAV-J`,
+      '/category':       taxName ? `${taxName} — ${i18n.t('nav_all_categories') || 'Category'} — MISSAV-J` : `${i18n.t('nav_all_categories') || 'Categories'} — MISSAV-J`,
+      '/tag':            taxName ? `${taxName} — ${i18n.t('nav_all_categories') || 'Tag'} — MISSAV-J` : `${i18n.t('nav_all_categories') || 'Tags'} — MISSAV-J`,
+      '/studio':         taxName ? `${taxName} — ${i18n.t('nav_studios') || 'Studio'} — MISSAV-J` : `${i18n.t('nav_studios') || 'Studios'} — MISSAV-J`,
       '/dmca':           `${i18n.t('legal_dmca_title') || 'DMCA Policy'} — MISSAV-J`,
       '/2257':           `${i18n.t('legal_2257_title') || '18 U.S.C. 2257'} — MISSAV-J`,
       '/privacy-policy': `${i18n.t('legal_privacy_title') || 'Privacy Policy'} — MISSAV-J`,
@@ -661,13 +792,18 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
     };
 
     const pageDescriptions = {
-      '/':          i18n.t('meta_home_desc') || 'Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses in high quality.',
-      '/trending':  i18n.t('meta_trending_desc') || 'Browse the most popular and trending videos right now.',
-      '/recent':    i18n.t('meta_recent_desc') || 'Watch the latest and most recently uploaded videos.',
-      '/actors':    i18n.t('meta_actors_desc') || 'Browse all actors and actresses.',
-      '/categories':i18n.t('meta_categories_desc') || 'Explore video categories and genres.',
-      '/studios':   i18n.t('meta_studios_desc') || 'Discover popular production studios.',
+      '/':               i18n.t('meta_home_desc') || 'Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses.',
+      '/trending':       i18n.t('meta_trending_desc') || 'Browse the most popular and trending videos right now.',
+      '/recent':         i18n.t('meta_recent_desc') || 'Watch the latest and most recently uploaded videos.',
+      '/actors':         i18n.t('meta_actors_desc') || 'Browse all actors and actresses.',
+      '/popular-actors': i18n.t('meta_actors_desc') || 'Browse popular Japanese actresses and performers on MISSAV-J.',
+      '/categories':     i18n.t('meta_categories_desc') || 'Explore video categories and genres.',
+      '/studios':        i18n.t('meta_studios_desc') || 'Discover popular production studios.',
       '/search':         i18n.t('meta_search_desc') || 'Search for videos, actors, studios, and more.',
+      '/actor':          taxName ? (i18n.t('meta_actor_detail_desc', { name: taxName }) || `Watch ${taxName} full-length HD JAV videos, latest releases, and filmography on MISSAV-J.`) : (i18n.t('meta_actors_desc') || 'Browse all actors and actresses.'),
+      '/category':       taxName ? (i18n.t('meta_category_detail_desc', { name: taxName }) || `Watch ${taxName} full-length HD JAV videos and curated category releases on MISSAV-J.`) : (i18n.t('meta_categories_desc') || 'Explore video categories and genres.'),
+      '/tag':            taxName ? (i18n.t('meta_tag_detail_desc', { name: taxName }) || `Browse videos tagged "${taxName}" in HD on MISSAV-J.`) : (i18n.t('meta_categories_desc') || 'Explore curated JAV video tags on MISSAV-J.'),
+      '/studio':         taxName ? (i18n.t('meta_studio_detail_desc', { name: taxName }) || `Stream ${taxName} studio JAV releases and official HD productions on MISSAV-J.`) : (i18n.t('meta_studios_desc') || 'Discover popular production studios.'),
       '/dmca':           'MISSAV-J DMCA copyright infringement notification and takedown policy.',
       '/2257':           '18 U.S.C. § 2257 record-keeping compliance statement and notices.',
       '/privacy-policy': 'MISSAV-J Privacy Policy regarding log files, cookies, and user preferences.',
@@ -675,8 +811,19 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
       '/contact':        'Contact MISSAV-J for advertising inquiries, partnerships, and support.',
     };
 
-    const title = pageTitles[routePath] || 'MISSAV-J — Premium Video Streaming Feed';
-    const desc = pageDescriptions[routePath] || pageDescriptions['/'];
+    const isUnknownRoute = !Object.prototype.hasOwnProperty.call(routes, routePath);
+    const existingTitle = (document.title || '').trim();
+    const title = isUnknownRoute
+      ? '404 - Page Not Found | MISSAV-J'
+      : (isFallbackWatchRoute && existingTitle && existingTitle !== 'MISSAV-J — Premium Video Streaming Feed'
+        ? existingTitle
+        : (pageTitles[routePath] || localizedHomeTitle));
+    const existingMetaDesc = document.getElementById('meta-description')?.getAttribute('content') || '';
+    const desc = isUnknownRoute
+      ? 'The page you are looking for could not be found.'
+      : (isFallbackWatchRoute && existingMetaDesc
+        ? existingMetaDesc
+        : (pageDescriptions[routePath] || pageDescriptions['/']));
 
     document.title = title;
     
@@ -777,7 +924,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
           {
             '@type': 'ListItem',
             'position': 1,
-            'name': 'Home',
+            'name': i18n.t('nav_home') || 'Home',
             'item': `${baseDomain}/${currentLang}/`
           }
         ];
@@ -786,7 +933,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
           breadcrumbElements.push({
             '@type': 'ListItem',
             'position': 2,
-            'name': 'Categories',
+            'name': i18n.t('nav_all_categories') || 'Categories',
             'item': `${baseDomain}/${currentLang}/categories`
           });
           breadcrumbElements.push({
@@ -799,7 +946,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
           breadcrumbElements.push({
             '@type': 'ListItem',
             'position': 2,
-            'name': 'Actresses',
+            'name': i18n.t('nav_all_actors') || 'Actresses',
             'item': `${baseDomain}/${currentLang}/actors`
           });
           breadcrumbElements.push({
@@ -812,7 +959,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
           breadcrumbElements.push({
             '@type': 'ListItem',
             'position': 2,
-            'name': 'Studios',
+            'name': i18n.t('nav_studios') || 'Studios',
             'item': `${baseDomain}/${currentLang}/studios`
           });
           breadcrumbElements.push({
@@ -930,18 +1077,25 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.97').then(m => {
+    import('./player.js?v=2.8.102').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
     
+    // Keep canonical, hreflang, <html lang>, and JSON-LD synchronized on language change
+    try {
+      updateSEOTags(matchedRoutePath, targetId);
+    } catch (seoErr) {
+      console.warn('SEO tags update failed (non-critical):', seoErr.message);
+    }
+
     return; // Early exit — player iframe is preserved!
   }
 
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.97').then(m => {
+    import('./player.js?v=2.8.102').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -955,8 +1109,9 @@ function navigate(urlPath) {
     closeFloatingPlayer();
   }
 
-  // Retrieve routing module or default back to home feed
-  const route = routes[matchedRoutePath] || routes['/'];
+  // Retrieve routing module or render explicit 404/error state for unknown paths
+  const isKnownRoute = Object.prototype.hasOwnProperty.call(routes, matchedRoutePath);
+  const route = routes[matchedRoutePath];
   purgeCustomBanner();
   
   const mainApp = document.getElementById('app-content');
@@ -972,6 +1127,17 @@ function navigate(urlPath) {
   
   // Scroll instantly to page top bounds
   window.scrollTo({ top: 0, behavior: 'instant' });
+
+  if (!isKnownRoute || !route) {
+    i18n.translateStaticUI();
+    try {
+      updateSEOTags(matchedRoutePath, targetId);
+    } catch (seoErr) {
+      console.warn('SEO tags update failed (non-critical):', seoErr.message);
+    }
+    ui.showError(i18n.t('error_not_found') || '404 - Page Not Found');
+    return;
+  }
 
   // Determine router initialization arguments dynamically
   let routeArg = undefined;
@@ -994,6 +1160,9 @@ function navigate(urlPath) {
     }
   }).catch(err => {
     console.error(`Error loading route ${matchedRoutePath}:`, err);
+    try {
+      updateSEOTags(matchedRoutePath, targetId);
+    } catch (_) {}
     ui.showError(i18n.t('error_load_page', { message: err.message }));
   });
 }
@@ -1024,7 +1193,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.97').then(m => {
+  import('./player.js?v=2.8.102').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -1037,18 +1206,32 @@ export function closeFloatingPlayer() {
 function highlightActiveSidebarItem(activePath, activeSearch = '') {
   const sidebarLinks = document.querySelectorAll('.sidebar-nav a, .sidebar-nav button');
   const activeFullPath = activePath + activeSearch; // e.g. "/category?name=Uncensored"
-  
+  const currentLang = i18n.getLang() || 'en';
+
+  const logoLink = document.getElementById('logo-branding');
+  if (logoLink) {
+    logoLink.setAttribute('href', `/${currentLang}/`);
+  }
+
   sidebarLinks.forEach(link => {
     const href = link.getAttribute('href') || '';
-    const cleanHref = href.replace('#', ''); // Remove hash prefix → "/category?name=Uncensored"
-    const cleanHrefPath = cleanHref.split('?')[0]; // Just the path → "/category"
-    
-    // For parameterized routes, compare full path + query; for simple routes, compare path only
-    const hasQuery = cleanHref.includes('?');
-    const isMatch = hasQuery
-      ? cleanHref === activeFullPath       // Exact match including query params
-      : cleanHrefPath === activePath;       // Path-only match for simple routes
-    
+    const cleanHref = href.replace('#', ''); // Remove hash prefix → "/en/category?name=Uncensored"
+    const [hrefPathOnly, hrefQuery = ''] = cleanHref.split('?');
+    const normalizedRoutePath = hrefPathOnly.startsWith('/') ? parseUrl(hrefPathOnly).routePath : hrefPathOnly;
+
+    // Keep sidebar hrefs localized to active language prefix so links match SSR output
+    if (link.tagName === 'A' && hrefPathOnly.startsWith('/')) {
+      const localizedHref = `/${currentLang}${normalizedRoutePath === '/' ? '/' : normalizedRoutePath}${hrefQuery ? `?${hrefQuery}` : ''}`;
+      if (href !== localizedHref) {
+        link.setAttribute('href', localizedHref);
+      }
+    }
+
+    const normalizedFullHref = normalizedRoutePath + (hrefQuery ? `?${hrefQuery}` : '');
+    const isMatch = hrefQuery
+      ? normalizedFullHref === activeFullPath
+      : normalizedRoutePath === activePath;
+
     if (isMatch) {
       link.classList.add('active');
     } else {
@@ -1206,7 +1389,8 @@ function setupFloatingPlayerDOM() {
   document.getElementById('floating-player-maximize').addEventListener('click', () => {
     if (window.missavJState.activeVideo) {
       const post = window.missavJState.activeVideo;
-      window.missavJNavigateToWatch(post.id, post.code, post.title);
+      const enSlug = post.en_slug || (post.localized_slugs && post.localized_slugs.en) || post.slug || '';
+      window.missavJNavigateToWatch(post.id, post.code, post.title, enSlug);
     }
   });
 
@@ -1217,7 +1401,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.97').then(m => {
+      import('./player.js?v=2.8.102').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
@@ -1796,6 +1980,15 @@ function setupLegalModals() {
  * Initializes global click events and mobile sidebar states
  */
 function initGlobalEvents() {
+  const logoLink = document.getElementById('logo-branding');
+  if (logoLink) {
+    logoLink.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      window.missavJNavigate('/');
+    });
+  }
+
   const menuBtn = document.getElementById('menu-btn');
   const sidebar = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -2014,7 +2207,6 @@ function setupLanguageDropdown() {
 // Bootstrap router elements when page finishes parsing DOM
 document.addEventListener('DOMContentLoaded', () => {
   purgeCustomBanner();
-  Analytics.init();
   ReferralSystem.init();
 
   // Back to Top Button Logic
@@ -2031,6 +2223,26 @@ document.addEventListener('DOMContentLoaded', () => {
     backToTopBtn.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  }
+
+  // 0. Normalize malformed %3F encoded-query pathnames before routing
+  if (/%3f/i.test(window.location.pathname)) {
+    const decodedPathname = safeDecodeURIComponent(window.location.pathname);
+    const qIdx = decodedPathname.indexOf('?');
+    if (qIdx !== -1) {
+      const cleanPath = decodedPathname.slice(0, qIdx).replace(/\/+$/, '') || '/';
+      const params = new URLSearchParams(decodedPathname.slice(qIdx + 1));
+      const existingParams = new URLSearchParams(window.location.search);
+      for (const [k, v] of existingParams.entries()) {
+        if (!params.has(k)) params.set(k, v);
+      }
+      const pairs = [];
+      for (const [k, v] of params.entries()) {
+        pairs.push(`${encodeURIComponent(k)}=${encodeURIComponent(v)}`);
+      }
+      const normalizedUrl = `${cleanPath}${pairs.length ? `?${pairs.join('&')}` : ''}${window.location.hash || ''}`;
+      history.replaceState(null, '', normalizedUrl);
+    }
   }
 
   // 1. Backward Compatibility: Catch hash-based legacy paths and replace state to localized URL path segments
