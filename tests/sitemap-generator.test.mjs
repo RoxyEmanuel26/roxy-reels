@@ -259,3 +259,35 @@ test('sync-worker-seo-data emits DUPLICATE_VIDEO_CANONICAL_MAP when api/duplicat
     await rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('sitemap uses enriched descriptions, strips third-party brand tags, and adds lastmod to static index entries', () => {
+  const input = [
+    post(105, {
+      code: 'SAMPLE-105-ENGLISH-SUBTITLE',
+      slug: 'sample-105-english-subtitle-drama',
+      title: 'SAMPLE-105 Feature Release',
+      date: '2026-10-15T00:00:00Z',
+      categories: ['Drama', 'missav', '123av'],
+      tags: ['Missav-J', 'Javtiful', 'HD', 'drama'],
+      studio: 'IdeaPocket'
+    })
+  ];
+  const enrichedByPostId = new Map([
+    ['105', { status: 'enriched', video_id: '105', meta_description: 'Curated release synopsis with full cast overview.' }]
+  ]);
+
+  const result = buildSitemapSet(input, { ...options, enrichedByPostId });
+  validateSitemapSet(result, 1);
+
+  const videoXml = result.files.get('sitemap_videos_0-999.xml');
+  assert.match(videoXml, /<video:description>English Subtitle — Curated release synopsis with full cast overview\.<\/video:description>/);
+  assert.doesNotMatch(videoXml, /<video:tag>(?:123av|missav|missav-j|javtiful)<\/video:tag>/i);
+  assert.match(videoXml, /<video:tag>IdeaPocket<\/video:tag>/);
+  assert.equal((videoXml.match(/<video:tag>drama<\/video:tag>/gi) || []).length, 1);
+
+  const indexXml = result.files.get('sitemap_index.xml');
+  assert.match(indexXml, /<loc>https:\/\/www\.missav-j\.com\/sitemaps\/sitemap_pages\.xml<\/loc>\s*<lastmod>2026-10-15<\/lastmod>/);
+  assert.match(indexXml, /<loc>https:\/\/www\.missav-j\.com\/sitemaps\/sitemap_categories\.xml<\/loc>\s*<lastmod>2026-10-15<\/lastmod>/);
+  assert.match(indexXml, /<loc>https:\/\/www\.missav-j\.com\/sitemaps\/sitemap_studios\.xml<\/loc>\s*<lastmod>2026-10-15<\/lastmod>/);
+  assert.match(indexXml, /<loc>https:\/\/www\.missav-j\.com\/sitemaps\/sitemap_actors_1\.xml<\/loc>\s*<lastmod>2026-10-15<\/lastmod>/);
+});

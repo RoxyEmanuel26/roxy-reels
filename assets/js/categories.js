@@ -4,9 +4,9 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
-import { ALL_CATEGORIES } from './categories_data.js?v=2.8.102';
+import ui from './ui.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
+import { ALL_CATEGORIES } from './categories_data.js?v=2.8.103';
 
 /**
  * Render category grid cards based on filtered data
@@ -29,21 +29,23 @@ function renderCategoriesGrid(categories, searchQuery = '') {
     return;
   }
 
+  const lang = i18n.getLang() || 'en';
   grid.innerHTML = categories.map((cat, idx) => {
     const safeName = ui.escapeHTML(cat.name);
     // Translate category name if dictionary key exists in i18n
     const translatedName = i18n.t(cat.key) || safeName;
+    const catHref = `/${lang}/category?name=${encodeURIComponent(cat.name)}`;
     const animationStyle = `style="animation-delay: calc(${idx % 16} * 20ms);"`;
 
     return `
-      <div class="category-browse-card fadeInUp" data-name="${encodeURIComponent(cat.name)}" ${animationStyle}>
+      <a href="${catHref}" class="category-browse-card fadeInUp" data-name="${encodeURIComponent(cat.name)}" ${animationStyle}>
         <div class="category-icon-circle">
           <span class="category-icon-emoji">${cat.icon}</span>
         </div>
         <div class="category-info-box">
           <div class="category-browse-name" title="${translatedName}">${translatedName}</div>
         </div>
-      </div>
+      </a>
     `;
   }).join('');
 }
@@ -64,7 +66,7 @@ export function init() {
   mainApp.innerHTML = `
     <div class="taxonomy-browse-header">
       <div>
-        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('categories_browse_title')}</h2>
+        <h1 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('categories_browse_title')}</h1>
         <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('categories_browse_desc')}</p>
       </div>
       
@@ -167,8 +169,10 @@ export function init() {
   const grid = document.getElementById('categories-grid');
   if (grid) {
     grid.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
       const card = e.target.closest('.category-browse-card');
       if (card) {
+        e.preventDefault();
         const categoryName = decodeURIComponent(card.dataset.name);
         window.missavJNavigate(`/category?name=${encodeURIComponent(categoryName)}`);
       }

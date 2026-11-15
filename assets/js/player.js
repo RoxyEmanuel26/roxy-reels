@@ -5,13 +5,13 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.102';
-import ui from './ui.js?v=2.8.102';
-import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
-import ReferralSystem from './referral.js?v=2.8.102';
-import { Analytics } from './analytics.js?v=2.8.102';
-import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.102';
+import api from './api.js?v=2.8.103';
+import ui from './ui.js?v=2.8.103';
+import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
+import ReferralSystem from './referral.js?v=2.8.103';
+import { Analytics } from './analytics.js?v=2.8.103';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.103';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -83,6 +83,14 @@ export async function init(id) {
 
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
+
+  // Preserve SSR Watch release details / FAQ markup during initial hydration on WRS/crawlers
+  const canonicalEl = document.getElementById('canonical-url') || document.querySelector('link[rel="canonical"]');
+  const ssrWatchId = canonicalEl ? (canonicalEl.getAttribute('data-ssr-watch-id') || '') : '';
+  const ssrEnrichEl = ssrWatchId === String(id)
+    ? mainApp.querySelector('.seo-fallback .video-ai-enrichment, .seo-fallback .video-release-details')
+    : null;
+  const preservedSsrReleaseHtml = ssrEnrichEl ? ssrEnrichEl.outerHTML : '';
 
   // 1. Tampilkan layout teater lengkap dengan Ambient Glow Canvas
   mainApp.innerHTML = `
@@ -169,6 +177,8 @@ export async function init(id) {
               </div>
             </div>
           </div>
+
+          <div id="player-release-details">${preservedSsrReleaseHtml}</div>
         </div>
       </div>
       
@@ -217,8 +227,10 @@ export async function init(id) {
       // Align positioning
       alignGlobalPlayerWithPlaceholder();
       
-      // Render metadata directly
-      document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
+      // Render metadata directly (preserve SSR concise/enriched title during initial hydration)
+      if (!window.__missavJShouldPreserveInitialSsrTitle?.()) {
+        document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
+      }
       renderPostMeta(post, id);
       loadRelatedVideos(post);
       
@@ -392,7 +404,9 @@ export async function init(id) {
         }
       }
       
-      document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
+      if (!window.__missavJShouldPreserveInitialSsrTitle?.()) {
+        document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
+      }
       renderPostMeta(post, id);
       loadRelatedVideos(post);
     }
@@ -478,12 +492,21 @@ export function renderPostMeta(post, id) {
 
   // Code & Studio
   if (codeEl) {
-    const safeCode = ui.escapeHTML(post.code || '');
+    const rawCode = String(post.code || '').trim();
+    const safeCode = ui.escapeHTML(rawCode);
     if (safeCode) {
       codeEl.textContent = safeCode;
       codeEl.style.display = '';
+      codeEl.style.cursor = 'pointer';
+      codeEl.title = `Copy ${rawCode}`;
+      codeEl.onclick = () => {
+        navigator.clipboard?.writeText(rawCode).then(() => {
+          ui.showToast(`${rawCode} ✓`);
+        }).catch(() => {});
+      };
     } else {
       codeEl.style.display = 'none';
+      codeEl.onclick = null;
     }
   }
 
@@ -562,6 +585,35 @@ export function renderPostMeta(post, id) {
       showShareModal(translatedTitle, shareUrl, thumbnailUrl, post);
       Analytics.trackShare(id, 'modal');
     });
+  }
+
+  // Ensure Watch Release Details & FAQ remain visible below .player-meta-box in rendered DOM
+  const releaseDetailsContainer = document.getElementById('player-release-details');
+  if (releaseDetailsContainer && !releaseDetailsContainer.innerHTML.trim()) {
+    const codeText = String(post.code || '').trim();
+    const safeCodeText = ui.escapeHTML(codeText || translatedTitle);
+    const actorsArr = (Array.isArray(post.actors) ? post.actors : (post.actors ? [post.actors] : [])).filter(Boolean);
+    const performersText = actorsArr.length > 0 ? actorsArr.map(a => ui.escapeHTML(a)).join(', ') : (i18n.t('unknown_actor') || 'Featured Cast');
+    const studioText = post.studio ? ui.escapeHTML(post.studio) : (i18n.t('unknown_studio') || 'Studio Archive');
+    const categoriesArr = (Array.isArray(post.categories) ? post.categories : (post.categories ? [post.categories] : [])).filter(Boolean);
+    const categoriesText = categoriesArr.length > 0 ? categoriesArr.slice(0, 5).map(c => ui.escapeHTML(c)).join(', ') : 'HD Streaming';
+    const durationVal = (post.duration && post.duration !== '00:00:00') ? ui.escapeHTML(post.duration) : ui.escapeHTML(getDeterministicDuration(id));
+    releaseDetailsContainer.innerHTML = `
+      <details class="video-release-details" open>
+        <summary>${ui.escapeHTML(i18n.t('watch_release_details_title') || 'Release Details & FAQ')}</summary>
+        <p style="margin: 10px 0 6px; font-size: 0.85rem; line-height: 1.55; color: var(--color-text-muted);">
+          ${safeCodeText} — ${studioText} · ${performersText} · ${durationVal} · ${categoriesText}
+        </p>
+        <dl class="watch-faq-list">
+          <dt>What is the release code for this video?</dt>
+          <dd>${safeCodeText} produced by ${studioText} (${durationVal}).</dd>
+          <dt>Who appears in ${safeCodeText}?</dt>
+          <dd>${performersText}.</dd>
+          <dt>What quality and categories are listed for ${safeCodeText}?</dt>
+          <dd>HD streaming across ${categoriesText} on MISSAV-J.</dd>
+        </dl>
+      </details>
+    `;
   }
 }
 
@@ -963,10 +1015,15 @@ function renderRelatedRowCard(post, index) {
     }
   }
 
+  const lang = i18n.getLang() || 'en';
+  const canonicalSlug = post.en_slug || post.localized_slugs?.en || post.slug || '';
+  const watchPath = typeof window !== 'undefined' && typeof window.missavJGetWatchUrl === 'function'
+    ? `/${lang}${window.missavJGetWatchUrl(post.id, post.code, post.title, canonicalSlug)}`
+    : `/${lang}/watch/${encodeURIComponent(String(post.id || ''))}`;
   const animationStyle = `style="animation-delay: calc(${index} * 40ms);"`;
 
   return `
-    <div class="related-video-card fadeInUp" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" data-en-slug="${ui.escapeHTML(post.en_slug || post.localized_slugs?.en || post.slug || '')}" ${animationStyle}>
+    <a href="${ui.escapeHTML(watchPath)}" class="related-video-card fadeInUp" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" data-en-slug="${ui.escapeHTML(canonicalSlug)}" ${animationStyle}>
       <div class="related-thumb">
         <img 
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
@@ -989,7 +1046,7 @@ function renderRelatedRowCard(post, index) {
           ${matchBadgeHTML}
         </div>
       </div>
-    </div>
+    </a>
   `;
 }
 
@@ -998,8 +1055,10 @@ function renderRelatedRowCard(post, index) {
  */
 function bindRelatedClicks(list) {
   list.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     const card = e.target.closest('.related-video-card');
     if (card) {
+      e.preventDefault();
       const postId = card.dataset.id;
       const code = card.dataset.code || '';
       const title = card.dataset.title || '';

@@ -4,8 +4,8 @@
  * dan perutean dinamis ke feed video berbasis API.
  */
 
-import ui from './ui.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
+import ui from './ui.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
 
 // Daftar Aktris JAV populer terkurasi dengan nama kanji & inisial premium
 const POPULAR_ACTORS = [
@@ -97,7 +97,7 @@ export function init() {
   mainApp.innerHTML = `
     <div class="taxonomy-browse-header">
       <div>
-        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('actors_browse_title')}</h2>
+        <h1 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('actors_browse_title')}</h1>
         <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('actors_browse_desc')}</p>
       </div>
       

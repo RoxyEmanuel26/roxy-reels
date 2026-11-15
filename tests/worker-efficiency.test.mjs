@@ -2623,3 +2623,325 @@ test('video indexing fix: above-fold eager SSR iframe, ?mvapm_embed fallback, Vi
     }
   }
 });
+
+test('growth SEO upgrades: 8 related links, 24-item SSR pagination, Kanji ProfilePage, Home hubs, PWA manifest, multi-page enrich & IndexNow', async () => {
+  globalThis.caches = { default: new MemoryCache() };
+  const baseHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const feedJs = await readFile(new URL('assets/js/feed.js', ROOT), 'utf8');
+  const uiJs = await readFile(new URL('assets/js/ui.js', ROOT), 'utf8');
+  const manifestRaw = JSON.parse(await readFile(new URL('manifest.json', ROOT), 'utf8'));
+  const playerJs = await readFile(new URL('assets/js/player.js', ROOT), 'utf8');
+
+  // 1. PWA manifest MIME/size alignment & monetization/X/alt-site preservation
+  assert.ok(manifestRaw.icons.some(ic => ic.src === '/assets/favicon.png' && ic.type === 'image/png' && ic.sizes === '192x192'));
+  assert.ok(!manifestRaw.icons.some(ic => ic.src.endsWith('.webp') && ic.type === 'image/png'));
+  assert.match(baseHtml, /glamournakedemployee\.com/);
+  assert.match(baseHtml, /benchform\.org/);
+  assert.match(baseHtml, /biomanos\.org/);
+  assert.match(feedJs, /maintAltBtn1/);
+  assert.match(uiJs, /maintAltBtn1/);
+  assert.match(playerJs, /opt-x/);
+  assert.match(playerJs, /opt-x-viral/);
+
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const listingRequestedUrls = [];
+  const batchPosts = Array.from({ length: 24 }, (_, idx) => ({
+    id: 95000 + idx,
+    code: `SSIS-${500 + idx}`,
+    slug: `ssis-${500 + idx}-sample-${idx}`,
+    title: `SSIS-${500 + idx} Sample Feature ${idx}`,
+    thumbnail: `https://img.example/${95000 + idx}.jpg`,
+    actors: ['Yua Mikami'],
+    studio: 'S1',
+    categories: ['Uncensored'],
+    duration: '02:00:00'
+  }));
+  const relatedPool = Array.from({ length: 10 }, (_, idx) => ({
+    id: 88000 + idx,
+    code: `REL-${800 + idx}`,
+    slug: `rel-${800 + idx}-video`,
+    title: `Related Video ${idx}`,
+    actors: ['Yua Mikami']
+  }));
+
+  let watchRelatedCalls = 0;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes('supabase.test/rest/v1/translations')) {
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (url.includes('myvideo/v1/posts/99123')) {
+      return new Response(JSON.stringify({
+        id: 99123,
+        code: 'SSIS-999-ENGLISH-SUBTITLE',
+        slug: 'ssis-999-english-subtitle-exclusive-feature',
+        title: 'SSIS-999 Exclusive Feature',
+        duration: '02:15:00',
+        embed_url: 'https://server.apijav.com/embed/99123',
+        thumbnail: 'https://img.example/99123.jpg',
+        actors: ['Yua Mikami'],
+        categories: ['Uncensored', 'English Subtitle'],
+        studio: 'S1'
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (url.includes('myvideo/v1/posts?')) {
+      listingRequestedUrls.push(url);
+      if (url.includes('per_page=8')) {
+        watchRelatedCalls += 1;
+        return new Response(JSON.stringify(relatedPool), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify(batchPosts), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'x-wp-total': '120', 'x-wp-totalpages': '5' }
+      });
+    }
+    return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+
+  const botHeaders = { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' };
+  const env = {
+    SUPABASE_URL: 'https://supabase.test',
+    SUPABASE_KEY: 'test-key',
+    ASSETS: { fetch: async () => new Response(baseHtml, { status: 200 }) }
+  };
+
+  // 2. Watch SSR renders 8 related links from the single per_page=8 call + runtime in meta description
+  const watchRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/ssis-999-english-subtitle-exclusive-feature-99123', { headers: botHeaders }),
+    env
+  }));
+  const watchHtml = await watchRes.text();
+  assert.equal(watchRelatedCalls, 1);
+  const relatedNavMatch = watchHtml.match(/<nav aria-label="Related Videos"[\s\S]*?<\/nav>/);
+  assert.ok(relatedNavMatch, 'Watch SSR must render Related Videos nav');
+  const relatedLinkCount = (relatedNavMatch[0].match(/<li\b/g) || []).length;
+  assert.equal(relatedLinkCount, 8, 'Watch SSR should render 8 related video links without extra subrequests');
+  assert.match(watchHtml, /02:15:00/);
+
+  // 3. Actor SSR includes Kanji alternateName in ProfilePage + <title> without breaking Person.name
+  const actorRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/actor?name=Yua%20Mikami', { headers: botHeaders }),
+    env
+  }));
+  const actorHtml = await actorRes.text();
+  assert.match(actorHtml, /<title>Yua Mikami \(三上悠亜\) JAV Videos/);
+  assert.match(actorHtml, /"name":\s*"Yua Mikami"/);
+  assert.match(actorHtml, /"alternateName":\s*"三上悠亜"/);
+  assert.ok(listingRequestedUrls.some(u => u.includes('per_page=24')), 'Listing SSR must request per_page=24');
+
+  // 4. Home SSR renders Telegram handle sync, Home hub links, and Option 1A English-only gating
+  const [enHomeRes, idHomeRes] = await Promise.all([
+    onRequest(makeContext({ request: new Request('https://www.missav-j.com/en/', { headers: botHeaders }), env })),
+    onRequest(makeContext({ request: new Request('https://www.missav-j.com/id/', { headers: botHeaders }), env }))
+  ]);
+  const [enHomeHtml, idHomeHtml] = await Promise.all([enHomeRes.text(), idHomeRes.text()]);
+  assert.match(enHomeHtml, /https:\/\/t\.me\/missav_jav_english/);
+  assert.doesNotMatch(enHomeHtml, /https:\/\/t\.me\/missav_j["']/);
+  assert.match(enHomeHtml, /class="home-hub-links"/);
+  assert.match(enHomeHtml, /category\?name=English%20Subtitle/);
+  assert.doesNotMatch(idHomeHtml, /category\?name=English%20Subtitle/);
+  assert.match(idHomeHtml, /studio\?name=S1/);
+
+  // 5. Multi-page seo-enrich skips enriched page 1 (matching source_hash) and collects page 2+ candidates
+  const { createHash } = await import('node:crypto');
+  const { fetchCandidatePosts } = await import(`../scripts/seo-enrich.mjs?t=${Date.now()}`);
+  const enrichedDb = {
+    posts: Object.fromEntries(Array.from({ length: 50 }, (_, i) => {
+      const id = 1000 + i;
+      const hash = createHash('md5').update(`${id}:C-${i}:T-${i}::`).digest('hex');
+      return [String(id), { status: 'enriched', source_hash: hash }];
+    }))
+  };
+  let mockFetchCount = 0;
+  const pagedCandidates = await fetchCandidatePosts(enrichedDb, 5, async (endpoint) => {
+    mockFetchCount++;
+    if (endpoint.includes('orderby=views')) return new Response('[]', { status: 200 });
+    if (endpoint.includes('page=1')) {
+      return new Response(JSON.stringify(Array.from({ length: 50 }, (_, i) => ({ id: 1000 + i, code: `C-${i}`, title: `T-${i}` }))), { status: 200 });
+    }
+    if (endpoint.includes('page=2')) {
+      return new Response(JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ id: 2000 + i, code: `NEW-${i}`, title: `New Title ${i}` }))), { status: 200 });
+    }
+    return new Response('[]', { status: 200 });
+  });
+  assert.ok(mockFetchCount >= 2, 'fetchCandidatePosts must continue past page 1');
+  assert.ok(pagedCandidates.some(p => p.id === 2000), 'fetchCandidatePosts must include page 2 un-enriched items');
+
+  // 6. IndexNow includes recent canonical Watch URLs within protocol limit
+  const { buildIndexNowUrls } = await import(`../scripts/indexnow.mjs?idx=${Date.now()}`);
+  const idxUrls = buildIndexNowUrls();
+  assert.ok(idxUrls.length >= 200 && idxUrls.length <= 10000, `Unexpected IndexNow batch count: ${idxUrls.length}`);
+  assert.ok(idxUrls.some(u => /\/en\/watch\/.+-\d+$/.test(u)));
+});
+
+test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR preservation, code search, referral retention & invariants', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  globalThis.caches = { default: new MemoryCache() };
+  const baseHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const botHeaders = { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' };
+  const env = { ASSETS: { fetch: async () => new Response(baseHtml, { status: 200 }) } };
+
+  // 1. Long Watch title (>140 chars) produces concise SERP <title> (<=72 chars) while keeping full title in <h1>
+  const longTitle = 'A Very Long Feature Movie Release Description That Exceeds Desktop And Mobile SERP Pixel Truncation Thresholds By Many Words Across Paragraphs';
+  globalThis.fetch = async (input) => {
+    const u = String(input);
+    if (u.includes('posts/99221')) {
+      return new Response(JSON.stringify({
+        id: 99221,
+        code: 'SAMPLE-999-ENGLISH-SUBTITLE',
+        title: longTitle,
+        slug: 'sample-999-english-subtitle-long-feature',
+        duration: '02:05:00',
+        thumbnail: 'https://pics.dmm.co.jp/sample999.jpg',
+        embed_url: 'https://server.apijav.com/?mvapm_embed=99221',
+        actors: ['Actor One'],
+        categories: ['English Subtitle', 'Drama'],
+        studio: 'S1'
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (u.includes('categories=') && u.includes('per_page=8')) {
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response('not found', { status: 404 });
+  };
+
+  const watchRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/sample-999-english-subtitle-long-feature-99221', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(watchRes.status, 200);
+  const watchHtml = await watchRes.text();
+  const titleMatch = watchHtml.match(/<title>([^<]+)<\/title>/i);
+  assert.ok(titleMatch, 'Watch SSR must include <title>');
+  const renderedTitle = titleMatch[1];
+  assert.ok(renderedTitle.length <= 72, `Concise Watch <title> must be <=72 chars, got ${renderedTitle.length}: ${renderedTitle}`);
+  assert.match(renderedTitle, /\[SAMPLE-999\]/);
+  assert.match(renderedTitle, /\(English Subtitle\)/);
+  assert.match(renderedTitle, /- MISSAV-J$/);
+  const h1Match = watchHtml.match(/<h1>([^<]+)<\/h1>/i);
+  assert.ok(h1Match && h1Match[1].includes(longTitle), 'Watch SSR <h1> must keep full untruncated movie title');
+
+  // 2. feed.js renderVideoCard emits real <a href="/en/watch/..."> links (no nested <a>), studio <a> for known studio, and <span> for Other
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevLocalStorage = globalThis.localStorage;
+  try {
+    globalThis.window = {
+      missavJGetWatchUrl: (id, code, title, slug) => `/watch/${String(slug || 'video').toLowerCase()}-${id}`,
+      location: { origin: 'https://www.missav-j.com', pathname: '/en/', search: '' }
+    };
+    const { renderVideoCard } = await importSource('assets/js/feed.js', [
+      [/^import\s+api\s+from\s+'[^']+';/m, 'const api = {};'],
+      [/^import\s+ui\s+from\s+'[^']+';/m, `const ui = {
+        escapeHTML: s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+        getProxiedThumbnail: s => s ? '/img/' + s : ''
+      };`],
+      [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = {};'],
+      [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "en", translateVideoTitle: t => t };'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/hub-content\.js[^']*';/m, 'const getHubContent = () => null;']
+    ]);
+
+    const cardHtml = renderVideoCard({
+      id: 881,
+      code: 'ABC-881',
+      title: 'Feature Release Test',
+      en_slug: 'abc-881-feature-release',
+      studio: 'S1',
+      actors: ['Performer One'],
+      views: 1200,
+      duration: '01:30:00',
+      thumbnail: 'cover.jpg'
+    }, 0);
+    assert.match(cardHtml, /<a href="\/en\/watch\/abc-881-feature-release-881" class="card-watch-link card-thumb-link"/);
+    assert.match(cardHtml, /<a href="\/en\/watch\/abc-881-feature-release-881" class="card-watch-link card-title-link">Feature Release Test<\/a>/);
+    assert.match(cardHtml, /<a href="\/en\/studio\?name=S1" class="card-studio"/);
+    assert.match(cardHtml, /<a href="\/en\/actor\?name=Performer%20One" class="actor-chip"/);
+
+    const unknownStudioCard = renderVideoCard({ id: 882, code: 'ABC-882', title: 'No Studio', studio: '', actors: [] }, 1);
+    assert.match(unknownStudioCard, /<span class="card-studio text-muted" data-studio="Other">/);
+
+    // 3. search.js normalizes unhyphenated release codes without breaking multi-word queries
+    const { normalizeSearchQuery } = await importSource('assets/js/search.js', [
+      [/^import\s+api\s+from\s+'[^']+';/m, 'const api = {};'],
+      [/^import\s+ui\s+from\s+'[^']+';/m, 'const ui = { escapeHTML: s => String(s || "") };'],
+      [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = {};'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/feed\.js[^']*';/m, 'const renderVideoCard = () => ""; const bindHoverPreviews = () => {};'],
+      [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "en", translateVideoTitle: t => t };']
+    ]);
+    assert.equal(normalizeSearchQuery('ssis888'), 'SSIS-888');
+    assert.equal(normalizeSearchQuery('ssis 888'), 'SSIS-888');
+    assert.equal(normalizeSearchQuery('fc2ppv123456'), 'FC2-PPV-123456');
+    assert.equal(normalizeSearchQuery('part 10'), 'part 10');
+
+    // 4. referral.js preserves non-tracking params (?name=, ?q=) and leaves Telegram channels free of ?start=
+    const replacedUrls = [];
+    const store = new Map();
+    const tgChannelLink = { href: 'https://t.me/missav_jav_english' };
+    const tgBotLink = { href: 'https://t.me/missav_helper_bot' };
+    globalThis.localStorage = {
+      getItem: k => store.get(k) || null,
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: k => store.delete(k)
+    };
+    globalThis.window = {
+      location: {
+        href: 'https://www.missav-j.com/en/actor?name=Yua+Mikami&ref=social_card&utm_source=tg',
+        search: '?name=Yua+Mikami&ref=social_card&utm_source=tg'
+      },
+      history: {
+        replaceState: (_state, _title, url) => replacedUrls.push(url)
+      }
+    };
+    globalThis.document = {
+      querySelectorAll: (sel) => sel.includes('t.me') ? [tgChannelLink, tgBotLink] : []
+    };
+    const { default: ReferralSystem } = await importSource('assets/js/referral.js');
+    ReferralSystem.init();
+    assert.equal(replacedUrls.length, 1);
+    assert.equal(replacedUrls[0], '/en/actor?name=Yua+Mikami');
+    assert.equal(tgChannelLink.href, 'https://t.me/missav_jav_english');
+    assert.equal(tgBotLink.href, 'https://t.me/missav_helper_bot?start=ref_social_card');
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.localStorage = prevLocalStorage;
+  }
+
+  // 5. Source parity & invariant audit across frontend, SW, HTML, and monetization
+  const [feedSrc, playerSrc, studiosSrc, categoriesSrc, actorsSrc, popActorsSrc, appSrc, swSrc] = await Promise.all([
+    readFile(new URL('assets/js/feed.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/player.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/studios.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/categories.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/actors.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/popular_actors.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/app.js', ROOT), 'utf8'),
+    readFile(new URL('sw.js', ROOT), 'utf8')
+  ]);
+
+  assert.match(feedSrc, /const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;/);
+  assert.match(feedSrc, /class="feed-page-h1"/);
+  assert.match(feedSrc, /class="home-hub-links"/);
+  assert.match(playerSrc, /<a href="\$\{ui\.escapeHTML\(watchPath\)\}" class="related-video-card/);
+  assert.match(playerSrc, /id="player-release-details"/);
+  assert.match(playerSrc, /class="video-release-details"/);
+  assert.match(playerSrc, /glamournakedemployee\.com/);
+  assert.match(studiosSrc, /<a href="\$\{studioHref\}" class="studio-browse-card/);
+  assert.match(studiosSrc, /<h1\b/);
+  assert.match(categoriesSrc, /<a href="\$\{catHref\}" class="category-browse-card/);
+  assert.match(categoriesSrc, /<h1\b/);
+  assert.match(actorsSrc, /Number\(actor\.count\) < 5 \? ' rel="nofollow"' : ''/);
+  assert.match(actorsSrc, /<h1\b/);
+  assert.match(popActorsSrc, /<h1\b/);
+  assert.match(appSrc, /captureInitialSsrState/);
+  assert.match(appSrc, /shouldPreserveInitialSsr/);
+  assert.match(appSrc, /__missavJShouldPreserveInitialSsrTitle/);
+  assert.match(appSrc, /defaultLabel: 'Top Actresses'/);
+  assert.doesNotMatch(appSrc, /Actress ranking MAY 2026/);
+  assert.match(appSrc, /e\.key === '\/'/);
+  assert.match(baseHtml, /rel="preload" as="style" href="https:\/\/fonts\.googleapis\.com/);
+  assert.match(baseHtml, /benchform\.org/);
+  assert.match(baseHtml, /biomanos\.org/);
+  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.103/);
+  assert.match(swSrc, /hub-content\.js\?v=2\.8\.103/);
+});

@@ -227,7 +227,24 @@ async function main() {
       liveCatByLower.set(key, { ...c, cleanName });
     }
   }
-  const candidateCats = existingCatsList
+  const AUTO_DISCOVER_MIN_COUNT = 50;
+  const AUTO_DISCOVER_BLOCKLIST = /^(?:123av|javtiful|missav|missav-j|blog|other|release|original|exclusive|planning|set product)$/i;
+  for (const [lower, item] of liveCatByLower.entries()) {
+    const cnt = Number(item.count || 0);
+    if (
+      !mergedCuratedMap.has(lower) &&
+      cnt >= AUTO_DISCOVER_MIN_COUNT &&
+      !AUTO_DISCOVER_BLOCKLIST.test(item.cleanName) &&
+      !/[\/\\@]/.test(item.cleanName) &&
+      item.cleanName.length >= 2 &&
+      item.cleanName.length <= 36 &&
+      isValidCategoryTerm({ name: item.cleanName, count: cnt })
+    ) {
+      mergedCuratedMap.set(lower, item.cleanName);
+    }
+  }
+  const combinedCatsList = [...mergedCuratedMap.values()];
+  const candidateCats = combinedCatsList
     .filter(name => {
       const hit = liveCatByLower.get(name.toLowerCase());
       return hit && Number(hit.count || 0) >= 1 && isValidCategoryTerm({ name, count: hit.count });
@@ -235,7 +252,7 @@ async function main() {
 
   console.log(`[Sync] Verifying ${candidateCats.length} categories against ${MYVIDEO_BASE}...`);
   const myVideoCatTotals = await fetchCategoryUpstreamTotals(candidateCats);
-  const deadCuratedCats = existingCatsList.filter(name => {
+  const deadCuratedCats = combinedCatsList.filter(name => {
     const hit = liveCatByLower.get(name.toLowerCase());
     if (!hit || Number(hit.count || 0) < 1 || !isValidCategoryTerm({ name, count: hit.count })) return true;
     const mvCount = myVideoCatTotals.get(name.toLowerCase());

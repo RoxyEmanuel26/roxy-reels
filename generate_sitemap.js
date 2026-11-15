@@ -183,10 +183,20 @@ function buildVideoSlug(post) {
   return encodeURIComponent(`${base}-${post.id}`);
 }
 
-function buildDescription(post) {
+function buildDescription(post, enrichedPost = null) {
+  const { baseCode, editionKey, editionLabel } = extractCodeAndEdition(post.code);
+  const enrichedDesc = typeof enrichedPost?.meta_description === 'string'
+    ? decodeHtmlEntities(enrichedPost.meta_description).replace(/\s+/g, ' ').trim()
+    : '';
+  if (enrichedDesc) {
+    if (editionKey !== 'standard' && editionLabel && !titleHasEditionMarker(enrichedDesc, editionKey)) {
+      return `${editionLabel} — ${enrichedDesc}`.slice(0, 2048);
+    }
+    return enrichedDesc.slice(0, 2048);
+  }
+
   const rawTitle = String(post.title || '').trim();
   const displayTitle = formatEditionVideoTitle(post) || rawTitle;
-  const { baseCode } = extractCodeAndEdition(post.code);
   const actor = labels(post.actors).slice(0, 3).join(', ');
   const studio = labels(post.studio)[0] || '';
   const normalizedBase = slugify(baseCode);
@@ -229,16 +239,26 @@ function buildPlayerUrl(post) {
   return null;
 }
 
+const THIRD_PARTY_TAG_NOISE = /^(?:123av|missav|missav-j|javtiful|jable|supjav)$/i;
+
 function buildVideoTags(post) {
-  return uniqueStrings([
+  const seen = new Set();
+  const cleanTags = [];
+  for (const raw of uniqueStrings([
     post.code,
     ...labels(post.studio),
     ...labels(post.categories),
     ...labels(post.tags)
-  ])
-    .map(tag => tag.slice(0, 100))
-    .filter(Boolean)
-    .slice(0, 10);
+  ])) {
+    const tag = raw.slice(0, 100).trim();
+    if (!tag || THIRD_PARTY_TAG_NOISE.test(tag)) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    cleanTags.push(tag);
+    if (cleanTags.length >= 10) break;
+  }
+  return cleanTags;
 }
 
 function normalizePost(post) {
@@ -294,14 +314,14 @@ function buildLocalizedPagesUrlset(routes) {
   return `${xml}</urlset>\n`;
 }
 
-function buildVideoUrlXml(post) {
+function buildVideoUrlXml(post, enrichedPost = null) {
   const location = `${BASE_URL}/en/watch/${buildVideoSlug(post)}`;
   const date = normalizeDate(post.date);
   const thumbnail = buildImageProxyUrl(post.thumbnail);
   const player = buildPlayerUrl(post);
   const rawTitle = String(post.title || '').trim();
   const title = formatEditionVideoTitle(post);
-  const description = rawTitle ? buildDescription(post) : '';
+  const description = rawTitle ? buildDescription(post, enrichedPost) : '';
   const eligible = Boolean(title && description && thumbnail && player && player !== location);
 
   let xml = `  <url>\n    <loc>${escXml(location)}</loc>\n`;
@@ -452,10 +472,12 @@ function buildSitemapSet(posts, options = {}) {
     buckets.get(start).push(post);
   }
 
+  const enrichedLookup = options.enrichedByPostId || null;
   const videoIndex = [];
   let eligibleVideos = 0;
   const missingVideoMetadata = [];
   let latest = null;
+  let maxVideoDate = null;
   for (const start of [...buckets.keys()].sort((a, b) => b - a)) {
     const end = start + VIDEO_BUCKET_SIZE - 1;
     const fileName = `sitemap_videos_${start}-${end}.xml`;
@@ -464,9 +486,13 @@ function buildSitemapSet(posts, options = {}) {
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n';
     let newestDate = null;
     for (const post of bucketPosts) {
-      const built = buildVideoUrlXml(post);
+      const enrichedPost = enrichedLookup instanceof Map
+        ? enrichedLookup.get(String(post.id))
+        : (enrichedLookup ? enrichedLookup[String(post.id)] : null);
+      const built = buildVideoUrlXml(post, enrichedPost);
       xml += built.xml;
       if (built.date && (!newestDate || built.date > newestDate)) newestDate = built.date;
+      if (built.date && (!maxVideoDate || built.date > maxVideoDate)) maxVideoDate = built.date;
       if (built.eligible) eligibleVideos += 1;
       else missingVideoMetadata.push(post.id);
       if (!latest || post.id > latest.id) {
@@ -474,6 +500,7 @@ function buildSitemapSet(posts, options = {}) {
           id: post.id,
           fileName,
           url: built.location,
+          date: built.date || null,
           thumbnail: built.thumbnail || '',
           player: built.player || ''
         };
@@ -484,6 +511,7 @@ function buildSitemapSet(posts, options = {}) {
     videoIndex.push({ fileName, newestDate });
   }
 
+  const staticLastmod = normalizeDate(options.staticLastmod) || maxVideoDate;
   let index = '<?xml version="1.0" encoding="UTF-8"?>\n';
   index += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   const staticNames = [...files.keys()].filter(name => !VIDEO_FILE_PATTERN.test(name)).sort((a, b) => {
@@ -494,7 +522,9 @@ function buildSitemapSet(posts, options = {}) {
     return a.localeCompare(b, 'en', { numeric: true });
   });
   for (const name of staticNames) {
-    index += `  <sitemap>\n    <loc>${BASE_URL}/sitemaps/${name}</loc>\n  </sitemap>\n`;
+    index += `  <sitemap>\n    <loc>${BASE_URL}/sitemaps/${name}</loc>\n`;
+    if (staticLastmod) index += `    <lastmod>${staticLastmod}</lastmod>\n`;
+    index += '  </sitemap>\n';
   }
   for (const item of videoIndex) {
     index += `  <sitemap>\n    <loc>${BASE_URL}/sitemaps/${item.fileName}</loc>\n`;
@@ -774,6 +804,17 @@ async function main() {
     for (const [name, xml] of taxonomyFiles) {
       fs.writeFileSync(path.join(outputDir, name), xml, 'utf8');
     }
+    const indexPath = path.join(outputDir, 'sitemap_index.xml');
+    if (fs.existsSync(indexPath)) {
+      const currentIndex = fs.readFileSync(indexPath, 'utf8');
+      const dates = [...currentIndex.matchAll(/<lastmod>(\d{4}-\d{2}-\d{2})<\/lastmod>/g)].map(m => m[1]).sort();
+      const staticLastmod = dates[dates.length - 1] || new Date().toISOString().slice(0, 10);
+      const updatedIndex = currentIndex.replace(
+        /<sitemap>\s*<loc>(https:\/\/www\.missav-j\.com\/sitemaps\/sitemap_(?:pages|categories|studios|actors_\d+)\.xml)<\/loc>(?:\s*<lastmod>[^<]*<\/lastmod>)?\s*<\/sitemap>/g,
+        (_, loc) => `<sitemap>\n    <loc>${loc}</loc>\n    <lastmod>${staticLastmod}</lastmod>\n  </sitemap>`
+      );
+      if (updatedIndex !== currentIndex) fs.writeFileSync(indexPath, updatedIndex, 'utf8');
+    }
     console.log(`[SUCCESS] Updated ${taxonomyFiles.size} static taxonomy/page sitemaps in ${outputDir}`);
     return { files: taxonomyFiles };
   }
@@ -781,6 +822,7 @@ async function main() {
   console.log(`Source: ${API_BASE_URL}`);
   console.log('Cloudflare Worker requests: 0');
   let preferredIds = new Set();
+  const enrichedByPostId = new Map();
   const enrichedPath = path.join(root, 'data', 'seo-enriched-posts.json');
   if (fs.existsSync(enrichedPath)) {
     try {
@@ -788,13 +830,14 @@ async function main() {
       for (const item of Object.values(enrichedDb?.posts || {})) {
         if (item && item.status === 'enriched' && item.video_id) {
           preferredIds.add(String(item.video_id));
+          enrichedByPostId.set(String(item.video_id), item);
         }
       }
     } catch {}
   }
   const fetched = await fetchAllPosts();
   console.log(`[BUILD] Building ${fetched.total.toLocaleString('en-US')} upstream records with clone deduplication...`);
-  const result = buildSitemapSet(fetched.posts, { actors, categories, studios: STUDIOS, preferredIds });
+  const result = buildSitemapSet(fetched.posts, { actors, categories, studios: STUDIOS, preferredIds, enrichedByPostId });
   validateSitemapSet(result, fetched.total);
   const changes = promoteSitemapSet(result.files, outputDir);
   const dupMapPath = path.join(root, 'api', 'duplicate-video-canonicals.json');

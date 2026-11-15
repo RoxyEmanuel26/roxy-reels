@@ -5,13 +5,14 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.102';
-import ui from './ui.js?v=2.8.102';
-import filter from './filter.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
-import { getHubContent } from './hub-content.js?v=2.8.102';
+import api from './api.js?v=2.8.103';
+import ui from './ui.js?v=2.8.103';
+import filter from './filter.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
+import { getHubContent } from './hub-content.js?v=2.8.103';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
+const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;
 let currentPage = 1;
 let totalPages = 1;
 let isLoading = false;
@@ -114,6 +115,52 @@ export function getDeterministicDuration(id) {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
+function getVideoCardWatchHref(post) {
+  const lang = i18n.getLang() || 'en';
+  const canonicalSlug = post.en_slug || post.localized_slugs?.en || post.slug || '';
+  if (typeof window !== 'undefined' && typeof window.missavJGetWatchUrl === 'function') {
+    return `/${lang}${window.missavJGetWatchUrl(post.id, post.code, post.title, canonicalSlug)}`;
+  }
+  const rawCode = String(post.code || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const fallbackId = encodeURIComponent(String(post.id || ''));
+  return `/${lang}/watch/${rawCode ? `${rawCode}-${fallbackId}` : fallbackId}`;
+}
+
+function buildClientHomeHubLinksHtml(lang) {
+  const safeLang = ui.escapeHTML(lang || 'en');
+  const studios = ['S1', "Moody's", 'SOD', 'Attackers', 'IdeaPocket', 'Fitch', 'PRESTIGE', 'FALENO', 'kawaii', 'E-BODY'];
+  const categories = ['Uncensored', 'English Subtitle', 'Drama', 'Romance', 'Solowork', 'Amateur', 'POV', 'VR'];
+  const quickRoutes = [
+    { path: '/trending', label: i18n.t('nav_trending') || 'Trending' },
+    { path: '/recent', label: i18n.t('nav_recent') || 'Recent' },
+    { path: '/popular-actors', label: i18n.t('nav_actors') || 'Popular Actresses' },
+    { path: '/actors', label: i18n.t('nav_all_actors') || 'All Actresses' },
+    { path: '/studios', label: i18n.t('nav_studios') || 'Studios' },
+    { path: '/categories', label: i18n.t('nav_all_categories') || 'Categories' }
+  ];
+
+  const quickItems = quickRoutes
+    .map(r => `<li><a href="/${safeLang}${r.path}">${ui.escapeHTML(r.label)}</a></li>`)
+    .join('');
+  const studioItems = studios
+    .map(s => `<li><a href="/${safeLang}/studio?name=${encodeURIComponent(s)}">${ui.escapeHTML(s)}</a></li>`)
+    .join('');
+  const catItems = categories
+    .map(c => `<li><a href="/${safeLang}/category?name=${encodeURIComponent(c)}">${ui.escapeHTML(i18n.t(`category_${c.toLowerCase().replace(/[^a-z0-9]/g, '_')}`) || c)}</a></li>`)
+    .join('');
+
+  return `
+    <nav aria-label="Popular Hubs & Studios" class="home-hub-links">
+      <h2>${ui.escapeHTML(i18n.t('nav_explore') || 'Explore Catalog')}</h2>
+      <ul class="home-hub-links-list">${quickItems}</ul>
+      <h2>${ui.escapeHTML(i18n.t('nav_studios') || 'Popular Studios')}</h2>
+      <ul class="home-hub-links-list">${studioItems}</ul>
+      <h2>${ui.escapeHTML(i18n.t('nav_all_categories') || 'Popular Categories')}</h2>
+      <ul class="home-hub-links-list">${catItems}</ul>
+    </nav>
+  `;
+}
+
 /**
  * Renders single video card markup adhering to YouTube + apiJAV clean layout guidelines (Safe from XSS, featuring Staggered Delay)
  * @param {Object} post - API Video/post data object
@@ -129,6 +176,8 @@ export function renderVideoCard(post, index = 0) {
   const safeStudio = ui.escapeHTML(post.studio || '');
   const safeCode = ui.escapeHTML(post.code || '');
   const safeThumbnail = ui.escapeHTML(ui.getProxiedThumbnail(post.thumbnail) || '');
+  const lang = i18n.getLang() || 'en';
+  const safeWatchHref = ui.escapeHTML(getVideoCardWatchHref(post));
   
   // Resolve duration fallback if missing or invalid
   let duration = post.duration || '';
@@ -178,10 +227,10 @@ export function renderVideoCard(post, index = 0) {
   // Format Duration indicator
   const durationBadge = safeDuration ? `<span class="card-duration">${safeDuration}</span>` : '';
 
-  // Format Studio link
+  // Format Studio link (skip crawl link on thin 'Other' bucket to match Worker noindex rule)
   const canonicalStudio = resolveStudioAlias(post.studio || '');
-  const studioMarkup = safeStudio 
-    ? `<span class="card-studio" data-studio="${encodeURIComponent(canonicalStudio)}">` + safeStudio + `</span>`
+  const studioMarkup = safeStudio
+    ? `<a href="/${lang}/studio?name=${encodeURIComponent(canonicalStudio)}" class="card-studio" data-studio="${encodeURIComponent(canonicalStudio)}">${safeStudio}</a>`
     : `<span class="card-studio text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
 
   // Format views
@@ -201,24 +250,26 @@ export function renderVideoCard(post, index = 0) {
 
   return `
     <article class="video-card fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-en-slug="${ui.escapeHTML(post.en_slug || post.localized_slugs?.en || post.slug || '')}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
-      <div class="card-thumb">
-        <img 
-          src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
-          alt="${safeTitle}" 
-          loading="${loadingStrategy}" 
-          ${fetchPriority}
-          decoding="async"
-          width="320" 
-          height="180"
-          onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
-        >
-        ${uncensoredBadge}
-        ${durationBadge}
-        ${hdBadge}
-        <div class="card-hover-overlay">▶ ${i18n.t('play_video')}</div>
-      </div>
+      <a href="${safeWatchHref}" class="card-watch-link card-thumb-link" aria-label="${safeTitle}">
+        <div class="card-thumb">
+          <img
+            src="${safeThumbnail || SVG_FALLBACK_THUMB}"
+            alt="${safeTitle}"
+            loading="${loadingStrategy}"
+            ${fetchPriority}
+            decoding="async"
+            width="320"
+            height="180"
+            onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
+          >
+          ${uncensoredBadge}
+          ${durationBadge}
+          ${hdBadge}
+          <div class="card-hover-overlay">▶ ${i18n.t('play_video')}</div>
+        </div>
+      </a>
       <div class="card-info">
-        <h3 class="card-title" title="${safeTitle}" data-original-title="${ui.escapeHTML(originalTitle)}">${safeTitle}</h3>
+        <h3 class="card-title" title="${safeTitle}" data-original-title="${ui.escapeHTML(originalTitle)}"><a href="${safeWatchHref}" class="card-watch-link card-title-link">${safeTitle}</a></h3>
         <div class="card-meta">
           ${studioMarkup}
           <span class="card-dot">•</span>
@@ -277,7 +328,7 @@ export async function init(filters = {}) {
         <div class="banner-icon">🎭</div>
         <div class="banner-content">
           <span class="banner-label">${i18n.t('banner_actor_label')}</span>
-          <h2 class="banner-title">${actorName}</h2>
+          <h1 class="banner-title">${actorName}</h1>
           <p class="banner-desc">${i18n.t('banner_actor_desc', { name: actorName })}</p>
         </div>
         <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
@@ -307,7 +358,7 @@ export async function init(filters = {}) {
           <div class="banner-icon">🎬</div>
           <div class="banner-content">
             <span class="banner-label">${i18n.t('banner_studio_label')}</span>
-            <h2 class="banner-title">${studioName}</h2>
+            <h1 class="banner-title">${studioName}</h1>
             <p class="banner-desc">${i18n.t('banner_studio_desc', { name: studioName })}</p>
           </div>
           <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
@@ -322,7 +373,7 @@ export async function init(filters = {}) {
         <div class="banner-icon">🏷️</div>
         <div class="banner-content">
           <span class="banner-label">${i18n.t('banner_tag_label')}</span>
-          <h2 class="banner-title">${tagName}</h2>
+          <h1 class="banner-title">${tagName}</h1>
           <p class="banner-desc">${i18n.t('banner_tag_desc', { name: tagName })}</p>
         </div>
         <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
@@ -358,7 +409,7 @@ export async function init(filters = {}) {
             <div class="banner-icon">📁</div>
             <div class="banner-content">
               <span class="banner-label">${i18n.t('banner_category_label')}</span>
-              <h2 class="banner-title">${displayName}</h2>
+              <h1 class="banner-title">${displayName}</h1>
               <p class="banner-desc">${i18n.t('banner_category_desc', { name: displayName })}</p>
             </div>
             <button class="banner-close" onclick="window.missavJNavigate('/')" title="Clear Filter">✕</button>
@@ -369,12 +420,33 @@ export async function init(filters = {}) {
     }
   }
 
+  let feedHeaderHtml = '';
+  if (!taxonomyBannerHtml) {
+    let pageHeading = i18n.t('home_feed_h1') || 'MISSAV-J — Free HD JAV Streaming';
+    if (currentFilters.category) {
+      const catKey = `category_${String(currentFilters.category).toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+      pageHeading = i18n.t(catKey) || currentFilters.category;
+    } else if (currentFilters.orderby === 'views') {
+      pageHeading = i18n.t('nav_trending') || 'Trending Videos';
+    } else if (currentFilters.orderby === 'date' && !randomMode) {
+      pageHeading = i18n.t('nav_recent') || 'Recent Videos';
+    }
+    feedHeaderHtml = `
+      <div class="feed-page-header">
+        <h1 class="feed-page-h1">${ui.escapeHTML(pageHeading)}</h1>
+      </div>
+    `;
+  }
+
+  const activeLang = i18n.getLang() || 'en';
+  const homeHubFooterHtml = randomMode ? buildClientHomeHubLinksHtml(activeLang) : '';
+
   mainApp.innerHTML = `
     <!-- Sticky Horizontal Filter Bar Container -->
     <div id="filter-bar-container" class="filter-bar-container"></div>
     
-    <!-- Dynamic Taxonomy Banner -->
-    ${taxonomyBannerHtml}
+    <!-- Dynamic Taxonomy Banner or Feed Page H1 -->
+    ${taxonomyBannerHtml || feedHeaderHtml}
     
     <!-- Info bar & total video count tracking -->
     <div class="feed-info-bar">
@@ -391,6 +463,7 @@ export async function init(filters = {}) {
       <span>${i18n.t('loading_more_videos')}</span>
     </div>
     <div id="scroll-sentinel" class="scroll-sentinel"></div>
+    ${homeHubFooterHtml}
   `;
 
   // 2. Render initial page skeletal loaders
@@ -463,8 +536,9 @@ function syncFeedRobotsMeta(data, filters) {
   const isThinTaxonomy = (
     Boolean(filters.actor) ||
     Boolean(filters.tag) ||
-    Boolean(filters.category)
-  ) && totalCount > 0 && totalCount < 2;
+    Boolean(filters.category) ||
+    Boolean(filters.studio)
+  ) && totalCount > 0 && totalCount < TAXONOMY_MIN_INDEXABLE_VIDEOS;
   const isNonIndexable = pageNum > 1 || Boolean(filters.search) || filters.studio === 'Other' || isThinTaxonomy;
   ui.setRobotsMeta(isNonIndexable);
 }
@@ -710,8 +784,11 @@ function bindGridClicks(grid) {
   if (!grid) return;
 
   grid.addEventListener('click', (e) => {
+    const isModifiedClick = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+
     const actorChip = e.target.closest('.actor-chip');
     if (actorChip) {
+      if (isModifiedClick) return;
       e.preventDefault();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
       window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
@@ -720,6 +797,8 @@ function bindGridClicks(grid) {
 
     const studioName = e.target.closest('.card-studio');
     if (studioName) {
+      if (isModifiedClick && studioName.tagName === 'A') return;
+      if (studioName.tagName === 'A') e.preventDefault();
       const studio = decodeURIComponent(studioName.dataset.studio);
       window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
       return;
@@ -727,6 +806,9 @@ function bindGridClicks(grid) {
 
     const card = e.target.closest('.video-card');
     if (card && !card.classList.contains('skeleton-card')) {
+      const watchAnchor = e.target.closest('a.card-watch-link');
+      if (watchAnchor && isModifiedClick) return;
+      if (watchAnchor) e.preventDefault();
       const postId = card.dataset.id;
       const code = card.dataset.code || '';
       const title = card.dataset.title || '';

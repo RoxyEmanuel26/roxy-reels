@@ -50,13 +50,15 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: 'gemini-3.5-flash'
         run: |
-          node scripts/seo-enrich.mjs --limit=25 || echo "AI Enrichment completed with soft fallback"
+          node scripts/seo-enrich.mjs --limit=50 || echo "AI Enrichment completed with soft fallback"
 
       - name: Submit latest URLs to IndexNow (Bing & Yandex)
         run: |
           node scripts/indexnow.mjs || echo "IndexNow submission completed with soft fallback"
 
       - name: Auto-post daily featured highlight to Twitter/X
+        # Disabled: X API requires paid tier (per owner decision)
+        if: false
         env:
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
           TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}

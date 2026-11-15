@@ -4,8 +4,8 @@
  * dan perutean dinamis ke feed video berbasis API.
  */
 
-import ui from './ui.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
+import ui from './ui.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
 
 // Daftar Studio JAV terkemuka terkurasi (disesuaikan dengan nama studio aktif pada upstream API)
 const POPULAR_STUDIOS = [
@@ -63,18 +63,20 @@ function renderStudiosGrid(studiosList, searchQuery = '') {
   }
 
   // Render kartu studio dengan staggered animation delay
+  const lang = i18n.getLang() || 'en';
   grid.innerHTML = studiosList.map((studio, idx) => {
     const safeName = ui.escapeHTML(studio.name);
     const safeLabel = ui.escapeHTML(studio.label);
+    const studioHref = `/${lang}/studio?name=${encodeURIComponent(studio.name)}`;
     const animationStyle = `style="animation-delay: calc(${idx % 12} * 45ms);"`;
 
     return `
-      <div class="studio-browse-card fadeInUp" data-name="${encodeURIComponent(studio.name)}" ${animationStyle}>
+      <a href="${studioHref}" class="studio-browse-card fadeInUp" data-name="${encodeURIComponent(studio.name)}" ${animationStyle}>
         <div class="studio-logo-box">
           <span class="studio-icon-text">${safeLabel}</span>
         </div>
         <div class="studio-browse-name">${safeName}</div>
-      </div>
+      </a>
     `;
   }).join('');
 }
@@ -90,7 +92,7 @@ export function init() {
   mainApp.innerHTML = `
     <div class="taxonomy-browse-header">
       <div>
-        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('studios_browse_title')}</h2>
+        <h1 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('studios_browse_title')}</h1>
         <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('studios_browse_desc')}</p>
       </div>
       
@@ -139,8 +141,10 @@ export function init() {
   const grid = document.getElementById('studios-grid');
   if (grid) {
     grid.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
       const card = e.target.closest('.studio-browse-card');
       if (card) {
+        e.preventDefault();
         const studioName = decodeURIComponent(card.dataset.name);
         window.missavJNavigate(`/studio?name=${encodeURIComponent(studioName)}`);
       }

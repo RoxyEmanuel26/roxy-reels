@@ -34,10 +34,16 @@ const ReferralSystem = {
         });
       }
       
-      // Clean up URL without reloading the page
+      // Clean up tracking params ONLY while preserving functional query params (?name=, ?q=, ?page=)
       if (window.history.replaceState) {
-        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-        window.history.replaceState({path: newUrl}, '', newUrl);
+        try {
+          const cleanUrl = new URL(window.location.href);
+          ['ref', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid']
+            .forEach(p => cleanUrl.searchParams.delete(p));
+          const remainingSearch = cleanUrl.searchParams.toString();
+          const newRelativeUrl = cleanUrl.pathname + (remainingSearch ? `?${remainingSearch}` : '') + cleanUrl.hash;
+          window.history.replaceState({ path: newRelativeUrl }, '', newRelativeUrl);
+        } catch (e) {}
       }
     }
   },
@@ -77,11 +83,13 @@ const ReferralSystem = {
   injectReferralToLinks() {
     const refSource = this.getReferral() || 'direct';
     
-    // Example: append ?start=ref_X to Telegram links
+    // Only append ?start=ref_X on Telegram bot links, leaving public channel URLs clean
     const tgLinks = document.querySelectorAll('a[href^="https://t.me/"]');
     tgLinks.forEach(link => {
       try {
         const url = new URL(link.href);
+        const tgPath = url.pathname.replace(/^\/+/, '');
+        if (!tgPath || tgPath.includes('/') || !/bot$/i.test(tgPath)) return;
         if (!url.searchParams.has('start')) {
           url.searchParams.set('start', `ref_${refSource}`);
           link.href = url.toString();

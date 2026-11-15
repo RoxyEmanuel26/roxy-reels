@@ -4,12 +4,12 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.102';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
-import { Analytics } from './analytics.js?v=2.8.102';
-import ReferralSystem from './referral.js?v=2.8.102';
-import './ads.js?v=2.8.102';
+import ui from './ui.js?v=2.8.103';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
+import { Analytics } from './analytics.js?v=2.8.103';
+import ReferralSystem from './referral.js?v=2.8.103';
+import './ads.js?v=2.8.103';
 
 // Initialize Global In-Memory SPA States
 // FIX: Validate Array type — JSON.parse() doesn't throw on non-array values (e.g. string/number),
@@ -252,7 +252,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
   if (postsList.length === 0) {
     mainApp.innerHTML = `
       <div class="saved-list-header">
-        <h2 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-2);">${title}</h2>
+        <h1 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-2);">${title}</h1>
       </div>
       <div class="empty-state">
         <div class="empty-icon">📁</div>
@@ -268,7 +268,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
   // Render cards grid with staggered animation delay
   mainApp.innerHTML = `
     <div class="saved-list-header" style="margin-bottom: var(--space-6);">
-      <h2 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-1);">${title}</h2>
+      <h1 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-1);">${title}</h1>
       <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('video_available', { total: postsList.length })}</p>
     </div>
     <div class="video-grid" id="saved-video-grid">
@@ -280,8 +280,11 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
   const grid = document.getElementById('saved-video-grid');
   if (grid) {
     grid.addEventListener('click', (e) => {
+      const isModifiedClick = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+
       const actorChip = e.target.closest('.actor-chip');
       if (actorChip) {
+        if (isModifiedClick) return;
         e.preventDefault();
         const actorName = safeDecodeURIComponent(actorChip.dataset.actor);
         window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
@@ -290,6 +293,8 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
       const studioName = e.target.closest('.card-studio');
       if (studioName) {
+        if (isModifiedClick && studioName.tagName === 'A') return;
+        if (studioName.tagName === 'A') e.preventDefault();
         const studio = safeDecodeURIComponent(studioName.dataset.studio);
         window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
         return;
@@ -297,6 +302,9 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
       const card = e.target.closest('.video-card');
       if (card && !card.classList.contains('skeleton-card')) {
+        const watchAnchor = e.target.closest('a.card-watch-link');
+        if (watchAnchor && isModifiedClick) return;
+        if (watchAnchor) e.preventDefault();
         const postId = card.dataset.id;
         const code = card.dataset.code || '';
         const title = card.dataset.title || '';
@@ -416,21 +424,21 @@ function renderStaticLegal(key) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.102').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.102').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.102').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.102').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.102').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.102').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.102').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.102').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.102').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.103').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.103').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.103').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.103').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.103').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.103').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.103').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.103').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.103').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.102').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.102').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.102').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.102').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.103').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.103').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.103').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.103').then(m => m.init()),
   
   // Playlists routing mapping
   '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
@@ -491,7 +499,10 @@ function updateSEOTags(routePath, targetId) {
     robotsMeta.name = 'robots';
     document.head.appendChild(robotsMeta);
   }
-  robotsMeta.content = isNoindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+  const preserveSsrRobots = shouldPreserveInitialSsr() && INITIAL_SSR_STATE?.robots;
+  robotsMeta.content = preserveSsrRobots
+    ? INITIAL_SSR_STATE.robots
+    : (isNoindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
 
   let cleanRoutePath = routePath;
   if (routePath === '/watch') {
@@ -566,6 +577,61 @@ function updateSEOTags(routePath, targetId) {
   updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoindex);
 }
 
+let INITIAL_SSR_STATE = null;
+let hasLeftInitialSsrUrl = false;
+
+function captureInitialSsrState() {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return null;
+  const initialFallback = document.querySelector('#app-content .seo-fallback');
+  const hasRichFallback = Boolean(
+    initialFallback &&
+    initialFallback.querySelector('nav, .video-ai-enrichment, .video-release-details, .home-hub-links, .taxonomy-profile-summary, .hub-editorial-guide')
+  );
+  const jsonLdEl = document.getElementById('json-ld-data');
+  const initialJsonLdText = jsonLdEl ? (jsonLdEl.textContent || '') : '';
+  let hasRichJsonLd = false;
+  if (initialJsonLdText) {
+    try {
+      const parsed = JSON.parse(initialJsonLdText);
+      const nodes = Array.isArray(parsed?.['@graph']) ? parsed['@graph'] : [parsed];
+      hasRichJsonLd = nodes.some(node => {
+        if (!node || typeof node !== 'object') return false;
+        if (['VideoObject', 'FAQPage'].includes(node['@type'])) return true;
+        if (node['@type'] === 'ItemList' && (node.numberOfItems > 0 || (Array.isArray(node.itemListElement) && node.itemListElement.length > 0))) return true;
+        if (node['@type'] === 'ProfilePage' && node.mainEntity?.alternateName) return true;
+        return false;
+      });
+    } catch (_) {}
+  }
+  return {
+    pathWithSearch: window.location.pathname + window.location.search,
+    hasRichSsr: hasRichFallback || hasRichJsonLd,
+    hasRichJsonLd,
+    title: document.title || '',
+    description: document.getElementById('meta-description')?.getAttribute('content') || '',
+    ogTitle: document.getElementById('og-title')?.getAttribute('content') || '',
+    ogDescription: document.getElementById('og-description')?.getAttribute('content') || '',
+    twitterTitle: document.getElementById('twitter-title')?.getAttribute('content') || '',
+    twitterDescription: document.getElementById('twitter-description')?.getAttribute('content') || '',
+    robots: document.querySelector('meta[name="robots"]')?.getAttribute('content') || '',
+    jsonLdText: initialJsonLdText
+  };
+}
+
+function shouldPreserveInitialSsr() {
+  return Boolean(
+    typeof window !== 'undefined' &&
+    INITIAL_SSR_STATE &&
+    INITIAL_SSR_STATE.hasRichSsr &&
+    !hasLeftInitialSsrUrl &&
+    (window.location.pathname + window.location.search) === INITIAL_SSR_STATE.pathWithSearch
+  );
+}
+
+if (typeof window !== 'undefined') {
+  window.__missavJShouldPreserveInitialSsrTitle = () => shouldPreserveInitialSsr();
+}
+
 /**
  * Helper: safely set meta tag content by ID
  */
@@ -582,6 +648,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoinde
   const baseDomain = window.location.origin;
   const currentLang = i18n.getLang();
   const isWatchPage = routePath === '/watch' && window.missavJState.activeVideo && !window.missavJState.activeVideo._isSeoFallback;
+  const preserveSsr = shouldPreserveInitialSsr();
   
   // Map locale codes to OG locale format
   const localeMap = {
@@ -595,11 +662,15 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoinde
     const translatedTitle = i18n.translateVideoTitle(post.title);
     const { baseCode, editionKey } = extractCodeAndEdition(post.code);
     const formattedTitle = formatWatchEditionTitle(translatedTitle, editionKey, currentLang);
-    const pageTitle = `${formattedTitle} — MISSAV-J`;
+    const pageTitle = preserveSsr && INITIAL_SSR_STATE?.title ? INITIAL_SSR_STATE.title : `${formattedTitle} — MISSAV-J`;
     const normalizedCode = slugify(baseCode || '');
     const normalizedTitle = slugify(formattedTitle);
     const displayCode = normalizedCode && (normalizedTitle === normalizedCode || normalizedTitle.startsWith(`${normalizedCode}-`)) ? '' : (baseCode || '');
-    const description = `${i18n.t('meta_watch_prefix') || 'Watch'} ${displayCode} ${formattedTitle}`.replace(/\s+/g, ' ').trim();
+    const fallbackWatchDesc = `${i18n.t('meta_watch_prefix') || 'Watch'} ${displayCode} ${formattedTitle}`.replace(/\s+/g, ' ').trim();
+    const description = preserveSsr && INITIAL_SSR_STATE?.description ? INITIAL_SSR_STATE.description : fallbackWatchDesc;
+    if (preserveSsr && INITIAL_SSR_STATE?.title) {
+      document.title = INITIAL_SSR_STATE.title;
+    }
     // Gunakan image proxy internal untuk konsistensi dengan [[catchall]].js agar terhindar dari hotlink protection CDN
     const hasValidThumbnail = Boolean(post.thumbnail && String(post.thumbnail).trim());
     const proxiedThumb = hasValidThumbnail ? ui.getProxiedThumbnail(post.thumbnail) : '';
@@ -613,20 +684,20 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoinde
     // Open Graph
     setMetaContent('og-type', 'video.other');
     setMetaContent('og-url', canonicalUrl);
-    setMetaContent('og-title', pageTitle);
-    setMetaContent('og-description', description);
+    setMetaContent('og-title', preserveSsr && INITIAL_SSR_STATE?.ogTitle ? INITIAL_SSR_STATE.ogTitle : pageTitle);
+    setMetaContent('og-description', preserveSsr && INITIAL_SSR_STATE?.ogDescription ? INITIAL_SSR_STATE.ogDescription : description);
     setMetaContent('og-image', thumbnail);
     setMetaContent('og-locale', localeMap[currentLang] || 'en_US');
     
     // Twitter Card
     setMetaContent('twitter-card', 'summary_large_image');
-    setMetaContent('twitter-title', pageTitle);
-    setMetaContent('twitter-description', description);
+    setMetaContent('twitter-title', preserveSsr && INITIAL_SSR_STATE?.twitterTitle ? INITIAL_SSR_STATE.twitterTitle : pageTitle);
+    setMetaContent('twitter-description', preserveSsr && INITIAL_SSR_STATE?.twitterDescription ? INITIAL_SSR_STATE.twitterDescription : description);
     setMetaContent('twitter-image', thumbnail);
 
-    // JSON-LD: VideoObject & BreadcrumbList schema (@graph)
+    // JSON-LD: VideoObject & BreadcrumbList schema (@graph) — preserve SSR FAQPage/VideoObject on initial WRS hydration
     const jsonLdEl = document.getElementById('json-ld-data');
-    if (jsonLdEl) {
+    if (jsonLdEl && !(preserveSsr && INITIAL_SSR_STATE?.hasRichJsonLd)) {
       let uploadDate = '';
       if (post.date) {
         const parsedDate = new Date(post.date);
@@ -819,34 +890,37 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoinde
         ? existingTitle
         : (pageTitles[routePath] || localizedHomeTitle));
     const existingMetaDesc = document.getElementById('meta-description')?.getAttribute('content') || '';
-    const desc = isUnknownRoute
+    const computedDesc = isUnknownRoute
       ? 'The page you are looking for could not be found.'
       : (isFallbackWatchRoute && existingMetaDesc
         ? existingMetaDesc
         : (pageDescriptions[routePath] || pageDescriptions['/']));
 
-    document.title = title;
+    const finalTitle = preserveSsr && INITIAL_SSR_STATE?.title ? INITIAL_SSR_STATE.title : title;
+    const desc = preserveSsr && INITIAL_SSR_STATE?.description ? INITIAL_SSR_STATE.description : computedDesc;
+
+    document.title = finalTitle;
     
     // Meta Description
     setMetaContent('meta-description', desc);
     
     // Open Graph
-    setMetaContent('og-type', 'website');
+    setMetaContent('og-type', preserveSsr && INITIAL_SSR_STATE?.hasRichJsonLd && routePath === '/watch' ? 'video.other' : 'website');
     setMetaContent('og-url', canonicalUrl);
-    setMetaContent('og-title', title);
-    setMetaContent('og-description', desc);
+    setMetaContent('og-title', preserveSsr && INITIAL_SSR_STATE?.ogTitle ? INITIAL_SSR_STATE.ogTitle : finalTitle);
+    setMetaContent('og-description', preserveSsr && INITIAL_SSR_STATE?.ogDescription ? INITIAL_SSR_STATE.ogDescription : desc);
     setMetaContent('og-image', '/assets/images/logo.webp');
     setMetaContent('og-locale', localeMap[currentLang] || 'en_US');
 
     // Twitter Card
     setMetaContent('twitter-card', 'summary');
-    setMetaContent('twitter-title', title);
-    setMetaContent('twitter-description', desc);
+    setMetaContent('twitter-title', preserveSsr && INITIAL_SSR_STATE?.twitterTitle ? INITIAL_SSR_STATE.twitterTitle : finalTitle);
+    setMetaContent('twitter-description', preserveSsr && INITIAL_SSR_STATE?.twitterDescription ? INITIAL_SSR_STATE.twitterDescription : desc);
     setMetaContent('twitter-image', '/assets/images/logo.webp');
 
-    // JSON-LD: Route-specific schema (WebSite/Organization, CollectionPage, ProfilePage, AboutPage, BreadcrumbList, ItemList)
+    // JSON-LD: Route-specific schema (preserve rich SSR ProfilePage/ItemList/FAQPage on initial WRS hydration)
     const jsonLdEl = document.getElementById('json-ld-data');
-    if (jsonLdEl) {
+    if (jsonLdEl && !(preserveSsr && INITIAL_SSR_STATE?.hasRichJsonLd)) {
       if (routePath === '/') {
         const websiteSchema = {
           '@type': 'WebSite',
@@ -875,7 +949,7 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoinde
             'height': 192
           },
           'sameAs': [
-            'https://t.me/missav_j'
+            'https://t.me/missav_jav_english'
           ]
         };
         jsonLdEl.textContent = JSON.stringify({
@@ -1007,6 +1081,9 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath, isNoinde
 }
 
 function navigate(urlPath) {
+  if (INITIAL_SSR_STATE && (window.location.pathname + window.location.search) !== INITIAL_SSR_STATE.pathWithSearch) {
+    hasLeftInitialSsrUrl = true;
+  }
   const { lang, routePath } = parseUrl(urlPath);
   
   // Sync selected language dynamically if it differs from stored preference.
@@ -1077,7 +1154,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.102').then(m => {
+    import('./player.js?v=2.8.103').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -1095,7 +1172,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.102').then(m => {
+    import('./player.js?v=2.8.103').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -1193,7 +1270,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.102').then(m => {
+  import('./player.js?v=2.8.103').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -1401,7 +1478,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.102').then(m => {
+      import('./player.js?v=2.8.103').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
@@ -1417,7 +1494,18 @@ function setupKeyboardHotkeys() {
   window.addEventListener('keydown', (e) => {
     // Escape keyboard listening if active element is an input bar
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-    
+
+    // /: Quickly focus header search box from anywhere on the site
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const searchInput = document.getElementById('header-search-input');
+      if (searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      return;
+    }
+
     const iframe = document.querySelector('iframe');
     if (!iframe) return;
 
@@ -2079,7 +2167,7 @@ const HEADER_CATEGORIES = [
       { labelKey: 'sub_new_releases', defaultLabel: 'New Releases', route: '/' },
       { labelKey: 'sub_uncensored_leak', defaultLabel: 'Uncensored leak', route: '/tag?name=Uncensored%20leak' },
       { labelKey: 'sub_actress_list', defaultLabel: 'Actress list', route: '/actors' },
-      { labelKey: 'sub_actress_ranking', defaultLabel: 'Actress ranking MAY 2026', route: '/actors' },
+      { labelKey: 'sub_actress_ranking', defaultLabel: 'Top Actresses', route: '/popular-actors' },
       { labelKey: 'sub_genre', defaultLabel: 'Genre', route: '/categories' },
       { labelKey: 'sub_maker', defaultLabel: 'Maker', route: '/studios' },
       { labelKey: 'sub_vr', defaultLabel: 'VR', route: '/tag?name=VR' },
@@ -2321,6 +2409,9 @@ document.addEventListener('DOMContentLoaded', () => {
     navigate(window.location.pathname + window.location.search);
   });
   
+  // Snapshot rich Worker SSR metadata/schema before initial SPA hydration replaces DOM
+  INITIAL_SSR_STATE = captureInitialSsrState();
+
   navigate(window.location.pathname + window.location.search);
 });
 

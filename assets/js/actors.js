@@ -4,9 +4,9 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
-import { ALL_ACTORS } from './actors_data.js?v=2.8.102';
+import ui from './ui.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
+import { ALL_ACTORS } from './actors_data.js?v=2.8.103';
 
 /**
  * Render actor grid cards based on filtered data
@@ -52,9 +52,11 @@ function renderActorsGrid(actorsList, searchQuery = '') {
 
     const lang = i18n.getLang() || 'en';
     const actorUrl = `/${lang}/actor?name=${encodeURIComponent(actor.name)}`;
+    // Match Worker thin-taxonomy policy (< 5 indexed releases) so PageRank focuses on indexable hubs
+    const relAttr = actor.count !== undefined && Number(actor.count) < 5 ? ' rel="nofollow"' : '';
 
     return `
-      <a href="${actorUrl}" class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
+      <a href="${actorUrl}"${relAttr} class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
         <div class="actor-avatar-circle">
           <span class="actor-initial">${safeLetter}</span>
         </div>
@@ -84,7 +86,7 @@ export function init() {
   mainApp.innerHTML = `
     <div class="taxonomy-browse-header">
       <div>
-        <h2 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('actors_browse_title_all') || 'All Actors'}</h2>
+        <h1 style="font-size: var(--text-lg); font-weight: 800; margin-bottom: var(--space-1);">${i18n.t('actors_browse_title_all') || 'All Actors'}</h1>
         <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('actors_browse_desc_all') || 'Browse and search all JAV actresses alphabetically'}</p>
       </div>
       

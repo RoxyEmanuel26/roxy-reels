@@ -4,7 +4,7 @@
  * serta fungsi lokalisasi statik & dinamis untuk seluruh antarmuka SPA.
  */
 
-import ui from './ui.js?v=2.8.102';
+import ui from './ui.js?v=2.8.103';
 
 // 13-language configuration with circular flag icons from /assets/pics
 export const LANGS = [
@@ -568,34 +568,34 @@ const DICTIONARY = {
 
   // SEO Meta Titles, Descriptions & Watch Prefixes (matching functions/[[catchall]].js SEO_I18N)
   meta_home_title: {
-    en: 'MISSAV-J | Premium JAV Streaming',
-    id: 'MISSAV-J | Streaming JAV Premium',
-    'zh-TW': 'MISSAV-J | 高級 JAV 串流',
-    'zh-CN': 'MISSAV-J | 高级 JAV 流媒体',
-    ja: 'MISSAV-J | プレミアムJAVストリーミング',
-    ko: 'MISSAV-J | 프리미엄 JAV 스트리밍',
-    ms: 'MISSAV-J | Penstriman JAV Premium',
-    th: 'MISSAV-J | สตรีมมิ่ง JAV พรีเมียม',
-    de: 'MISSAV-J | Premium JAV Streaming',
-    fr: 'MISSAV-J | Streaming JAV Premium',
-    vi: 'MISSAV-J | Truyền phát JAV Cao cấp',
-    fil: 'MISSAV-J | Premium JAV Streaming',
-    pt: 'MISSAV-J | Streaming JAV Premium'
+    en: 'MISSAV-J | Watch Free HD JAV Online — 120,000+ Videos Daily',
+    id: 'MISSAV-J | Nonton JAV HD Gratis Online — 120.000+ Video Terbaru',
+    'zh-TW': 'MISSAV-J | 免費高畫質 JAV 線上看 — 12萬+ 每日更新影片',
+    'zh-CN': 'MISSAV-J | 免费高清 JAV 在线看 — 12万+ 每日更新影片',
+    ja: 'MISSAV-J | 無料HD JAVストリーミング — 12万本以上を毎日更新',
+    ko: 'MISSAV-J | 무료 HD JAV 스트리밍 — 12만 편 이상 매일 업데이트',
+    ms: 'MISSAV-J | Tonton JAV HD Percuma — 120,000+ Video Harian',
+    th: 'MISSAV-J | ดูหนัง JAV HD ฟรีออนไลน์ — อัปเดตทุกวันกว่า 120,000+ เรื่อง',
+    de: 'MISSAV-J | Kostenloses HD JAV Streaming — Über 120.000 Videos täglich',
+    fr: 'MISSAV-J | Streaming JAV HD Gratuit — Plus de 120 000 vidéos',
+    vi: 'MISSAV-J | Xem Phim JAV HD Miễn Phí — Hơn 120.000+ Video Mới',
+    fil: 'MISSAV-J | Manood ng Libreng HD JAV Online — 120,000+ Videos Araw-araw',
+    pt: 'MISSAV-J | Assistir JAV HD Grátis Online — 120.000+ Vídeos Diários'
   },
   meta_home_desc: {
-    en: 'Watch the best premium JAV streaming. Explore the latest releases, trending videos, and top actresses.',
-    id: 'Tonton video JAV premium terbaik. Jelajahi rilis terbaru, video trending, dan aktris top.',
-    'zh-TW': '觀看最好的高級 JAV 串流。探索最新發布、熱門影片和頂級女優。',
-    'zh-CN': '观看最好的高级 JAV 流媒体。探索最新发布、热门视频和顶级女优。',
-    ja: '最高のプレミアムJAVストリーミングを視聴。最新リリース、トレンド動画、人気女優を探索。',
-    ko: '최고의 프리미엄 JAV 스트리밍을 시청하세요. 최신 릴리스, 인기 동영상 및 최고 여배우를 탐색하십시오.',
-    ms: 'Tonton penstriman JAV premium terbaik. Terokai keluaran terkini, video trending dan pelakon popular.',
-    th: 'ดูการสตรีม JAV พรีเมียมที่ดีที่สุด สำรวจการเปิดตัวล่าสุด วิดีโอยอดนิยม และนักแสดงหญิงชั้นนำ',
-    de: 'Sehen Sie sich die besten Premium-JAV-Streams an. Entdecken Sie die neuesten Veröffentlichungen, Trendvideos und Top-Schauspielerinnen.',
-    fr: 'Regardez le meilleur streaming JAV premium. Découvrez les dernières sorties, les vidéos tendance et les meilleures actrices.',
-    vi: 'Xem truyền phát JAV cao cấp tốt nhất. Khám phá các bản phát hành mới nhất, video thịnh hành và các nữ diễn viên hàng đầu.',
-    fil: 'Panoorin ang pinakamahusay na premium JAV streaming. Tuklasin ang mga pinakabagong release, trending videos, at top actresses.',
-    pt: 'Assista ao melhor streaming JAV premium. Explore os lançamentos mais recentes, vídeos em alta e as melhores atrizes.'
+    en: 'Stream 120,000+ HD JAV videos free on MISSAV-J with daily updates, English subtitles, Uncensored Leak releases, top actresses, and studio catalogs.',
+    id: 'Nonton 120.000+ video JAV HD gratis di MISSAV-J dengan update harian, Sub Indo, English Subtitle, Uncensored Leak, dan katalog aktris terlengkap.',
+    'zh-TW': '在 MISSAV-J 免費線上觀看超過 120,000 部高畫質 JAV 影片，每日更新、無碼流出、中文字幕及完整女優與片商索引。',
+    'zh-CN': '在 MISSAV-J 免费在线观看超过 120,000 部高清 JAV 影片，每日更新、无码流出、中文字幕及完整女优与片商索引。',
+    ja: 'MISSAV-Jで120,000本以上のHD JAV動画を無料視聴。毎日更新の新作、無修正流出、人気女優やメーカー別カタログを高速再生。',
+    ko: 'MISSAV-J에서 120,000편 이상의 HD JAV 동영상을 무료로 감상하세요. 매일 최신 업데이트, 노모 유출 및 인기 여배우 풀 카탈로그.',
+    ms: 'Strim 120,000+ video JAV HD percuma di MISSAV-J dengan kemas kini harian, sari kata Inggeris, Uncensored Leak dan direktori pelakon lengkap.',
+    th: 'สตรีมวิดีโอ JAV HD กว่า 120,000+ เรื่องฟรีบน MISSAV-J อัปเดตใหม่ทุกวัน ครบทั้งซับไทย ซับอังกฤษ Uncensored Leak และทำเนียบนักแสดงหญิง',
+    de: 'Streamen Sie über 120.000 HD JAV-Videos kostenlos auf MISSAV-J mit täglichen Updates, englischen Untertiteln, Uncensored Leaks und Darsteller-Verzeichnis.',
+    fr: 'Regardez plus de 120 000 vidéos JAV HD gratuites sur MISSAV-J avec mises à jour quotidiennes, sous-titres anglais, Uncensored Leak et catalogue complet.',
+    vi: 'Xem miễn phí hơn 120.000 video JAV HD trên MISSAV-J, cập nhật mỗi ngày, đầy đủ Vietsub, phụ đề tiếng Anh, Uncensored Leak và danh sách diễn viên.',
+    fil: 'Mag-stream ng 120,000+ HD JAV videos nang libre sa MISSAV-J na may araw-araw na update, English subtitles, Uncensored Leak, at direktoryo ng aktres.',
+    pt: 'Assista gratuitamente a mais de 120.000 vídeos JAV em HD no MISSAV-J com atualizações diárias, legendas, Uncensored Leak e catálogo de atrizes.'
   },
   meta_trending_desc: {
     en: 'Watch the most popular and trending JAV videos right now on MISSAV-J.',

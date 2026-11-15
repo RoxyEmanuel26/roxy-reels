@@ -109,9 +109,10 @@ Given a list of Japanese adult videos with their original metadata, produce a hi
 
 STRICT RULES:
 1. ONLY use facts from the provided metadata (code, actress, studio, categories, duration). Never hallucinate actresses or plot details.
-2. No clickbait or vulgar sensationalism. Maintain a clean, respectful, journalistic tone.
-3. Language: Write in English with accurate Japanese names where appropriate.
-4. Output MUST BE a valid JSON array matching this exact schema:
+2. No clickbait or vulgar sensationalism. Maintain a clean, factual, search-optimized editorial tone.
+3. Include the clean release code and lead actress name naturally in seo_title and meta_description for high SERP relevance and click-through rate.
+4. Language: Write in English with accurate Japanese names where appropriate.
+5. Output MUST BE a valid JSON array matching this exact schema:
 [
   {
     "video_id": "string",
@@ -233,6 +234,47 @@ function generateMockEnrichment(post) {
   };
 }
 
+export async function fetchCandidatePosts(db, targetQueueSize = maxToProcess, fetchImpl = fetch) {
+  const byId = new Map();
+  const hasNeededCandidates = () => {
+    let needed = 0;
+    for (const post of byId.values()) {
+      const pId = String(post.id);
+      const existing = db?.posts?.[pId];
+      if (!existing || existing.status !== 'enriched' || existing.source_hash !== computeSourceHash(post)) {
+        needed++;
+        if (needed >= targetQueueSize * 2) return true;
+      }
+    }
+    return false;
+  };
+
+  // Fetch page 1..5 of latest daily releases + page 1..10 of top viewed releases
+  const feedPlan = [
+    ...Array.from({ length: 5 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&page=${i + 1}`),
+    ...Array.from({ length: 10 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&orderby=views&page=${i + 1}`)
+  ];
+
+  for (const endpoint of feedPlan) {
+    if (hasNeededCandidates()) break;
+    try {
+      const feedRes = await fetchImpl(endpoint);
+      if (!feedRes.ok) continue;
+      const items = await feedRes.json();
+      if (!Array.isArray(items) || items.length === 0) continue;
+      for (const post of items) {
+        if (post && post.id && !byId.has(String(post.id))) {
+          byId.set(String(post.id), post);
+        }
+      }
+    } catch (err) {
+      console.warn(`[Fetch Warning] Failed candidate page (${endpoint}):`, err.message);
+    }
+  }
+
+  return [...byId.values()];
+}
+
 /**
  * Main execution runner
  */
@@ -241,16 +283,13 @@ export async function runEnrichmentPipeline() {
   console.log(`Model: ${GEMINI_MODEL} | Mode: ${isMock ? 'MOCK / SIMULATED' : 'LIVE GEMINI API'}`);
 
   const db = loadDatabase();
-  
-  // Ambil feed video terbaru / populer
+
+  // Ambil feed video terbaru (harian) & terpopuler multi-halaman
   let candidatePosts = [];
   try {
-    const feedRes = await fetch('https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&orderby=views');
-    if (feedRes.ok) {
-      candidatePosts = await feedRes.json();
-    }
+    candidatePosts = await fetchCandidatePosts(db, maxToProcess);
   } catch (err) {
-    console.warn('[Fetch Warning] Could not fetch live feed, using database entries:', err.message);
+    console.warn('[Fetch Warning] Could not fetch live feed, using mock sample:', err.message);
   }
 
   // Jika tidak ada dari live feed, gunakan mock sample untuk menjamin kestabilan

@@ -4,11 +4,11 @@
  * perayapan infinite scroll, penyorotan kata kunci yang aman dari XSS, dan staggered delay.
  */
 
-import api from './api.js?v=2.8.102';
-import ui from './ui.js?v=2.8.102';
-import filter from './filter.js?v=2.8.102';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.102';
-import i18n from './i18n.js?v=2.8.102';
+import api from './api.js?v=2.8.103';
+import ui from './ui.js?v=2.8.103';
+import filter from './filter.js?v=2.8.103';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.103';
+import i18n from './i18n.js?v=2.8.103';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
@@ -24,6 +24,23 @@ let seenTitles = new Set();
 
 // Premium inline SVG fallback ketika thumbnail gagal dimuat
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2213%22>NO IMAGE</text></svg>`;
+
+/**
+ * Normalizes compact release code queries (e.g. "ssis888" -> "SSIS-888", "fc2ppv123456" -> "FC2-PPV-123456")
+ * so users typing without hyphens still hit exact release codes.
+ * @param {string} raw
+ * @returns {string}
+ */
+export function normalizeSearchQuery(raw) {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+  const fc2Match = trimmed.match(/^fc2[\s_-]*ppv[\s_-]*(\d{5,8})$/i);
+  if (fc2Match) return `FC2-PPV-${fc2Match[1]}`;
+  if (/^(part|vol|ep|day|no)\s+\d+$/i.test(trimmed)) return trimmed;
+  const codeMatch = trimmed.match(/^([a-zA-Z]{2,6})[\s_-]?(\d{2,5})$/);
+  if (codeMatch) return `${codeMatch[1].toUpperCase()}-${codeMatch[2]}`;
+  return trimmed;
+}
 
 /**
  * Menyorot (highlight) teks kata kunci di dalam teks yang sudah tersanitasi secara aman
@@ -62,8 +79,8 @@ function renderSearchVideoCard(post, index) {
   const highlightedTitle = highlightText(safeTitle, currentQuery);
   
   return cardHtml.replace(
-    `class="card-title" title="${safeTitle}">${safeTitle}`,
-    () => `class="card-title" title="${safeTitle}">${highlightedTitle}`
+    `class="card-watch-link card-title-link">${safeTitle}</a>`,
+    () => `class="card-watch-link card-title-link">${highlightedTitle}</a>`
   );
 }
 
@@ -78,7 +95,8 @@ export async function init(query = '') {
     intersectionObserver = null;
   }
 
-  currentQuery = query.trim();
+  const rawQuery = String(query || '').trim();
+  currentQuery = normalizeSearchQuery(rawQuery);
   currentPage = 1;
   totalPages = 1;
   isLoading = false;
@@ -95,7 +113,7 @@ export async function init(query = '') {
   // Sinkronisasikan teks input di header search bar dan fokuskan
   const headerSearchInput = document.getElementById('header-search-input');
   if (headerSearchInput) {
-    headerSearchInput.value = currentQuery;
+    headerSearchInput.value = rawQuery || currentQuery;
     headerSearchInput.focus();
   }
 
@@ -106,6 +124,10 @@ export async function init(query = '') {
   mainApp.innerHTML = `
     <!-- Sticky Horizontal Filter Bar Container -->
     <div id="filter-bar-container" class="filter-bar-container"></div>
+
+    <div class="feed-page-header">
+      <h1 class="feed-page-h1">${ui.escapeHTML(i18n.t('nav_search') || 'Search')}</h1>
+    </div>
     
     <div class="feed-info-bar">
       <div class="video-total-count" id="search-total-count">${i18n.t('searching_videos')}</div>
@@ -166,8 +188,8 @@ export async function init(query = '') {
         // Guard: pastikan user masih di halaman search saat timer selesai
         if (window.missavJState.currentPath !== '/search') return;
 
-        currentQuery = val;
-        currentFilters.search = val;
+        currentQuery = normalizeSearchQuery(val);
+        currentFilters.search = currentQuery;
         currentPage = 1;
         hasMore = true;
         seenCodes = new Set();
@@ -175,7 +197,7 @@ export async function init(query = '') {
 
         // Perbarui URL dengan clean path (bukan hash agar tidak merusak History API)
         const currentLang = i18n.getLang() || 'en';
-        const newPath = `/${currentLang}/search?q=${encodeURIComponent(val)}`;
+        const newPath = `/${currentLang}/search?q=${encodeURIComponent(currentQuery)}`;
         history.replaceState(null, '', newPath);
 
         const grid = document.getElementById('search-video-grid');
@@ -323,8 +345,11 @@ function bindGridClicks(grid) {
   if (!grid) return;
 
   grid.addEventListener('click', (e) => {
+    const isModifiedClick = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+
     const actorChip = e.target.closest('.actor-chip');
     if (actorChip) {
+      if (isModifiedClick) return;
       e.preventDefault();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
       window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
@@ -333,6 +358,8 @@ function bindGridClicks(grid) {
 
     const studioName = e.target.closest('.card-studio');
     if (studioName) {
+      if (isModifiedClick && studioName.tagName === 'A') return;
+      if (studioName.tagName === 'A') e.preventDefault();
       const studio = decodeURIComponent(studioName.dataset.studio);
       window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
       return;
@@ -340,6 +367,9 @@ function bindGridClicks(grid) {
 
     const card = e.target.closest('.video-card');
     if (card && !card.classList.contains('skeleton-card')) {
+      const watchAnchor = e.target.closest('a.card-watch-link');
+      if (watchAnchor && isModifiedClick) return;
+      if (watchAnchor) e.preventDefault();
       const postId = card.dataset.id;
       const code = card.dataset.code || '';
       const title = card.dataset.title || '';

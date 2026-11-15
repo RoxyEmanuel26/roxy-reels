@@ -947,3 +947,123 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
+
+/* Semantic anchor link resets for crawlable cards & browse hubs */
+a.card-watch-link,
+a.card-studio,
+a.related-video-card,
+a.studio-browse-card,
+a.category-browse-card {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.card-watch-link:hover,
+a.related-video-card:hover,
+a.studio-browse-card:hover,
+a.category-browse-card:hover {
+  text-decoration: none;
+}
+
+a.card-thumb-link {
+  display: block;
+}
+
+a.card-title-link {
+  display: inline;
+}
+
+.feed-page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+
+.feed-page-h1 {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.home-hub-links {
+  margin-top: var(--space-8);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.home-hub-links h2 {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.home-hub-links-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+}
+
+.home-hub-links-list:last-child {
+  margin-bottom: 0;
+}
+
+.home-hub-links-list a {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.home-hub-links-list a:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.video-release-details,
+.video-ai-enrichment {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.video-release-details summary,
+.video-ai-enrichment h2 {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.watch-faq-list {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.watch-faq-list dt {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-top: var(--space-2);
+}
+
+.watch-faq-list dd {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+}
