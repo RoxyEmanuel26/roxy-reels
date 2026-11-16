@@ -4,11 +4,12 @@
  * perayapan infinite scroll, penyorotan kata kunci yang aman dari XSS, dan staggered delay.
  */
 
-import api from './api.js?v=2.8.103';
-import ui from './ui.js?v=2.8.103';
-import filter from './filter.js?v=2.8.103';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.103';
-import i18n from './i18n.js?v=2.8.103';
+import api from './api.js?v=2.8.104';
+import ui from './ui.js?v=2.8.104';
+import filter from './filter.js?v=2.8.104';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.104';
+import i18n from './i18n.js?v=2.8.104';
+import { loadIndexableTaxonomies } from './taxonomy-index.js?v=2.8.104';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
@@ -228,7 +229,10 @@ async function fetchAndRenderSearch(isInitial = false) {
   try {
     const requestedQuery = currentQuery;
     const requestedPage = currentPage;
-    const data = await api.getPosts({ page: requestedPage, ...currentFilters });
+    const [data] = await Promise.all([
+      api.getPosts({ page: requestedPage, ...currentFilters }),
+      loadIndexableTaxonomies()
+    ]);
     
     // Race condition protection: if query or page changed while fetching, abort render
     if (currentQuery !== requestedQuery || currentPage !== requestedPage) {
@@ -349,8 +353,8 @@ function bindGridClicks(grid) {
 
     const actorChip = e.target.closest('.actor-chip');
     if (actorChip) {
-      if (isModifiedClick) return;
-      e.preventDefault();
+      if (isModifiedClick && actorChip.tagName === 'A') return;
+      if (actorChip.tagName === 'A') e.preventDefault();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
       window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       return;

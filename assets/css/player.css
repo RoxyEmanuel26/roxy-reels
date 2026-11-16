@@ -1067,3 +1067,12 @@ a.card-title-link {
   margin: var(--space-1) 0 0;
   color: var(--color-text-muted);
 }
+
+.taxonomy-link-thin {
+  cursor: pointer;
+}
+
+.taxonomy-link-thin:focus-visible {
+  outline: 2px solid var(--color-accent, #e50914);
+  outline-offset: 2px;
+}

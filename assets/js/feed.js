@@ -5,11 +5,12 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.103';
-import ui from './ui.js?v=2.8.103';
-import filter from './filter.js?v=2.8.103';
-import i18n from './i18n.js?v=2.8.103';
-import { getHubContent } from './hub-content.js?v=2.8.103';
+import api from './api.js?v=2.8.104';
+import ui from './ui.js?v=2.8.104';
+import filter from './filter.js?v=2.8.104';
+import i18n from './i18n.js?v=2.8.104';
+import { getHubContent } from './hub-content.js?v=2.8.104';
+import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.104';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;
@@ -214,9 +215,16 @@ export function renderVideoCard(post, index = 0) {
     .slice(0, 3) 
     .map(a => {
       const safeActor = ui.escapeHTML(a);
-      const lang = i18n.getLang() || 'en';
+      const cardLang = i18n.getLang() || 'en';
       // encodeURIComponent uses raw 'a' (not safeActor) to avoid double-encoding HTML entities
-      return `<a href="/${lang}/actor?name=${encodeURIComponent(a)}" class="actor-chip" data-actor="${encodeURIComponent(a)}">${safeActor}</a>`;
+      return renderTaxonomyLink({
+        type: 'actor',
+        name: a,
+        lang: cardLang,
+        className: 'actor-chip',
+        label: safeActor,
+        dataAttrs: `data-actor="${encodeURIComponent(a)}"`
+      });
     })
     .join('');
 
@@ -229,9 +237,9 @@ export function renderVideoCard(post, index = 0) {
 
   // Format Studio link (skip crawl link on thin 'Other' bucket to match Worker noindex rule)
   const canonicalStudio = resolveStudioAlias(post.studio || '');
-  const studioMarkup = safeStudio
+  const studioMarkup = (safeStudio && canonicalStudio !== 'Other')
     ? `<a href="/${lang}/studio?name=${encodeURIComponent(canonicalStudio)}" class="card-studio" data-studio="${encodeURIComponent(canonicalStudio)}">${safeStudio}</a>`
-    : `<span class="card-studio text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
+    : `<span class="card-studio text-muted" data-studio="Other">${safeStudio || i18n.t('unknown_studio')}</span>`;
 
   // Format views
   const viewsCount = post.views ? parseInt(post.views, 10) : 0;
@@ -570,7 +578,10 @@ async function fetchAndRenderFeed(isInitial = false) {
     const requestedFilters = { ...currentFilters };
     const requestedPage = fetchPage;
     
-    const data = await api.getPosts({ page: fetchPage, ...currentFilters });
+    const [data] = await Promise.all([
+      api.getPosts({ page: fetchPage, ...currentFilters }),
+      loadIndexableTaxonomies()
+    ]);
     
     // Race condition protection: if filters or page changed while fetching, abort render
     if (JSON.stringify(requestedFilters) !== JSON.stringify(currentFilters) || currentPage !== requestedPage) {
@@ -788,8 +799,8 @@ function bindGridClicks(grid) {
 
     const actorChip = e.target.closest('.actor-chip');
     if (actorChip) {
-      if (isModifiedClick) return;
-      e.preventDefault();
+      if (isModifiedClick && actorChip.tagName === 'A') return;
+      if (actorChip.tagName === 'A') e.preventDefault();
       const actorName = decodeURIComponent(actorChip.dataset.actor);
       window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       return;

@@ -2559,7 +2559,8 @@ test('video indexing fix: above-fold eager SSR iframe, ?mvapm_embed fallback, Vi
       [/^import\s+i18n\s+from\s+'[^']+';/m, `const i18n = { t: k => k, getLang: () => 'en', translateVideoTitle: t => t };`],
       [/^import\s+ReferralSystem\s+from\s+'[^']+';/m, `const ReferralSystem = {};`],
       [/^import\s+\{\s*Analytics\s*\}\s+from\s+'[^']+';/m, `const Analytics = { trackVideoPlay() {} };`],
-      [/^import\s+\{[^}]+\}\s+from\s+'\.\/related-strategy\.js[^']*';/m, `const MIN_RELATED_RESULTS = 6; const getPrimaryRelatedQuery = () => ({}); const getFallbackRelatedQuery = () => ({});`]
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/related-strategy\.js[^']*';/m, `const MIN_RELATED_RESULTS = 6; const getPrimaryRelatedQuery = () => ({}); const getFallbackRelatedQuery = () => ({});`],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, `const loadIndexableTaxonomies = async () => {}; const renderTaxonomyLink = ({ type, name, lang, className, label, dataAttrs = '' }) => \`<a href="/\${lang}/\${type}?name=\${encodeURIComponent(name)}" class="\${className}"\${dataAttrs ? ' ' + dataAttrs : ''}>\${label}</a>\`;`]
     ]);
 
     const runPlayerMode = async (ua) => {
@@ -2838,7 +2839,8 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
       };`],
       [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = {};'],
       [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "en", translateVideoTitle: t => t };'],
-      [/^import\s+\{[^}]+\}\s+from\s+'\.\/hub-content\.js[^']*';/m, 'const getHubContent = () => null;']
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/hub-content\.js[^']*';/m, 'const getHubContent = () => null;'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const loadIndexableTaxonomies = async () => {}; const renderTaxonomyLink = ({ type, name, lang, className, label, dataAttrs = "" }) => `<a href="/${lang}/${type}?name=${encodeURIComponent(name)}" class="${className}"${dataAttrs ? " " + dataAttrs : ""}>${label}</a>`;']
     ]);
 
     const cardHtml = renderVideoCard({
@@ -2866,7 +2868,8 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
       [/^import\s+ui\s+from\s+'[^']+';/m, 'const ui = { escapeHTML: s => String(s || "") };'],
       [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = {};'],
       [/^import\s+\{[^}]+\}\s+from\s+'\.\/feed\.js[^']*';/m, 'const renderVideoCard = () => ""; const bindHoverPreviews = () => {};'],
-      [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "en", translateVideoTitle: t => t };']
+      [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "en", translateVideoTitle: t => t };'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const loadIndexableTaxonomies = async () => {};']
     ]);
     assert.equal(normalizeSearchQuery('ssis888'), 'SSIS-888');
     assert.equal(normalizeSearchQuery('ssis 888'), 'SSIS-888');
@@ -2930,7 +2933,8 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(studiosSrc, /<h1\b/);
   assert.match(categoriesSrc, /<a href="\$\{catHref\}" class="category-browse-card/);
   assert.match(categoriesSrc, /<h1\b/);
-  assert.match(actorsSrc, /Number\(actor\.count\) < 5 \? ' rel="nofollow"' : ''/);
+  assert.match(actorsSrc, /isThinActor[\s\S]*role="link"[^>]*taxonomy-link-thin/);
+  assert.doesNotMatch(actorsSrc, /rel="nofollow"/);
   assert.match(actorsSrc, /<h1\b/);
   assert.match(popActorsSrc, /<h1\b/);
   assert.match(appSrc, /captureInitialSsrState/);
@@ -2942,6 +2946,129 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(baseHtml, /rel="preload" as="style" href="https:\/\/fonts\.googleapis\.com/);
   assert.match(baseHtml, /benchform\.org/);
   assert.match(baseHtml, /biomanos\.org/);
-  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.103/);
-  assert.match(swSrc, /hub-content\.js\?v=2\.8\.103/);
+  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.104/);
+  assert.match(swSrc, /hub-content\.js\?v=2\.8\.104/);
+  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.104/);
+});
+
+test('noindex discovery guard: client chips link only indexable taxonomies', async () => {
+  const prevFetch = globalThis.fetch;
+  const prevWindow = globalThis.window;
+  const escapeHTML = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  try {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes('/api/actors.json')) {
+        return new Response(JSON.stringify(['Yua Mikami', 'Eimi Fukada']), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      if (String(url).includes('/api/categories.json')) {
+        return new Response(JSON.stringify(['Creampie', 'English Subtitle', 'Blonde']), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      return new Response('[]', { status: 404 });
+    };
+
+    const taxonomyMod = await importSource('assets/js/taxonomy-index.js', [
+      [/^import\s+ui\s+from\s+'[^']+';/m, `const ui = { escapeHTML: ${escapeHTML.toString()} };`]
+    ]);
+    await taxonomyMod.loadIndexableTaxonomies({ timeoutMs: 0 });
+
+    assert.equal(taxonomyMod.isIndexableTaxonomy('actor', 'Yua Mikami', 'ko'), true);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('actor', 'Kawano Mina', 'ko'), false);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('actor', 'Kitagi Rina', 'ko'), false);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('actor', 'Yuki Mikami', 'de'), false);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('category', 'Creampie', 'ko'), true);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('category', 'English Subtitle', 'en'), true);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('category', 'English Subtitle', 'ko'), false);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('category', 'Blonde / Blonde', 'en'), true);
+    assert.equal(taxonomyMod.isIndexableTaxonomy('tag', 'Rare Thin Tag', 'en'), false);
+
+    const indexableActorChip = taxonomyMod.renderTaxonomyLink({
+      type: 'actor',
+      name: 'Yua Mikami',
+      lang: 'ko',
+      className: 'actor-chip',
+      label: 'Yua Mikami',
+      dataAttrs: 'data-actor="Yua%20Mikami"'
+    });
+    assert.match(indexableActorChip, /^<a href="\/ko\/actor\?name=Yua%20Mikami" class="actor-chip" data-actor="Yua%20Mikami">Yua Mikami<\/a>$/);
+
+    const thinActorChip = taxonomyMod.renderTaxonomyLink({
+      type: 'actor',
+      name: 'Kitagi Rina',
+      lang: 'ko',
+      className: 'actor-chip',
+      label: 'Kitagi Rina',
+      dataAttrs: 'data-actor="Kitagi%20Rina"'
+    });
+    assert.match(thinActorChip, /^<span role="link" tabindex="0" class="actor-chip taxonomy-link-thin" data-nav-href="\/ko\/actor\?name=Kitagi%20Rina"/);
+    assert.doesNotMatch(thinActorChip, /\shref=/);
+
+    const canonicalCategoryChip = taxonomyMod.renderTaxonomyLink({
+      type: 'category',
+      name: 'Blonde / Blonde',
+      lang: 'en',
+      className: 'meta-tag-chip',
+      label: 'Blonde'
+    });
+    assert.match(canonicalCategoryChip, /^<a href="\/en\/category\?name=Blonde"/);
+
+    // End-to-end card rendering: mix of curated + thin actors in feed.js renderVideoCard
+    globalThis.__testTaxonomyMod = taxonomyMod;
+    globalThis.window = {
+      missavJGetWatchUrl: (id, _c, _t, slug) => `/watch/${String(slug || 'video').toLowerCase()}-${id}`,
+      location: { origin: 'https://www.missav-j.com', pathname: '/ko/', search: '' }
+    };
+    const { renderVideoCard } = await importSource('assets/js/feed.js', [
+      [/^import\s+api\s+from\s+'[^']+';/m, 'const api = {};'],
+      [/^import\s+ui\s+from\s+'[^']+';/m, `const ui = { escapeHTML: ${escapeHTML.toString()}, getProxiedThumbnail: s => s || '' };`],
+      [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = {};'],
+      [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "ko", translateVideoTitle: t => t };'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/hub-content\.js[^']*';/m, 'const getHubContent = () => null;'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const { loadIndexableTaxonomies, renderTaxonomyLink } = globalThis.__testTaxonomyMod;']
+    ]);
+
+    const mixedCard = renderVideoCard({
+      id: 991,
+      code: 'TST-991',
+      title: 'Mixed Actors Card',
+      en_slug: 'tst-991-mixed',
+      studio: 'Other',
+      actors: ['Yua Mikami', 'Kitagi Rina'],
+      views: 100,
+      duration: '00:45:00'
+    }, 0);
+    assert.match(mixedCard, /<a href="\/ko\/actor\?name=Yua%20Mikami" class="actor-chip"/);
+    assert.match(mixedCard, /<span role="link" tabindex="0" class="actor-chip taxonomy-link-thin" data-nav-href="\/ko\/actor\?name=Kitagi%20Rina"/);
+    assert.doesNotMatch(mixedCard, /<a href="\/ko\/actor\?name=Kitagi%20Rina"/);
+    assert.doesNotMatch(mixedCard, /<a href="\/ko\/studio\?name=Other"/);
+
+    // Static invariants: SW cache, routes exclusion, player.js & monetization untouched
+    const [playerSrc, routesRaw, swSrc, baseHtml] = await Promise.all([
+      readFile(new URL('assets/js/player.js', ROOT), 'utf8'),
+      readFile(new URL('_routes.json', ROOT), 'utf8'),
+      readFile(new URL('sw.js', ROOT), 'utf8'),
+      readFile(new URL('index.html', ROOT), 'utf8')
+    ]);
+    const routes = JSON.parse(routesRaw);
+    assert.ok(routes.exclude.includes('/api/actors.json'));
+    assert.ok(routes.exclude.includes('/api/categories.json'));
+    assert.match(swSrc, /\/api\/actors\.json['"][\s\S]*ONE_DAY/);
+    assert.match(swSrc, /\/api\/categories\.json['"][\s\S]*ONE_DAY/);
+    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.104/);
+    assert.match(playerSrc, /renderTaxonomyLink\(/);
+    assert.doesNotMatch(playerSrc, /<a href="\$\{baseHref\}\?name=Other"|<a href="\/\$\{lang\}\/studio\?name=Other"/);
+    assert.match(playerSrc, /glamournakedemployee\.com/);
+    assert.match(baseHtml, /benchform\.org/);
+    assert.match(baseHtml, /biomanos\.org/);
+  } finally {
+    delete globalThis.__testTaxonomyMod;
+    globalThis.fetch = prevFetch;
+    globalThis.window = prevWindow;
+  }
 });

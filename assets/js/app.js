@@ -4,12 +4,13 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.8.103';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.103';
-import i18n from './i18n.js?v=2.8.103';
-import { Analytics } from './analytics.js?v=2.8.103';
-import ReferralSystem from './referral.js?v=2.8.103';
-import './ads.js?v=2.8.103';
+import ui from './ui.js?v=2.8.104';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.104';
+import i18n from './i18n.js?v=2.8.104';
+import { Analytics } from './analytics.js?v=2.8.104';
+import ReferralSystem from './referral.js?v=2.8.104';
+import { loadIndexableTaxonomies } from './taxonomy-index.js?v=2.8.104';
+import './ads.js?v=2.8.104';
 
 // Initialize Global In-Memory SPA States
 // FIX: Validate Array type — JSON.parse() doesn't throw on non-array values (e.g. string/number),
@@ -226,26 +227,44 @@ window.missavJNavigate = function(routePath) {
 };
 
 /**
- * Handle SPA links click globally to prevent full page reloads for A href tags
+ * Strips leading language code segment (if valid) while preserving non-lang routes like /watch/slug-123.
+ */
+function toRelativeSpaPath(rawHref) {
+  const url = new URL(rawHref, window.location.origin);
+  const segments = url.pathname.replace(/^\//, '').split('/');
+  const firstSegmentIsLang = i18n.LANGS.some(l => l.code.toLowerCase() === (segments[0] || '').toLowerCase());
+  return '/' + (firstSegmentIsLang ? segments.slice(1).join('/') : segments.join('/')) + url.search;
+}
+
+/**
+ * Handle SPA links click & keyboard navigation globally without triggering duplicate page reloads.
  */
 document.body.addEventListener('click', (e) => {
   const chip = e.target.closest('.meta-tag-chip');
-  if (chip && chip.getAttribute('href') && chip.getAttribute('href').startsWith('/')) {
+  if (!chip) return;
+  const rawTarget = chip.getAttribute('href') || chip.getAttribute('data-nav-href');
+  if (rawTarget && rawTarget.startsWith('/')) {
+    const isModifiedClick = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+    if (isModifiedClick && chip.tagName === 'A') return;
     e.preventDefault();
-    
-    const url = new URL(chip.href, window.location.origin);
-    // FIX: Check if first path segment is actually a lang code before stripping it.
-    // Old code assumed 3-segment URLs always had /<lang>/<route> format — wrong for
-    // /watch/slug-123 (no lang prefix), causing strip of 'watch' → broken 404 route.
-    const segments = url.pathname.replace(/^\//, '').split('/');
-    const firstSegmentIsLang = i18n.LANGS.some(l => l.code.toLowerCase() === (segments[0] || '').toLowerCase());
-    const relativePath = '/' + (firstSegmentIsLang ? segments.slice(1).join('/') : segments.join('/')) + url.search;
-    window.missavJNavigate(relativePath);
+    e.stopPropagation();
+    window.missavJNavigate(toRelativeSpaPath(rawTarget));
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const thinLink = e.target.closest('[role="link"][data-nav-href]');
+  if (!thinLink) return;
+  const navHref = thinLink.getAttribute('data-nav-href');
+  if (navHref && navHref.startsWith('/')) {
+    e.preventDefault();
+    window.missavJNavigate(toRelativeSpaPath(navHref));
   }
 });
 
 // Custom playlist grid renderer for Watch Later & Session History
-function renderSavedVideosPage(title, postsList, emptyMessage) {
+async function renderSavedVideosPage(title, postsList, emptyMessage) {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
 
@@ -264,6 +283,8 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
     i18n.translateStaticUI();
     return;
   }
+
+  await loadIndexableTaxonomies();
 
   // Render cards grid with staggered animation delay
   mainApp.innerHTML = `
@@ -284,8 +305,8 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
       const actorChip = e.target.closest('.actor-chip');
       if (actorChip) {
-        if (isModifiedClick) return;
-        e.preventDefault();
+        if (isModifiedClick && actorChip.tagName === 'A') return;
+        if (actorChip.tagName === 'A') e.preventDefault();
         const actorName = safeDecodeURIComponent(actorChip.dataset.actor);
         window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
         return;
@@ -424,25 +445,25 @@ function renderStaticLegal(key) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.8.103').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.8.103').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.8.103').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.8.103').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.8.103').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.8.103').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.8.103').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.8.103').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.8.103').then(m => m.init({ tag: getParam('name') })),
+  '/':          () => import('./feed.js?v=2.8.104').then(m => m.init()),
+  '/trending':  () => import('./trending.js?v=2.8.104').then(m => m.init()),
+  '/recent':    () => import('./recent.js?v=2.8.104').then(m => m.init()),
+  '/search':    (q) => import('./search.js?v=2.8.104').then(m => m.init(q || getParam('q'))),
+  '/watch':     (id) => import('./player.js?v=2.8.104').then(m => m.init(id || window.missavJGetCurrentWatchId())),
+  '/category':  () => import('./feed.js?v=2.8.104').then(m => m.init({ category: getParam('name') })),
+  '/actor':     () => import('./feed.js?v=2.8.104').then(m => m.init({ actor: getParam('name') })),
+  '/studio':    () => import('./feed.js?v=2.8.104').then(m => m.init({ studio: getParam('name') })),
+  '/tag':       () => import('./feed.js?v=2.8.104').then(m => m.init({ tag: getParam('name') })),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.8.103').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.8.103').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.8.103').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.8.103').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.8.104').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.8.104').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.8.104').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.8.104').then(m => m.init()),
   
   // Playlists routing mapping
-  '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
-  '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc'))),
+  '/watch-later': () => renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc')),
+  '/history':     () => renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')),
 
   // Legal and compliance static routes
   '/dmca':            () => Promise.resolve(renderStaticLegal('dmca')),
@@ -1154,7 +1175,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.8.103').then(m => {
+    import('./player.js?v=2.8.104').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -1172,7 +1193,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.8.103').then(m => {
+    import('./player.js?v=2.8.104').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -1270,7 +1291,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.8.103').then(m => {
+  import('./player.js?v=2.8.104').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -1478,7 +1499,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.8.103').then(m => {
+      import('./player.js?v=2.8.104').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
@@ -2409,6 +2430,9 @@ document.addEventListener('DOMContentLoaded', () => {
     navigate(window.location.pathname + window.location.search);
   });
   
+  // Prefetch curated taxonomy sets once per session in parallel with initial navigation
+  loadIndexableTaxonomies();
+
   // Snapshot rich Worker SSR metadata/schema before initial SPA hydration replaces DOM
   INITIAL_SSR_STATE = captureInitialSsrState();
 

@@ -4,9 +4,9 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js?v=2.8.103';
-import i18n from './i18n.js?v=2.8.103';
-import { ALL_ACTORS } from './actors_data.js?v=2.8.103';
+import ui from './ui.js?v=2.8.104';
+import i18n from './i18n.js?v=2.8.104';
+import { ALL_ACTORS } from './actors_data.js?v=2.8.104';
 
 /**
  * Render actor grid cards based on filtered data
@@ -52,11 +52,9 @@ function renderActorsGrid(actorsList, searchQuery = '') {
 
     const lang = i18n.getLang() || 'en';
     const actorUrl = `/${lang}/actor?name=${encodeURIComponent(actor.name)}`;
-    // Match Worker thin-taxonomy policy (< 5 indexed releases) so PageRank focuses on indexable hubs
-    const relAttr = actor.count !== undefined && Number(actor.count) < 5 ? ' rel="nofollow"' : '';
-
-    return `
-      <a href="${actorUrl}"${relAttr} class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
+    // Match Worker thin-taxonomy policy (< 5 indexed releases): avoid emitting <a href> crawl traps
+    const isThinActor = actor.count !== undefined && Number(actor.count) < 5;
+    const cardInner = `
         <div class="actor-avatar-circle">
           <span class="actor-initial">${safeLetter}</span>
         </div>
@@ -65,6 +63,19 @@ function renderActorsGrid(actorsList, searchQuery = '') {
           ${nativeHtml}
         </div>
         ${countHtml}
+    `;
+
+    if (isThinActor) {
+      return `
+      <div role="link" tabindex="0" class="actor-browse-card taxonomy-link-thin fadeInUp" data-nav-href="${actorUrl}" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
+        ${cardInner}
+      </div>
+    `;
+    }
+
+    return `
+      <a href="${actorUrl}" class="actor-browse-card fadeInUp" data-name="${encodeURIComponent(actor.name)}" ${animationStyle}>
+        ${cardInner}
       </a>
     `;
   }).join('');
@@ -192,7 +203,9 @@ export function init() {
     grid.addEventListener('click', (e) => {
       const card = e.target.closest('.actor-browse-card');
       if (card) {
-        e.preventDefault();
+        const isModifiedClick = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+        if (isModifiedClick && card.tagName === 'A') return;
+        if (card.tagName === 'A') e.preventDefault();
         const actorName = decodeURIComponent(card.dataset.name);
         window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
       }

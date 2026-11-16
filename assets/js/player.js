@@ -5,13 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.103';
-import ui from './ui.js?v=2.8.103';
-import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.103';
-import i18n from './i18n.js?v=2.8.103';
-import ReferralSystem from './referral.js?v=2.8.103';
-import { Analytics } from './analytics.js?v=2.8.103';
-import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.103';
+import api from './api.js?v=2.8.104';
+import ui from './ui.js?v=2.8.104';
+import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.104';
+import i18n from './i18n.js?v=2.8.104';
+import ReferralSystem from './referral.js?v=2.8.104';
+import { Analytics } from './analytics.js?v=2.8.104';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.104';
+import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.104';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -198,6 +199,7 @@ export async function init(id) {
   try {
     let post;
     const isBot = isCrawlerUserAgent();
+    const taxonomiesPromise = loadIndexableTaxonomies();
     const isCurrentlyPlaying = !isBot && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(id);
 
     // Keep global floating player hidden for bots so its mode-theater overlay never occludes the inline bot iframe.
@@ -231,6 +233,7 @@ export async function init(id) {
       if (!window.__missavJShouldPreserveInitialSsrTitle?.()) {
         document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       }
+      await taxonomiesPromise;
       renderPostMeta(post, id);
       loadRelatedVideos(post);
       
@@ -407,6 +410,7 @@ export async function init(id) {
       if (!window.__missavJShouldPreserveInitialSsrTitle?.()) {
         document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       }
+      await taxonomiesPromise;
       renderPostMeta(post, id);
       loadRelatedVideos(post);
     }
@@ -522,9 +526,9 @@ export function renderPostMeta(post, id) {
 
   if (studioWrapper) {
     const lang = i18n.getLang() || 'en';
-    if (post.studio) {
+    const canonicalStudio = resolveStudioAlias(post.studio || '');
+    if (post.studio && canonicalStudio !== 'Other') {
       const safeStudio = ui.escapeHTML(post.studio);
-      const canonicalStudio = resolveStudioAlias(post.studio) || post.studio;
       studioWrapper.innerHTML = `
         <a href="/${lang}/studio?name=${encodeURIComponent(canonicalStudio)}" class="studio-link-badge">
           🎬 ${safeStudio}
@@ -532,10 +536,14 @@ export function renderPostMeta(post, id) {
       `;
     } else {
       studioWrapper.innerHTML = `
-        <a href="/${lang}/studio?name=Other" class="studio-link-badge text-muted">
-          🎬 ${i18n.t('unknown_studio')}
-        </a>
+        <span role="link" tabindex="0" class="studio-link-badge text-muted taxonomy-link-thin" data-nav-href="/${lang}/studio?name=Other">
+          🎬 ${ui.escapeHTML(post.studio || i18n.t('unknown_studio'))}
+        </span>
       `;
+      const thinBadge = studioWrapper.querySelector('.studio-link-badge[data-nav-href]');
+      if (thinBadge) {
+        thinBadge.addEventListener('click', () => window.missavJNavigate('/studio?name=Other'));
+      }
     }
   }
 
@@ -547,6 +555,7 @@ export function renderPostMeta(post, id) {
       return;
     }
     const itemsArr = Array.isArray(items) ? items : [items];
+    const lang = i18n.getLang() || 'en';
     listEl.innerHTML = itemsArr
       .map(item => {
         const safeItem = ui.escapeHTML(item);
@@ -556,8 +565,13 @@ export function renderPostMeta(post, id) {
           const translated = i18n.t(dictKey);
           if (translated) displayName = translated;
         }
-        const lang = i18n.getLang() || 'en';
-        return `<a href="/${lang}/${routePrefix}?name=${encodeURIComponent(item)}" class="meta-tag-chip">${displayName}</a>`;
+        return renderTaxonomyLink({
+          type: routePrefix,
+          name: item,
+          lang,
+          className: 'meta-tag-chip',
+          label: displayName
+        });
       })
       .join('');
   };
