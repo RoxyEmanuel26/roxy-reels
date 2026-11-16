@@ -4,12 +4,12 @@
  * perayapan infinite scroll, penyorotan kata kunci yang aman dari XSS, dan staggered delay.
  */
 
-import api from './api.js?v=2.8.104';
-import ui from './ui.js?v=2.8.104';
-import filter from './filter.js?v=2.8.104';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.104';
-import i18n from './i18n.js?v=2.8.104';
-import { loadIndexableTaxonomies } from './taxonomy-index.js?v=2.8.104';
+import api from './api.js?v=2.8.105';
+import ui from './ui.js?v=2.8.105';
+import filter from './filter.js?v=2.8.105';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.8.105';
+import i18n from './i18n.js?v=2.8.105';
+import { loadIndexableTaxonomies } from './taxonomy-index.js?v=2.8.105';
 
 // State Halaman Pencarian (In-memory)
 let currentQuery = '';
@@ -22,6 +22,15 @@ let intersectionObserver = null;
 let currentFilters = {};
 let seenCodes = new Set();
 let seenTitles = new Set();
+let searchEpoch = 0;
+let activeSearchToken = 0;
+
+function resetInfiniteObserver() {
+  if (intersectionObserver) {
+    intersectionObserver.disconnect();
+    intersectionObserver = null;
+  }
+}
 
 // Premium inline SVG fallback ketika thumbnail gagal dimuat
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2213%22>NO IMAGE</text></svg>`;
@@ -90,11 +99,9 @@ function renderSearchVideoCard(post, index) {
  * @param {string} query - Kata kunci pencarian awal
  */
 export async function init(query = '') {
-  // Matikan observer dari navigasi sebelumnya
-  if (intersectionObserver) {
-    intersectionObserver.disconnect();
-    intersectionObserver = null;
-  }
+  const myEpoch = ++searchEpoch;
+  activeSearchToken++;
+  resetInfiniteObserver();
 
   const rawQuery = String(query || '').trim();
   currentQuery = normalizeSearchQuery(rawQuery);
@@ -148,21 +155,22 @@ export async function init(query = '') {
 
   // 2. Tampilkan Skeletons awal
   const grid = document.getElementById('search-video-grid');
-  ui.showSkeletonsInElement(grid, 8);
+  ui.showSkeletonsInElement(grid, 8, 'grid');
 
   // 3. Inisialisasi horizontal filter bar khusus pencarian
   filter.init(document.getElementById('filter-bar-container'), currentFilters, updateSearchFilters);
 
   // 4. Lakukan pemuatan data awal
   if (currentQuery) {
-    await fetchAndRenderSearch(true);
+    await fetchAndRenderSearch(true, myEpoch);
   } else {
     // Jika query kosong, tampilkan empty state default
     ui.showEmpty('', grid);
   }
+  if (myEpoch !== searchEpoch) return;
 
   // 5. Setup Infinite Scroll
-  setupInfiniteScroll();
+  setupInfiniteScroll(myEpoch);
 
   // 6. Bind click events di grid
   bindGridClicks(grid);
@@ -189,6 +197,11 @@ export async function init(query = '') {
         // Guard: pastikan user masih di halaman search saat timer selesai
         if (window.missavJState.currentPath !== '/search') return;
 
+        const liveEpoch = ++searchEpoch;
+        activeSearchToken++;
+        resetInfiniteObserver();
+        isLoading = false;
+
         currentQuery = normalizeSearchQuery(val);
         currentFilters.search = currentQuery;
         currentPage = 1;
@@ -201,20 +214,25 @@ export async function init(query = '') {
         const newPath = `/${currentLang}/search?q=${encodeURIComponent(currentQuery)}`;
         history.replaceState(null, '', newPath);
 
-        const grid = document.getElementById('search-video-grid');
-        if (grid) {
-          ui.showSkeletonsInElement(grid, 8);
-          await fetchAndRenderSearch(true);
+        const liveGrid = document.getElementById('search-video-grid');
+        if (liveGrid) {
+          ui.showSkeletonsInElement(liveGrid, 8, 'grid');
+          await fetchAndRenderSearch(true, liveEpoch);
+          if (liveEpoch === searchEpoch) setupInfiniteScroll(liveEpoch);
         }
       }, 400); // 400ms debounce — hanya eksekusi setelah 400ms berhenti mengetik
     } else if (val.length === 0) {
       // Jika input dikosongkan, reset UI dan kembalikan URL search tanpa query
+      searchEpoch++;
+      activeSearchToken++;
+      resetInfiniteObserver();
+      isLoading = false;
       currentQuery = '';
       currentFilters.search = '';
       const currentLang = i18n.getLang() || 'en';
       history.replaceState(null, '', `/${currentLang}/search`);
-      const grid = document.getElementById('search-video-grid');
-      if (grid) ui.showEmpty('', grid);
+      const liveGrid = document.getElementById('search-video-grid');
+      if (liveGrid) ui.showEmpty('', liveGrid);
     }
   };
 }
@@ -223,7 +241,9 @@ export async function init(query = '') {
  * Mengambil hasil pencarian dari API dan merendernya
  * @param {boolean} isInitial - Apakah loading pertama kali
  */
-async function fetchAndRenderSearch(isInitial = false) {
+async function fetchAndRenderSearch(isInitial = false, expectedEpoch = searchEpoch) {
+  if (expectedEpoch !== searchEpoch) return;
+  const mySearchToken = ++activeSearchToken;
   isLoading = true;
   
   try {
@@ -234,9 +254,9 @@ async function fetchAndRenderSearch(isInitial = false) {
       loadIndexableTaxonomies()
     ]);
     
-    // Race condition protection: if query or page changed while fetching, abort render
-    if (currentQuery !== requestedQuery || currentPage !== requestedPage) {
-      console.warn('[Search] Stale request aborted (Query or Page changed)');
+    // Race condition protection: if epoch, token, query or page changed while fetching, abort render
+    if (expectedEpoch !== searchEpoch || mySearchToken !== activeSearchToken || currentQuery !== requestedQuery || currentPage !== requestedPage) {
+      console.warn('[Search] Stale request aborted (Epoch, Query or Page changed)');
       return;
     }
     
@@ -283,11 +303,13 @@ async function fetchAndRenderSearch(isInitial = false) {
     if (isInitial) {
       grid.innerHTML = cardsHtml;
     } else {
+      grid.querySelectorAll('.skeleton-card, .skeleton-card-row').forEach(el => el.remove());
       grid.insertAdjacentHTML('beforeend', cardsHtml);
     }
 
   } catch (error) {
     console.error('Fetch Search Error:', error);
+    if (expectedEpoch !== searchEpoch || mySearchToken !== activeSearchToken) return;
     const grid = document.getElementById('search-video-grid');
     if (!grid) return;
     if (isInitial) {
@@ -296,24 +318,28 @@ async function fetchAndRenderSearch(isInitial = false) {
       currentPage--;
     }
   } finally {
-    isLoading = false;
+    if (expectedEpoch === searchEpoch && mySearchToken === activeSearchToken) {
+      isLoading = false;
+    }
   }
 }
 
 /**
  * Setup IntersectionObserver untuk pencarian tak terbatas
  */
-function setupInfiniteScroll() {
+function setupInfiniteScroll(expectedEpoch = searchEpoch) {
+  resetInfiniteObserver();
   const sentinel = document.getElementById('search-scroll-sentinel');
   const loader = document.getElementById('search-infinite-loader');
   if (!sentinel) return;
 
   intersectionObserver = new IntersectionObserver(async (entries) => {
+    if (expectedEpoch !== searchEpoch) return;
     if (entries[0].isIntersecting && !isLoading && hasMore) {
       if (loader) loader.classList.remove('hidden');
       currentPage++;
-      await fetchAndRenderSearch(false);
-      if (loader) loader.classList.add('hidden');
+      await fetchAndRenderSearch(false, expectedEpoch);
+      if (expectedEpoch === searchEpoch && loader) loader.classList.add('hidden');
     }
   }, {
     rootMargin: '300px'
@@ -328,6 +354,11 @@ function setupInfiniteScroll() {
  * Callback saat sort/filter bar diubah
  */
 async function updateSearchFilters(updatedFilters) {
+  const myEpoch = ++searchEpoch;
+  activeSearchToken++;
+  resetInfiniteObserver();
+  isLoading = false;
+
   currentFilters = { ...currentFilters, ...updatedFilters };
   currentPage = 1;
   hasMore = true;
@@ -336,10 +367,13 @@ async function updateSearchFilters(updatedFilters) {
 
   const grid = document.getElementById('search-video-grid');
   if (grid) {
-    ui.showSkeletonsInElement(grid, 8);
+    ui.showSkeletonsInElement(grid, 8, 'grid');
   }
 
-  await fetchAndRenderSearch(true);
+  await fetchAndRenderSearch(true, myEpoch);
+  if (myEpoch === searchEpoch) {
+    setupInfiniteScroll(myEpoch);
+  }
 }
 
 /**

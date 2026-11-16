@@ -4,6 +4,20 @@
  * tema warna in-memory, serta tampilan error dan empty states yang aman dari XSS.
  */
 
+// Builds responsive 16:9 card skeleton placeholders shared by page-level and grid-level loaders
+function buildGridSkeletonMarkup(count) {
+  return Array(count).fill(0).map(() => `
+    <div class="video-card skeleton-card">
+      <div class="skeleton skeleton-image"></div>
+      <div class="card-info">
+        <div class="skeleton skeleton-text" style="width:90%"></div>
+        <div class="skeleton skeleton-text" style="width:65%"></div>
+        <div class="skeleton skeleton-text" style="width:40%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 // State Tema global (In-memory, tidak disimpan ke localStorage/sessionStorage)
 let currentTheme = 'dark';
 
@@ -70,28 +84,23 @@ const ui = {
 
     mainApp.innerHTML = `
       <div class="video-grid" id="video-grid">
-        ${Array(count).fill(0).map(() => `
-          <div class="video-card skeleton-card">
-            <div class="skeleton skeleton-image"></div>
-            <div class="card-info">
-              <div class="skeleton skeleton-text" style="width:90%"></div>
-              <div class="skeleton skeleton-text" style="width:65%"></div>
-              <div class="skeleton skeleton-text" style="width:40%"></div>
-            </div>
-          </div>
-        `).join('')}
+        ${buildGridSkeletonMarkup(count)}
       </div>
     `;
   },
 
   /**
-   * Menyisipkan skeleton loader ke dalam elemen grid tertentu
-   * (Misalnya sidebar video terkait)
+   * Menyisipkan skeleton loader ke dalam elemen grid atau daftar sidebar tertentu.
    * @param {HTMLElement} element - Target element penampung
    * @param {number} count - Jumlah skeleton
+   * @param {'row'|'grid'} [variant='row'] - 'grid' untuk kartu video 16:9, 'row' untuk sidebar watch
    */
-  showSkeletonsInElement(element, count = 4) {
+  showSkeletonsInElement(element, count = 4, variant = 'row') {
     if (!element) return;
+    if (variant === 'grid') {
+      element.innerHTML = buildGridSkeletonMarkup(count);
+      return;
+    }
     element.innerHTML = Array(count).fill(0).map(() => `
       <div class="video-card skeleton-card-row">
         <div class="skeleton skeleton-image-row"></div>

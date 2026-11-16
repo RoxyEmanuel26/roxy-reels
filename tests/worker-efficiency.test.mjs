@@ -2946,9 +2946,9 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(baseHtml, /rel="preload" as="style" href="https:\/\/fonts\.googleapis\.com/);
   assert.match(baseHtml, /benchform\.org/);
   assert.match(baseHtml, /biomanos\.org/);
-  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.104/);
-  assert.match(swSrc, /hub-content\.js\?v=2\.8\.104/);
-  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.104/);
+  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.105/);
+  assert.match(swSrc, /hub-content\.js\?v=2\.8\.105/);
+  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.105/);
 });
 
 test('noindex discovery guard: client chips link only indexable taxonomies', async () => {
@@ -3060,7 +3060,7 @@ test('noindex discovery guard: client chips link only indexable taxonomies', asy
     assert.ok(routes.exclude.includes('/api/categories.json'));
     assert.match(swSrc, /\/api\/actors\.json['"][\s\S]*ONE_DAY/);
     assert.match(swSrc, /\/api\/categories\.json['"][\s\S]*ONE_DAY/);
-    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.104/);
+    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.105/);
     assert.match(playerSrc, /renderTaxonomyLink\(/);
     assert.doesNotMatch(playerSrc, /<a href="\$\{baseHref\}\?name=Other"|<a href="\/\$\{lang\}\/studio\?name=Other"/);
     assert.match(playerSrc, /glamournakedemployee\.com/);
@@ -3070,5 +3070,163 @@ test('noindex discovery guard: client chips link only indexable taxonomies', asy
     delete globalThis.__testTaxonomyMod;
     globalThis.fetch = prevFetch;
     globalThis.window = prevWindow;
+  }
+});
+
+test('feed skeleton race guard: overlapping home navigations never leave skeleton cards above results', async () => {
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevSessionStorage = globalThis.sessionStorage;
+  const prevIntersectionObserver = globalThis.IntersectionObserver;
+  const escapeHTML = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  try {
+    const store = new Map();
+    globalThis.sessionStorage = {
+      getItem: k => store.get(k) || null,
+      setItem: (k, v) => store.set(k, String(v))
+    };
+
+    const makeEl = (id) => ({
+      id,
+      _innerHTML: '',
+      get innerHTML() { return this._innerHTML; },
+      set innerHTML(val) {
+        this._innerHTML = String(val || '');
+        if (id === 'app-content') {
+          activeDom['video-grid'] = makeEl('video-grid');
+          activeDom['video-total-count'] = makeEl('video-total-count');
+          activeDom['page-track'] = makeEl('page-track');
+          activeDom['filter-bar-container'] = makeEl('filter-bar-container');
+          activeDom['infinite-loader'] = makeEl('infinite-loader');
+          activeDom['scroll-sentinel'] = makeEl('scroll-sentinel');
+        }
+      },
+      textContent: '',
+      classList: { add() {}, remove() {}, contains: () => false },
+      addEventListener() {},
+      insertAdjacentHTML(_pos, html) { this._innerHTML += html; },
+      querySelectorAll(sel) {
+        if (sel.includes('skeleton') && this._innerHTML.includes('skeleton-card')) {
+          return [{
+            remove: () => {
+              this._innerHTML = this._innerHTML.replace(/<div class="video-card skeleton-card[\s\S]*$/m, '');
+            }
+          }];
+        }
+        return [];
+      }
+    });
+
+    const appContent = makeEl('app-content');
+    const activeDom = { 'app-content': appContent };
+    globalThis.document = {
+      getElementById: id => activeDom[id] || null
+    };
+    globalThis.window = {
+      missavJGetWatchUrl: (id) => `/watch/video-${id}`,
+      location: { origin: 'https://www.missav-j.com', pathname: '/en/', search: '' }
+    };
+
+    let observerCreations = 0;
+    let disconnectCalls = 0;
+    globalThis.IntersectionObserver = class {
+      constructor(cb) {
+        observerCreations++;
+        this.cb = cb;
+      }
+      observe(sentinel) {
+        this.sentinel = sentinel;
+        queueMicrotask(() => {
+          if (!this.disconnected) this.cb([{ isIntersecting: true }]);
+        });
+      }
+      disconnect() {
+        disconnectCalls++;
+        this.disconnected = true;
+      }
+    };
+
+    const deferred = [];
+    const skeletonVariants = [];
+    globalThis.__raceTestDeps = {
+      api: {
+        getPosts({ page }) {
+          return new Promise((resolve) => {
+            deferred.push({ page, resolve });
+          });
+        }
+      },
+      ui: {
+        escapeHTML,
+        getProxiedThumbnail: s => s || '',
+        setRobotsMeta() {},
+        showEmpty() {},
+        showSkeletonsInElement(el, count, variant = 'row') {
+          skeletonVariants.push(variant);
+          if (el) el.innerHTML = Array(count).fill('<div class="video-card skeleton-card"></div>').join('');
+        }
+      }
+    };
+
+    const { init: initFeed } = await importSource('assets/js/feed.js', [
+      [/^import\s+api\s+from\s+'[^']+';/m, 'const { api } = globalThis.__raceTestDeps;'],
+      [/^import\s+ui\s+from\s+'[^']+';/m, 'const { ui } = globalThis.__raceTestDeps;'],
+      [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = { init() {} };'],
+      [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "en", translateVideoTitle: t => t };'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/hub-content\.js[^']*';/m, 'const getHubContent = () => null;'],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const loadIndexableTaxonomies = async () => {}; const renderTaxonomyLink = ({ label }) => `<span>${label}</span>`;']
+    ]);
+
+    // Start two overlapping Home init() calls (exact double-click / rapid Watch->Home transition race)
+    const p1 = initFeed({});
+    await new Promise(r => setTimeout(r, 0));
+    const p2 = initFeed({});
+    await new Promise(r => setTimeout(r, 0));
+
+    assert.equal(deferred.length, 2, 'Two initial page fetches should have started');
+    // Resolve stale #1 FIRST while #2 is still in flight
+    deferred[0].resolve({
+      total: 122810,
+      totalPages: 5118,
+      posts: [{ id: 101, code: 'STALE-101', title: 'Stale Video', studio: 'S1', actors: [] }]
+    });
+    await p1;
+
+    // Crucial check: stale p1 MUST NOT attach an IntersectionObserver to p2's sentinel
+    assert.equal(observerCreations, 0, 'Stale feed.init() must not attach a zombie IntersectionObserver');
+    assert.equal(deferred.length, 2, 'Stale completion must not unlock an extra infinite-scroll fetch');
+
+    // Now resolve active #2
+    deferred[1].resolve({
+      total: 122810,
+      totalPages: 5118,
+      posts: [{ id: 202, code: 'REAL-202', title: 'Fresh Video', studio: 'S1', actors: [] }]
+    });
+    await p2;
+
+    const finalGrid = activeDom['video-grid'];
+    assert.ok(finalGrid.innerHTML.includes('Fresh Video'), 'Active Home fetch must populate video grid');
+    assert.doesNotMatch(finalGrid.innerHTML, /skeleton-card/, 'Home grid must never retain skeleton placeholders alongside or above real cards');
+    assert.equal(observerCreations, 1, 'Exactly one IntersectionObserver should be created for the active epoch');
+    assert.ok(skeletonVariants.every(v => v === 'grid'), 'Feed skeletons should use 16:9 grid card layout');
+    assert.ok(disconnectCalls >= 0);
+
+    // Static checks in app.js & search.js for click dedup & race protection
+    const [appSrc, searchSrc] = await Promise.all([
+      readFile(new URL('assets/js/app.js', ROOT), 'utf8'),
+      readFile(new URL('assets/js/search.js', ROOT), 'utf8')
+    ]);
+    assert.match(appSrc, /if\s*\(\s*e\.defaultPrevented\s*\)\s*return;/);
+    assert.match(appSrc, /logoLink\.addEventListener\([\s\S]*e\.stopPropagation\(\)/);
+    assert.match(appSrc, /activeNavigationToken/);
+    assert.match(searchSrc, /searchEpoch/);
+    assert.match(searchSrc, /showSkeletonsInElement\([^,]+,\s*8,\s*'grid'\)/);
+  } finally {
+    delete globalThis.__raceTestDeps;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.sessionStorage = prevSessionStorage;
+    globalThis.IntersectionObserver = prevIntersectionObserver;
   }
 });

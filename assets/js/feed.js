@@ -5,12 +5,12 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.104';
-import ui from './ui.js?v=2.8.104';
-import filter from './filter.js?v=2.8.104';
-import i18n from './i18n.js?v=2.8.104';
-import { getHubContent } from './hub-content.js?v=2.8.104';
-import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.104';
+import api from './api.js?v=2.8.105';
+import ui from './ui.js?v=2.8.105';
+import filter from './filter.js?v=2.8.105';
+import i18n from './i18n.js?v=2.8.105';
+import { getHubContent } from './hub-content.js?v=2.8.105';
+import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.105';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;
@@ -23,6 +23,16 @@ let intersectionObserver = null;
 let seenCodes = new Set();
 let seenTitles = new Set();
 let totalRenderedVideos = 0;
+// Monotonic tokens prevent overlapping init/filter navigations from leaving skeletons or zombie observers
+let feedEpoch = 0;
+let activeFetchToken = 0;
+
+function resetInfiniteObserver() {
+  if (intersectionObserver) {
+    intersectionObserver.disconnect();
+    intersectionObserver = null;
+  }
+}
 
 // Random Mode State — used on the homepage to show a fresh mix of videos each visit
 let randomMode = false;
@@ -297,11 +307,9 @@ export function renderVideoCard(post, index = 0) {
  * @param {Object} [filters] - Route filter overrides (e.g. category parsed from relative routing paths)
  */
 export async function init(filters = {}) {
-  // Dispose of active IntersectionObservers running from prior SPA page context loops
-  if (intersectionObserver) {
-    intersectionObserver.disconnect();
-    intersectionObserver = null;
-  }
+  const myEpoch = ++feedEpoch;
+  activeFetchToken++;
+  resetInfiniteObserver();
 
   // Reset local page cycle memory states
   currentPage = 1;
@@ -474,18 +482,19 @@ export async function init(filters = {}) {
     ${homeHubFooterHtml}
   `;
 
-  // 2. Render initial page skeletal loaders
+  // 2. Render initial page skeletal loaders matching grid aspect ratio
   const grid = document.getElementById('video-grid');
-  ui.showSkeletonsInElement(grid, 8);
+  ui.showSkeletonsInElement(grid, 8, 'grid');
 
   // 3. Mount homepage horizontal filter bar orchestration states
   filter.init(document.getElementById('filter-bar-container'), currentFilters, updateFeedFilters);
 
   // 4. Fire initial listings fetch
-  await fetchAndRenderFeed(true);
+  await fetchAndRenderFeed(true, myEpoch);
+  if (myEpoch !== feedEpoch) return;
 
-  // 5. Setup IntersectionObserver configurations for infinite scrolls
-  setupInfiniteScroll();
+  // 5. Setup IntersectionObserver configurations only for the still-active feed epoch
+  setupInfiniteScroll(myEpoch);
   
   // 6. Connect delegators for grid actions
   bindGridClicks(grid);
@@ -555,7 +564,9 @@ function syncFeedRobotsMeta(data, filters) {
  * Fetch and render listings from API endpoints
  * @param {boolean} isInitial - Overwrites existing grid list markup if true
  */
-async function fetchAndRenderFeed(isInitial = false) {
+async function fetchAndRenderFeed(isInitial = false, expectedEpoch = feedEpoch) {
+  if (expectedEpoch !== feedEpoch) return;
+  const myFetchToken = ++activeFetchToken;
   isLoading = true;
   
   try {
@@ -577,25 +588,31 @@ async function fetchAndRenderFeed(isInitial = false) {
 
     const requestedFilters = { ...currentFilters };
     const requestedPage = fetchPage;
+    const isStale = () => (
+      expectedEpoch !== feedEpoch ||
+      myFetchToken !== activeFetchToken ||
+      JSON.stringify(requestedFilters) !== JSON.stringify(currentFilters) ||
+      currentPage !== requestedPage
+    );
     
     const [data] = await Promise.all([
       api.getPosts({ page: fetchPage, ...currentFilters }),
       loadIndexableTaxonomies()
     ]);
     
-    // Race condition protection: if filters or page changed while fetching, abort render
-    if (JSON.stringify(requestedFilters) !== JSON.stringify(currentFilters) || currentPage !== requestedPage) {
-      console.warn('[Feed] Stale request aborted (Filters or Page changed)');
+    // Race condition protection: if epoch, fetch token, filters, or page changed while fetching, abort render
+    if (isStale()) {
+      console.warn('[Feed] Stale request aborted (Epoch, Filters or Page changed)');
       return;
     }
+
+    const grid = document.getElementById('video-grid');
+    if (!grid) return;
 
     // Shuffle results client-side in random mode for a fresh feel
     if (randomMode && data.posts.length > 1) {
       shuffleArray(data.posts);
     }
-    
-    const grid = document.getElementById('video-grid');
-    if (!grid) return;
 
     const totalCountEl = document.getElementById('video-total-count');
     const pageTrackEl = document.getElementById('page-track');
@@ -624,6 +641,7 @@ async function fetchAndRenderFeed(isInitial = false) {
           const swappedName = nameParts.reverse().join(' ');
           console.log(`[Feed] Actor "${currentFilters.actor}" returned 0 results, retrying with swapped name: "${swappedName}"`);
           const candidate = await api.getPosts({ page: currentPage, ...currentFilters, actor: swappedName });
+          if (isStale()) return;
           if (candidate.posts.length > 0) {
             currentFilters.actor = swappedName;
             retryData = candidate;
@@ -637,6 +655,7 @@ async function fetchAndRenderFeed(isInitial = false) {
         const tagSlug = slugifyTaxonomyParam(currentFilters.tag);
         if (tagSlug && tagSlug !== currentFilters.tag) {
           const candidate = await api.getPosts({ page: currentPage, ...currentFilters, tag: tagSlug });
+          if (isStale()) return;
           if (candidate.posts.length > 0) {
             currentFilters.tag = tagSlug;
             retryData = candidate;
@@ -676,11 +695,13 @@ async function fetchAndRenderFeed(isInitial = false) {
     if (isInitial) {
       grid.innerHTML = cardsHtml;
     } else {
+      grid.querySelectorAll('.skeleton-card, .skeleton-card-row').forEach(el => el.remove());
       grid.insertAdjacentHTML('beforeend', cardsHtml);
     }
 
   } catch (error) {
     console.error('Fetch Feed Error:', error);
+    if (expectedEpoch !== feedEpoch || myFetchToken !== activeFetchToken) return;
     const grid = document.getElementById('video-grid');
     if (!grid) return;
     if (isInitial) {
@@ -721,19 +742,23 @@ async function fetchAndRenderFeed(isInitial = false) {
       }
     }
   } finally {
-    isLoading = false;
+    if (expectedEpoch === feedEpoch && myFetchToken === activeFetchToken) {
+      isLoading = false;
+    }
   }
 }
 
 /**
  * Attaches IntersectionObserver handlers pointing to scroll-sentinels below the grid
  */
-function setupInfiniteScroll() {
+function setupInfiniteScroll(expectedEpoch = feedEpoch) {
+  resetInfiniteObserver();
   const sentinel = document.getElementById('scroll-sentinel');
   const loader = document.getElementById('infinite-loader');
   if (!sentinel) return;
 
   intersectionObserver = new IntersectionObserver(async (entries) => {
+    if (expectedEpoch !== feedEpoch) return;
     if (entries[0].isIntersecting && !isLoading && hasMore) {
       if (loader) loader.classList.remove('hidden');
       
@@ -755,9 +780,9 @@ function setupInfiniteScroll() {
       } else {
         currentPage++;
       }
-      await fetchAndRenderFeed(false);
+      await fetchAndRenderFeed(false, expectedEpoch);
       
-      if (loader) loader.classList.add('hidden');
+      if (expectedEpoch === feedEpoch && loader) loader.classList.add('hidden');
     }
   }, {
     rootMargin: '300px'
@@ -770,6 +795,11 @@ function setupInfiniteScroll() {
  * Filter updates handler invoked by the horizontal filter bar engine
  */
 async function updateFeedFilters(updatedFilters) {
+  const myEpoch = ++feedEpoch;
+  activeFetchToken++;
+  resetInfiniteObserver();
+  isLoading = false;
+
   currentFilters = { ...currentFilters, ...updatedFilters };
   currentPage = 1;
   hasMore = true;
@@ -782,10 +812,13 @@ async function updateFeedFilters(updatedFilters) {
 
   const grid = document.getElementById('video-grid');
   if (grid) {
-    ui.showSkeletonsInElement(grid, 8);
+    ui.showSkeletonsInElement(grid, 8, 'grid');
   }
 
-  await fetchAndRenderFeed(true);
+  await fetchAndRenderFeed(true, myEpoch);
+  if (myEpoch === feedEpoch) {
+    setupInfiniteScroll(myEpoch);
+  }
 }
 
 /**
