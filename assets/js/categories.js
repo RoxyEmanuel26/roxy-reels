@@ -4,9 +4,10 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js?v=2.8.106';
-import i18n from './i18n.js?v=2.8.106';
-import { ALL_CATEGORIES } from './categories_data.js?v=2.8.106';
+import ui from './ui.js?v=2.8.107';
+import i18n from './i18n.js?v=2.8.107';
+import { ALL_CATEGORIES } from './categories_data.js?v=2.8.107';
+import { loadIndexableTaxonomies, isIndexableTaxonomy, hasLoadedTaxonomySet } from './taxonomy-index.js?v=2.8.107';
 
 /**
  * Render category grid cards based on filtered data
@@ -30,21 +31,36 @@ function renderCategoriesGrid(categories, searchQuery = '') {
   }
 
   const lang = i18n.getLang() || 'en';
+  const hasCuratedList = hasLoadedTaxonomySet('category');
   grid.innerHTML = categories.map((cat, idx) => {
     const safeName = ui.escapeHTML(cat.name);
     // Translate category name if dictionary key exists in i18n
     const translatedName = i18n.t(cat.key) || safeName;
     const catHref = `/${lang}/category?name=${encodeURIComponent(cat.name)}`;
     const animationStyle = `style="animation-delay: calc(${idx % 16} * 20ms);"`;
-
-    return `
-      <a href="${catHref}" class="category-browse-card fadeInUp" data-name="${encodeURIComponent(cat.name)}" ${animationStyle}>
+    const isIndexable = hasCuratedList
+      ? isIndexableTaxonomy('category', cat.name, lang)
+      : !(lang !== 'en' && /^(english sub|english subtitle|jav english sub)$/i.test(cat.name));
+    const cardInner = `
         <div class="category-icon-circle">
           <span class="category-icon-emoji">${cat.icon}</span>
         </div>
         <div class="category-info-box">
           <div class="category-browse-name" title="${translatedName}">${translatedName}</div>
         </div>
+    `;
+
+    if (!isIndexable) {
+      return `
+      <div role="link" tabindex="0" class="category-browse-card taxonomy-link-thin fadeInUp" data-nav-href="${catHref}" data-name="${encodeURIComponent(cat.name)}" ${animationStyle}>
+        ${cardInner}
+      </div>
+    `;
+    }
+
+    return `
+      <a href="${catHref}" class="category-browse-card fadeInUp" data-name="${encodeURIComponent(cat.name)}" ${animationStyle}>
+        ${cardInner}
       </a>
     `;
   }).join('');
@@ -53,9 +69,11 @@ function renderCategoriesGrid(categories, searchQuery = '') {
 /**
  * Initialize the Categories browse page
  */
-export function init() {
+export async function init() {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
+
+  await loadIndexableTaxonomies();
 
   const alphabet = ['ALL', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
 

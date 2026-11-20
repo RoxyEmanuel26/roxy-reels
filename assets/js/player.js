@@ -5,14 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.106';
-import ui from './ui.js?v=2.8.106';
-import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.106';
-import i18n from './i18n.js?v=2.8.106';
-import ReferralSystem from './referral.js?v=2.8.106';
-import { Analytics } from './analytics.js?v=2.8.106';
-import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.106';
-import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.106';
+import api from './api.js?v=2.8.107';
+import ui from './ui.js?v=2.8.107';
+import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.107';
+import i18n from './i18n.js?v=2.8.107';
+import ReferralSystem from './referral.js?v=2.8.107';
+import { Analytics } from './analytics.js?v=2.8.107';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.107';
+import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.107';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -75,7 +75,7 @@ function getSecureIframeMarkup(iframeHtml) {
  */
 export async function init(id) {
   if (!id) {
-    ui.showError(i18n.t('invalid_video_id'));
+    ui.showError(i18n.t('invalid_video_id'), null, { noindex: true });
     return;
   }
 
@@ -88,6 +88,8 @@ export async function init(id) {
   // Preserve SSR Watch release details / FAQ markup during initial hydration on WRS/crawlers
   const canonicalEl = document.getElementById('canonical-url') || document.querySelector('link[rel="canonical"]');
   const ssrWatchId = canonicalEl ? (canonicalEl.getAttribute('data-ssr-watch-id') || '') : '';
+  const ssrFallbackEl = ssrWatchId === String(id) ? mainApp.querySelector('.seo-fallback') : null;
+  const preservedSsrFullHtml = ssrFallbackEl ? ssrFallbackEl.outerHTML : '';
   const ssrEnrichEl = ssrWatchId === String(id)
     ? mainApp.querySelector('.seo-fallback .video-ai-enrichment, .seo-fallback .video-release-details')
     : null;
@@ -420,7 +422,10 @@ export async function init(id) {
 
   } catch (error) {
     console.error('Failed to load player page:', error);
-    ui.setRobotsMeta(true);
+    if (isCrawlerUserAgent() && preservedSsrFullHtml) {
+      mainApp.innerHTML = preservedSsrFullHtml;
+      return;
+    }
     ui.showError(i18n.t('error_load_watch_page', { message: error.message }));
   }
 }

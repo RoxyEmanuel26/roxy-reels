@@ -2982,9 +2982,9 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(baseHtml, />Popular Actors<\/span>/);
   assert.doesNotMatch(baseHtml, />(?:Beranda|Populer \(Trending\)|Tonton Nanti|Riwayat Sesi|Aktor Populer|Studio Populer)</);
   assert.doesNotMatch(baseHtml, /title="Toggle Tema"/);
-  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.106/);
-  assert.match(swSrc, /hub-content\.js\?v=2\.8\.106/);
-  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.106/);
+  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.107/);
+  assert.match(swSrc, /hub-content\.js\?v=2\.8\.107/);
+  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.107/);
 });
 
 test('noindex discovery guard: client chips link only indexable taxonomies', async () => {
@@ -3066,7 +3066,7 @@ test('noindex discovery guard: client chips link only indexable taxonomies', asy
       [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = {};'],
       [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "ko", translateVideoTitle: t => t };'],
       [/^import\s+\{[^}]+\}\s+from\s+'\.\/hub-content\.js[^']*';/m, 'const getHubContent = () => null;'],
-      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const { loadIndexableTaxonomies, renderTaxonomyLink } = globalThis.__testTaxonomyMod;']
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const { loadIndexableTaxonomies, renderTaxonomyLink, isIndexableTaxonomy, resolveCategoryAlias, hasLoadedTaxonomySet, isEnglishSpecificCategory } = globalThis.__testTaxonomyMod;']
     ]);
 
     const mixedCard = renderVideoCard({
@@ -3096,7 +3096,7 @@ test('noindex discovery guard: client chips link only indexable taxonomies', asy
     assert.ok(routes.exclude.includes('/api/categories.json'));
     assert.match(swSrc, /\/api\/actors\.json['"][\s\S]*ONE_DAY/);
     assert.match(swSrc, /\/api\/categories\.json['"][\s\S]*ONE_DAY/);
-    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.106/);
+    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.107/);
     assert.match(playerSrc, /renderTaxonomyLink\(/);
     assert.doesNotMatch(playerSrc, /<a href="\$\{baseHref\}\?name=Other"|<a href="\/\$\{lang\}\/studio\?name=Other"/);
     assert.match(playerSrc, /glamournakedemployee\.com/);
@@ -3213,7 +3213,7 @@ test('feed skeleton race guard: overlapping home navigations never leave skeleto
       [/^import\s+filter\s+from\s+'[^']+';/m, 'const filter = { init() {} };'],
       [/^import\s+i18n\s+from\s+'[^']+';/m, 'const i18n = { t: k => k, getLang: () => "en", translateVideoTitle: t => t };'],
       [/^import\s+\{[^}]+\}\s+from\s+'\.\/hub-content\.js[^']*';/m, 'const getHubContent = () => null;'],
-      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const loadIndexableTaxonomies = async () => {}; const renderTaxonomyLink = ({ label }) => `<span>${label}</span>`;']
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, 'const loadIndexableTaxonomies = async () => {}; const renderTaxonomyLink = ({ label }) => `<span>${label}</span>`; const isIndexableTaxonomy = () => true; const resolveCategoryAlias = v => v; const hasLoadedTaxonomySet = () => false; const isEnglishSpecificCategory = () => false;']
     ]);
 
     // Start two overlapping Home init() calls (exact double-click / rapid Watch->Home transition race)
@@ -3267,4 +3267,143 @@ test('feed skeleton race guard: overlapping home navigations never leave skeleto
     globalThis.sessionStorage = prevSessionStorage;
     globalThis.IntersectionObserver = prevIntersectionObserver;
   }
+});
+
+test('compact double-prefix release codes 301 redirect instead of false 410 while true mismatches still return 410', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const postsById = {
+    6253: { id: 6253, code: 'PM028', slug: 'pm028-grounded-flight-sample', title: 'PM028 Grounded Flight Sample', thumbnail: 'https://fourhoi.com/6253.jpg' },
+    43861: { id: 43861, code: 'PP004', slug: 'pp004-sample-title', title: 'PP004 Sample Title', thumbnail: 'https://fourhoi.com/43861.jpg' }
+  };
+
+  globalThis.caches = { default: new MemoryCache() };
+  globalThis.fetch = async input => {
+    const m = String(input).match(/\/posts\/(\d+)/);
+    const payload = m && postsById[m[1]];
+    if (payload) return new Response(JSON.stringify(payload), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response('not found', { status: 404 });
+  };
+  const env = { ASSETS: { fetch: async () => new Response(indexHtml, { status: 200 }) } };
+  const botHeaders = { 'User-Agent': 'Googlebot/2.1' };
+
+  const compactDup6253 = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/de/watch/pm028-pm028-grounded-flight-ho-6253', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(compactDup6253.status, 301);
+  assert.equal(compactDup6253.headers.get('X-Edge-Mode'), 'SEARCH-REDIRECT');
+  assert.equal(compactDup6253.headers.get('Location'), 'https://www.missav-j.com/de/watch/pm028-grounded-flight-sample-6253');
+
+  const compactDup43861 = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/pp004-pp004-old-slug-43861', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(compactDup43861.status, 301);
+  assert.equal(compactDup43861.headers.get('X-Edge-Mode'), 'SEARCH-REDIRECT');
+
+  const mismatchCompact = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/de/watch/pm029-pm029-wrong-code-6253', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(mismatchCompact.status, 410);
+  assert.equal(mismatchCompact.headers.get('X-Edge-Mode'), 'SEARCH-GONE-410');
+
+  const mismatchDifferentPrefix = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/de/watch/ssis-111-wrong-code-6253', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(mismatchDifferentPrefix.status, 410);
+  assert.equal(mismatchDifferentPrefix.headers.get('X-Edge-Mode'), 'SEARCH-GONE-410');
+});
+
+test('transient API errors never poison valid SSR pages with client noindex', async () => {
+  const prevDocument = globalThis.document;
+  const prevWindow = globalThis.window;
+
+  try {
+    const robotsEl = { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' };
+    const appContentEl = { innerHTML: '' };
+    globalThis.window = { i18n: null, location: { reload() {} } };
+    globalThis.document = {
+      documentElement: { setAttribute() {} },
+      head: { appendChild() {} },
+      querySelector: sel => (sel === 'meta[name="robots"]' ? robotsEl : null),
+      createElement: () => ({ name: 'robots', content: '' }),
+      getElementById: id => (id === 'app-content' ? appContentEl : null)
+    };
+
+    const uiMod = await importSource('assets/js/ui.js');
+    const ui = uiMod.default;
+
+    ui.showError('Temporary upstream timeout');
+    assert.match(robotsEl.content, /^index, follow/, 'Transient ui.showError must preserve indexability by default');
+
+    ui.showError('404 - Page Not Found', null, { noindex: true });
+    assert.equal(robotsEl.content, 'noindex, follow', 'Explicit permanent 404 may set noindex');
+
+    const [uiSrc, playerSrc, feedSrc, appSrc] = await Promise.all([
+      readFile(new URL('assets/js/ui.js', ROOT), 'utf8'),
+      readFile(new URL('assets/js/player.js', ROOT), 'utf8'),
+      readFile(new URL('assets/js/feed.js', ROOT), 'utf8'),
+      readFile(new URL('assets/js/app.js', ROOT), 'utf8')
+    ]);
+
+    assert.match(uiSrc, /showError\(message,\s*container\s*=\s*null,\s*\{\s*noindex\s*=\s*false\s*\}\s*=\s*\{\}\)/);
+    assert.doesNotMatch(playerSrc, /catch\s*\(error\)\s*\{[\s\S]*ui\.setRobotsMeta\(true\)/);
+    assert.match(playerSrc, /preservedSsrFullHtml/);
+    assert.match(playerSrc, /error_not_found|invalid_video_id.*noindex:\s*true/);
+    assert.doesNotMatch(feedSrc, /catch\s*\(error\)\s*\{[\s\S]*ui\.setRobotsMeta\(true\)/);
+    assert.match(feedSrc, /preservedSsrFeedHtml/);
+    assert.match(appSrc, /error_not_found[\s\S]*noindex:\s*true/);
+  } finally {
+    globalThis.document = prevDocument;
+    globalThis.window = prevWindow;
+  }
+});
+
+test('curated hub link hygiene: zero 404, 301 alias, or noindex crawl-trap links in client hubs', async () => {
+  const [actorsJsonRaw, catsJsonRaw, popActorsSrc, feedSrc, categoriesSrc, studiosSrc, indexHtml, swSrc] = await Promise.all([
+    readFile(new URL('api/actors.json', ROOT), 'utf8'),
+    readFile(new URL('api/categories.json', ROOT), 'utf8'),
+    readFile(new URL('assets/js/popular_actors.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/feed.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/categories.js', ROOT), 'utf8'),
+    readFile(new URL('assets/js/studios.js', ROOT), 'utf8'),
+    readFile(new URL('index.html', ROOT), 'utf8'),
+    readFile(new URL('sw.js', ROOT), 'utf8')
+  ]);
+
+  const curatedActorSet = new Set(JSON.parse(actorsJsonRaw).map(a => String(a).trim().toLowerCase()));
+  const curatedCatSet = new Set(JSON.parse(catsJsonRaw).map(c => String(c).trim().toLowerCase()));
+
+  const popNames = [...popActorsSrc.matchAll(/\{\s*name:\s*'([^']+)'/g)].map(m => m[1]);
+  assert.ok(popNames.length >= 15, 'Expected curated list in popular_actors.js');
+  for (const actorName of popNames) {
+    assert.ok(curatedActorSet.has(actorName.toLowerCase()), `popular_actors.js entry "${actorName}" must exist in api/actors.json (>=8 videos)`);
+  }
+  assert.doesNotMatch(popActorsSrc, /Karen Kanon|Maria Ozawa|Sora Aoi|'Arina Hashimoto'/);
+
+  const hubFnMatch = feedSrc.match(/function buildClientHomeHubLinksHtml\(lang\)[\s\S]*?\n\}/);
+  assert.ok(hubFnMatch, 'Expected buildClientHomeHubLinksHtml in feed.js');
+  const hubFnBody = hubFnMatch[0];
+  assert.doesNotMatch(hubFnBody, /'Drama'|'Romance'|'Solowork'|'Amateur'|'POV'/);
+  assert.match(hubFnBody, /lang === 'en'\s*\?\s*\['English Subtitle'\]\s*:\s*\[\]/);
+  for (const catLiteral of [...hubFnBody.matchAll(/'([^']+)'/g)].map(m => m[1])) {
+    if (['Uncensored', 'Uncensored leak', 'English Subtitle', '4K', 'Full Hd (Fhd)', 'Cosplay', 'Mature Woman', 'Married Woman', 'Big Breasts', 'Vr'].includes(catLiteral)) {
+      assert.ok(curatedCatSet.has(catLiteral.toLowerCase()), `Home hub category "${catLiteral}" must exist in api/categories.json`);
+    }
+  }
+
+  assert.match(feedSrc, /isIndexableTaxonomy\('category',\s*canonicalTag,\s*lang\)/);
+  assert.match(feedSrc, /isNonCuratedCategory/);
+  assert.match(categoriesSrc, /loadIndexableTaxonomies\(\)/);
+  assert.match(categoriesSrc, /role="link"[^>]*taxonomy-link-thin[^>]*data-nav-href="\$\{catHref\}"/);
+  assert.match(studiosSrc, /isThinStudio[\s\S]*role="link"[^>]*taxonomy-link-thin[^>]*data-nav-href="\$\{studioHref\}"/);
+
+  // Adsterra & v2.8.107 invariants
+  assert.match(indexHtml, /benchform\.org/);
+  assert.match(indexHtml, /biomanos\.org/);
+  assert.match(indexHtml, /app\.js\?v=2\.8\.107/);
+  assert.match(swSrc, /missavj-cache-v2\.8\.107/);
 });

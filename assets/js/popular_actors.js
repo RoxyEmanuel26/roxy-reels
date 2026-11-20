@@ -4,26 +4,26 @@
  * dan perutean dinamis ke feed video berbasis API.
  */
 
-import ui from './ui.js?v=2.8.106';
-import i18n from './i18n.js?v=2.8.106';
+import ui from './ui.js?v=2.8.107';
+import i18n from './i18n.js?v=2.8.107';
 
 // Daftar Aktris JAV populer terkurasi dengan nama kanji & inisial premium
 const POPULAR_ACTORS = [
   { name: 'Eimi Fukada', native: '深田えいみ', letter: 'E' },
   { name: 'Yua Mikami', native: '三上悠亜', letter: 'Y' },
-  { name: 'Arina Hashimoto', native: '橋本ありな', letter: 'A' },
+  { name: 'Arata Arina (Hashimoto Arina)', native: '新ありな (橋本ありな)', letter: 'A' },
   { name: 'Kana Momonogi', native: '桃乃木かな', letter: 'K' },
   { name: 'Remu Suzumori', native: '涼森れむ', letter: 'R' },
   { name: 'Saeko Matsushita', native: '松下紗栄子', letter: 'S' },
   { name: 'Minami Hatsukawa', native: '初川みなみ', letter: 'M' },
-  { name: 'Karen Kanon', native: '花音かれん', letter: 'K' },
+  { name: 'Saika Kawakita', native: '河北彩花', letter: 'S' },
   { name: 'Yura Kano', native: '架乃ゆら', letter: 'Y' },
   { name: 'Julia', native: 'ジュリア', letter: 'J' },
   { name: 'Shoko Takahashi', native: '高橋しょう子', letter: 'S' },
   { name: 'Tsukasa Aoi', native: '葵つかさ', letter: 'T' },
   { name: 'Ai Uehara', native: '上原亜衣', letter: 'A' },
-  { name: 'Maria Ozawa', native: '小沢マリア', letter: 'M' },
-  { name: 'Sora Aoi', native: '蒼井そら', letter: 'S' }
+  { name: 'Yui Hatano', native: '波多野結衣', letter: 'Y' },
+  { name: 'Tsumugi Akari', native: '明里つむぎ', letter: 'T' }
 ];
 
 // Hilangkan duplikasi nama jika ada

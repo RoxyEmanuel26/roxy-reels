@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|AdsBot-Google|Mediapartners-Google|Storebot-Google|Google-Read-Aloud|APIs-Google|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.106';
+const SSR_CACHE_VERSION = 'v2.8.107';
 
 const EDITION_LOCALIZED_LABELS = {
   en: { 'uncensored-leak': 'Uncensored Leak', 'english-subtitle': 'English Subtitle', 'chinese-subtitle': 'Chinese Subtitle', uncensored: 'Uncensored' },
@@ -152,13 +152,16 @@ function extractReleaseCodePrefix(value) {
   const numericCodeMatch = normalized.match(/^(\d{6}-\d{2,4})(?=-|$)/);
   if (numericCodeMatch) return numericCodeMatch[1];
 
+  const compactDupMatch = normalized.match(/^([a-z]{1,6}\d{2,6})-\1(?=-|$)/);
+  if (compactDupMatch) return compactDupMatch[1];
+
   const hyphenCodeMatch = normalized.match(/^((?:[a-z]+\d{0,4}|\d{1,2}[a-z]{2,6})-[a-z]{0,3}\d{2,8})(?=-|$)/);
   if (hyphenCodeMatch) {
     const candidate = hyphenCodeMatch[1].replace(RELEASE_CODE_DESCRIPTOR_REGEX, '');
     if (!GENERIC_SLUG_NUM_PREFIX_REGEX.test(candidate)) return candidate;
   }
 
-  const compactCodeMatch = normalized.match(/^([a-z]{1,5}\d{3,6})(?=-|$)/);
+  const compactCodeMatch = normalized.match(/^([a-z]{1,6}\d{2,6})(?=-|$)/);
   if (compactCodeMatch) return compactCodeMatch[1];
 
   return '';
@@ -181,7 +184,9 @@ function isWatchCodeMismatch(rawSlug, id, postCode) {
   const expectedCode = extractReleaseCodePrefix(postCode);
   const incomingCode = extractReleaseCodePrefix(withoutId);
   if (!expectedCode || !incomingCode) return false;
-  return expectedCode !== incomingCode;
+  if (expectedCode === incomingCode) return false;
+  if (!expectedCode.includes('-') && incomingCode.startsWith(`${expectedCode}-`)) return false;
+  return true;
 }
 
 function removeDefaultSeoNoscript(html) {

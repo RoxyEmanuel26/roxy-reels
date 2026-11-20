@@ -170,9 +170,12 @@ const ui = {
    * Menampilkan halaman error dengan tombol "Coba Lagi" (Aman XSS)
    * @param {string} message - Deskripsi kesalahan
    * @param {HTMLElement} [container] - Container opsional
+   * @param {Object} [options] - Opsi tambahan (`noindex: true` hanya untuk 404 permanen)
    */
-  showError(message, container = null) {
-    this.setRobotsMeta(true);
+  showError(message, container = null, { noindex = false } = {}) {
+    if (noindex) {
+      this.setRobotsMeta(true);
+    }
     const target = container || document.getElementById('app-content');
     if (!target) return;
 

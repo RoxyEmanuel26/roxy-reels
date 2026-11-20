@@ -4,8 +4,8 @@
  * dan perutean dinamis ke feed video berbasis API.
  */
 
-import ui from './ui.js?v=2.8.106';
-import i18n from './i18n.js?v=2.8.106';
+import ui from './ui.js?v=2.8.107';
+import i18n from './i18n.js?v=2.8.107';
 
 // Daftar Studio JAV terkemuka terkurasi (disesuaikan dengan nama studio aktif pada upstream API)
 const POPULAR_STUDIOS = [
@@ -69,13 +69,25 @@ function renderStudiosGrid(studiosList, searchQuery = '') {
     const safeLabel = ui.escapeHTML(studio.label);
     const studioHref = `/${lang}/studio?name=${encodeURIComponent(studio.name)}`;
     const animationStyle = `style="animation-delay: calc(${idx % 12} * 45ms);"`;
-
-    return `
-      <a href="${studioHref}" class="studio-browse-card fadeInUp" data-name="${encodeURIComponent(studio.name)}" ${animationStyle}>
+    const isThinStudio = String(studio.name || '').trim().toLowerCase() === 'other';
+    const cardInner = `
         <div class="studio-logo-box">
           <span class="studio-icon-text">${safeLabel}</span>
         </div>
         <div class="studio-browse-name">${safeName}</div>
+    `;
+
+    if (isThinStudio) {
+      return `
+      <div role="link" tabindex="0" class="studio-browse-card taxonomy-link-thin fadeInUp" data-nav-href="${studioHref}" data-name="${encodeURIComponent(studio.name)}" ${animationStyle}>
+        ${cardInner}
+      </div>
+    `;
+    }
+
+    return `
+      <a href="${studioHref}" class="studio-browse-card fadeInUp" data-name="${encodeURIComponent(studio.name)}" ${animationStyle}>
+        ${cardInner}
       </a>
     `;
   }).join('');

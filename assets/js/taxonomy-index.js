@@ -5,7 +5,7 @@
  * stay clickable for humans without exposing <a href> crawl traps to search bots.
  */
 
-import ui from './ui.js?v=2.8.106';
+import ui from './ui.js?v=2.8.107';
 
 const ENGLISH_SPECIFIC_CATEGORIES = new Set([
   'jav english sub',
@@ -117,6 +117,17 @@ export function loadIndexableTaxonomies({ timeoutMs = 2500 } = {}) {
     }
   }
   return loadPromise;
+}
+
+export function hasLoadedTaxonomySet(type) {
+  if (type === 'actor') return Boolean(actorSet && actorSet.size > 0);
+  if (type === 'category' || type === 'tag') return Boolean(categorySet && categorySet.size > 0);
+  return true;
+}
+
+export function isEnglishSpecificCategory(name) {
+  const resolved = resolveCategoryAlias(name);
+  return Boolean(resolved && ENGLISH_SPECIFIC_CATEGORIES.has(resolved.toLowerCase()));
 }
 
 /**

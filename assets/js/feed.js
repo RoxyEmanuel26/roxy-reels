@@ -5,12 +5,19 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.106';
-import ui from './ui.js?v=2.8.106';
-import filter from './filter.js?v=2.8.106';
-import i18n from './i18n.js?v=2.8.106';
-import { getHubContent } from './hub-content.js?v=2.8.106';
-import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.106';
+import api from './api.js?v=2.8.107';
+import ui from './ui.js?v=2.8.107';
+import filter from './filter.js?v=2.8.107';
+import i18n from './i18n.js?v=2.8.107';
+import { getHubContent } from './hub-content.js?v=2.8.107';
+import {
+  loadIndexableTaxonomies,
+  renderTaxonomyLink,
+  isIndexableTaxonomy,
+  resolveCategoryAlias,
+  hasLoadedTaxonomySet,
+  isEnglishSpecificCategory
+} from './taxonomy-index.js?v=2.8.107';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;
@@ -24,9 +31,14 @@ let intersectionObserver = null;
 let seenCodes = new Set();
 let seenTitles = new Set();
 let totalRenderedVideos = 0;
+let preservedSsrFeedHtml = '';
 // Monotonic tokens prevent overlapping init/filter navigations from leaving skeletons or zombie observers
 let feedEpoch = 0;
 let activeFetchToken = 0;
+
+function isCrawlerUserAgent() {
+  return typeof navigator !== 'undefined' && /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent || '');
+}
 
 function resetInfiniteObserver() {
   if (intersectionObserver) {
@@ -141,7 +153,18 @@ function getVideoCardWatchHref(post) {
 function buildClientHomeHubLinksHtml(lang) {
   const safeLang = ui.escapeHTML(lang || 'en');
   const studios = ['S1', "Moody's", 'SOD', 'Attackers', 'IdeaPocket', 'Fitch', 'PRESTIGE', 'FALENO', 'kawaii', 'E-BODY'];
-  const categories = ['Uncensored', 'English Subtitle', 'Drama', 'Romance', 'Solowork', 'Amateur', 'POV', 'VR'];
+  const categories = [
+    'Uncensored',
+    'Uncensored leak',
+    ...(lang === 'en' ? ['English Subtitle'] : []),
+    '4K',
+    'Full Hd (Fhd)',
+    'Cosplay',
+    'Mature Woman',
+    'Married Woman',
+    'Big Breasts',
+    'Vr'
+  ];
   const quickRoutes = [
     { path: '/trending', label: i18n.t('nav_trending') || 'Trending' },
     { path: '/recent', label: i18n.t('nav_recent') || 'Recent' },
@@ -321,6 +344,7 @@ export async function init(filters = {}) {
   seenCodes = new Set();
   seenTitles = new Set();
   totalRenderedVideos = 0;
+  preservedSsrFeedHtml = '';
   currentFilters = {
     per_page: 24,
     orderby: 'date',
@@ -335,6 +359,15 @@ export async function init(filters = {}) {
   // 1. Prepare Base Feed layout templates
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
+
+  const ssrFallbackEl = typeof mainApp.querySelector === 'function' ? mainApp.querySelector('.seo-fallback') : null;
+  preservedSsrFeedHtml = (isCrawlerUserAgent() && ssrFallbackEl) ? ssrFallbackEl.outerHTML : '';
+
+  // Load curated taxonomy sets for filtered/hub views without adding delay to unfiltered Home
+  if (hasSpecificFilter && typeof loadIndexableTaxonomies === 'function') {
+    await loadIndexableTaxonomies();
+    if (myEpoch !== feedEpoch) return;
+  }
 
   // Build Taxonomy banner layouts dynamically if specialized filters are engaged
   let taxonomyBannerHtml = '';
@@ -359,7 +392,11 @@ export async function init(filters = {}) {
       const p = hub.paragraphs.map(text => `<p style="margin: 6px 0; line-height: 1.5; color: var(--text-secondary, #ccc); font-size: 0.88rem;">${ui.escapeHTML(text)}</p>`).join('');
       const tags = (hub.relatedTags || []).map(t => {
         const lang = i18n.getLang() || 'en';
-        return `<a href="/${lang}/category?name=${encodeURIComponent(t)}" style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.06); color: var(--color-accent, #ff527b); border-radius: 4px; font-size: 0.8rem; text-decoration: none;">${ui.escapeHTML(t)}</a>`;
+        const canonicalTag = resolveCategoryAlias(t) || t;
+        if (isIndexableTaxonomy('category', canonicalTag, lang)) {
+          return `<a href="/${lang}/category?name=${encodeURIComponent(canonicalTag)}" style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.06); color: var(--color-accent, #ff527b); border-radius: 4px; font-size: 0.8rem; text-decoration: none;">${ui.escapeHTML(canonicalTag)}</a>`;
+        }
+        return `<span style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.04); color: var(--text-secondary, #bbb); border-radius: 4px; font-size: 0.8rem;">${ui.escapeHTML(t)}</span>`;
       }).join('');
       hubGuideHtml = `
         <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); width: 100%;">
@@ -406,7 +443,11 @@ export async function init(filters = {}) {
       const p = hub.paragraphs.map(text => `<p style="margin: 6px 0; line-height: 1.5; color: var(--text-secondary, #ccc); font-size: 0.88rem;">${ui.escapeHTML(text)}</p>`).join('');
       const tags = (hub.relatedTags || []).map(t => {
         const lang = i18n.getLang() || 'en';
-        return `<a href="/${lang}/category?name=${encodeURIComponent(t)}" style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.06); color: var(--color-accent, #ff527b); border-radius: 4px; font-size: 0.8rem; text-decoration: none;">${ui.escapeHTML(t)}</a>`;
+        const canonicalTag = resolveCategoryAlias(t) || t;
+        if (isIndexableTaxonomy('category', canonicalTag, lang)) {
+          return `<a href="/${lang}/category?name=${encodeURIComponent(canonicalTag)}" style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.06); color: var(--color-accent, #ff527b); border-radius: 4px; font-size: 0.8rem; text-decoration: none;">${ui.escapeHTML(canonicalTag)}</a>`;
+        }
+        return `<span style="display: inline-block; margin: 2px 4px; padding: 2px 8px; background: rgba(255,255,255,0.04); color: var(--text-secondary, #bbb); border-radius: 4px; font-size: 0.8rem;">${ui.escapeHTML(t)}</span>`;
       }).join('');
       hubGuideHtml = `
         <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); width: 100%;">
@@ -550,6 +591,7 @@ function renderUniqueFeedBatch(posts) {
 
 function syncFeedRobotsMeta(data, filters) {
   const pageNum = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10);
+  const lang = i18n.getLang() || 'en';
   const totalCount = Number(data?.total || 0);
   const minRequired = filters.actor ? TAXONOMY_MIN_INDEXABLE_ACTOR_VIDEOS : TAXONOMY_MIN_INDEXABLE_VIDEOS;
   const isThinTaxonomy = (
@@ -558,7 +600,22 @@ function syncFeedRobotsMeta(data, filters) {
     Boolean(filters.category) ||
     Boolean(filters.studio)
   ) && totalCount > 0 && totalCount < minRequired;
-  const isNonIndexable = pageNum > 1 || Boolean(filters.search) || filters.studio === 'Other' || isThinTaxonomy;
+  const isNonCuratedActor = Boolean(filters.actor) && hasLoadedTaxonomySet('actor') && !isIndexableTaxonomy('actor', filters.actor, lang);
+  const isNonCuratedCategory = Boolean(filters.category) && (
+    (lang !== 'en' && isEnglishSpecificCategory(filters.category)) ||
+    (hasLoadedTaxonomySet('category') && !isIndexableTaxonomy('category', filters.category, lang))
+  );
+  const isNonCuratedTag = Boolean(filters.tag) && (
+    (lang !== 'en' && isEnglishSpecificCategory(filters.tag)) ||
+    (hasLoadedTaxonomySet('tag') && !isIndexableTaxonomy('tag', filters.tag, lang))
+  );
+  const isNonIndexable = pageNum > 1 ||
+    Boolean(filters.search) ||
+    filters.studio === 'Other' ||
+    isThinTaxonomy ||
+    isNonCuratedActor ||
+    isNonCuratedCategory ||
+    isNonCuratedTag;
   ui.setRobotsMeta(isNonIndexable);
 }
 
@@ -707,8 +764,12 @@ async function fetchAndRenderFeed(isInitial = false, expectedEpoch = feedEpoch) 
     const grid = document.getElementById('video-grid');
     if (!grid) return;
     if (isInitial) {
-      ui.setRobotsMeta(true);
       hasMore = false;
+      const mainAppEl = document.getElementById('app-content');
+      if (isCrawlerUserAgent() && preservedSsrFeedHtml && mainAppEl) {
+        mainAppEl.innerHTML = preservedSsrFeedHtml;
+        return;
+      }
       const maintTitle = i18n.t('maintenance_title') || 'Server Maintenance';
       const maintDesc = i18n.t('maintenance_desc') || 'We are currently upgrading our core video servers to provide you with a faster and better experience.<br>Please check back again in a few hours.';
       const maintBtn = i18n.t('maintenance_btn') || 'Refresh Page';
