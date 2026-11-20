@@ -129,16 +129,24 @@ test('sitemap_pages.xml emits xhtml:link alternates for all 13 locales and x-def
   }
 });
 
-test('sync-taxonomies enforces >=5 video threshold, spam/hyphen actor filter, and dirty category exclusion', async () => {
-  const { isValidActorTerm, isValidCategoryTerm, MIN_INDEXABLE_VIDEOS } = await import('../scripts/sync-taxonomies.mjs');
+test('sync-taxonomies enforces >=8 actor / >=5 category thresholds, spam/hyphen actor filter, and dirty category exclusion', async () => {
+  const {
+    isValidActorTerm,
+    isValidCategoryTerm,
+    MIN_INDEXABLE_VIDEOS,
+    MIN_INDEXABLE_ACTOR_VIDEOS,
+    MIN_INDEXABLE_CATEGORY_VIDEOS
+  } = await import('../scripts/sync-taxonomies.mjs');
+  assert.equal(MIN_INDEXABLE_ACTOR_VIDEOS, 8);
+  assert.equal(MIN_INDEXABLE_CATEGORY_VIDEOS, 5);
   assert.equal(MIN_INDEXABLE_VIDEOS, 5);
 
   assert.equal(isValidActorTerm({ name: '-Karin', count: 1 }), false);
   assert.equal(isValidActorTerm({ name: 'Mayu Nozomi', count: 0 }), false);
-  assert.equal(isValidActorTerm({ name: 'Mayu Nozomi', count: 4 }), true);
-  assert.equal(4 >= MIN_INDEXABLE_VIDEOS, false);
-  assert.equal(isValidActorTerm({ name: 'Mayu Nozomi', count: 5 }), true);
-  assert.equal(5 >= MIN_INDEXABLE_VIDEOS, true);
+  assert.equal(isValidActorTerm({ name: 'Mayu Nozomi', count: 7 }), true);
+  assert.equal(7 >= MIN_INDEXABLE_ACTOR_VIDEOS, false);
+  assert.equal(isValidActorTerm({ name: 'Mayu Nozomi', count: 8 }), true);
+  assert.equal(8 >= MIN_INDEXABLE_ACTOR_VIDEOS, true);
   assert.equal(isValidActorTerm({ name: 'Eimi Fukada (深田えいみ)', count: 20 }), true);
   assert.equal(isValidActorTerm({ name: 'Ai, 23 Years Old', count: 10 }), false);
 
@@ -146,7 +154,8 @@ test('sync-taxonomies enforces >=5 video threshold, spam/hyphen actor filter, an
   assert.equal(isValidCategoryTerm({ name: 'Dm150/en/fc2', count: 21851 }), false);
   assert.equal(isValidCategoryTerm({ name: 'Blonde / Blonde', count: 8 }), false);
   assert.equal(isValidCategoryTerm({ name: 'Thin Cat', count: 4 }), true);
-  assert.equal(4 >= MIN_INDEXABLE_VIDEOS, false);
+  assert.equal(4 >= MIN_INDEXABLE_CATEGORY_VIDEOS, false);
+  assert.equal(5 >= MIN_INDEXABLE_CATEGORY_VIDEOS, true);
   assert.equal(isValidCategoryTerm({ name: 'Tokyohot', count: 1087 }), true);
   assert.equal(isValidCategoryTerm({ name: 'Blonde', count: 8 }), true);
 });

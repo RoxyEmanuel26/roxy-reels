@@ -1278,7 +1278,7 @@ test('serveHumanShell rewrites lang, canonical, and og:url per localized URL fro
   assert.match(idHtml, /<meta property="og:url" id="og-url" content="https:\/\/www\.missav-j\.com\/id\/category\?name=Drama"/);
 });
 
-test('Watch SSR enforces Option 1A symmetrical hreflangs, localized VideoObject inLanguage/labels, and batch listing translations', async () => {
+test('Watch SSR consolidates indexing on canonical English (A1), marks non-EN watch noindex, and keeps batch listing translations', async () => {
   const { onRequest } = await importSource('functions/[[catchall]].js');
   const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
   const postPayload = {
@@ -1295,9 +1295,11 @@ test('Watch SSR enforces Option 1A symmetrical hreflangs, localized VideoObject 
     fr: 'Collection Travail Sur Demande'
   };
 
+  let enSupabaseSingleCalls = 0;
   globalThis.fetch = async input => {
     const u = String(input);
     if (u.includes('supabase.example/rest/v1/translations?id=eq.771')) {
+      enSupabaseSingleCalls++;
       return new Response(JSON.stringify([{ translations: translationRow }]), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
@@ -1333,31 +1335,44 @@ test('Watch SSR enforces Option 1A symmetrical hreflangs, localized VideoObject 
     }
   });
 
-  // 1. Translated /id/ watch URL emits symmetrical hreflang cluster (en, fr, id, x-default) & localized inLanguage/labels
+  // 1. Canonical English watch URL is indexable, emits ONLY en + x-default hreflang, skips Supabase lookup, and emits VideoObject
   globalThis.caches = { default: new MemoryCache() };
+  const enWatchRes = await onRequest(makeBotCtx('https://www.missav-j.com/en/watch/h0930-ki180818-request-work-collection-771'));
+  const enWatchHtml = await enWatchRes.text();
+  assert.equal(enWatchRes.status, 200);
+  assert.equal(enSupabaseSingleCalls, 0, 'EN watch SSR must skip single-post Supabase translation fetch');
+  assert.match(enWatchHtml, /<meta name="robots" content="index, follow/);
+  assert.match(enWatchHtml, /"@type":\s*"VideoObject"/);
+  assert.match(enWatchHtml, /"inLanguage":\s*"en"/);
+  assert.match(enWatchHtml, /hreflang="en" href="https:\/\/www\.missav-j\.com\/en\/watch\/h0930-ki180818-request-work-collection-771"/);
+  assert.match(enWatchHtml, /hreflang="x-default" href="https:\/\/www\.missav-j\.com\/en\/watch\/h0930-ki180818-request-work-collection-771"/);
+  assert.doesNotMatch(enWatchHtml, /hreflang="(?:id|fr|ko|ms|de|ja)"/);
+  assert.match(enWatchHtml, /data-ssr-watch-id="771"/);
+  assert.match(enWatchHtml, /data-watch-hreflangs="en"/);
+
+  // 2. Translated /id/ watch URL stays readable/localized for users & social previews, but is noindex + omits hreflang & VideoObject
   const idWatchRes = await onRequest(makeBotCtx('https://www.missav-j.com/id/watch/h0930-ki180818-request-work-collection-771'));
   const idWatchHtml = await idWatchRes.text();
   assert.equal(idWatchRes.status, 200);
   assert.match(idWatchHtml, /Koleksi Permintaan Kerja/);
-  assert.match(idWatchHtml, /"inLanguage":\s*"id"/);
   assert.match(idWatchHtml, /<strong>Aktris:<\/strong>/);
   assert.match(idWatchHtml, /<strong>Kategori:<\/strong>/);
-  assert.match(idWatchHtml, /hreflang="en" href="https:\/\/www\.missav-j\.com\/en\/watch\/h0930-ki180818-request-work-collection-771"/);
-  assert.match(idWatchHtml, /hreflang="id" href="https:\/\/www\.missav-j\.com\/id\/watch\/h0930-ki180818-request-work-collection-771"/);
-  assert.match(idWatchHtml, /hreflang="fr" href="https:\/\/www\.missav-j\.com\/fr\/watch\/h0930-ki180818-request-work-collection-771"/);
-  assert.match(idWatchHtml, /hreflang="x-default" href="https:\/\/www\.missav-j\.com\/en\/watch\/h0930-ki180818-request-work-collection-771"/);
-  assert.doesNotMatch(idWatchHtml, /hreflang="ko"/);
-  assert.match(idWatchHtml, /data-ssr-watch-id="771"/);
+  assert.match(idWatchHtml, /<meta name="robots" content="noindex, follow">/);
+  assert.match(idWatchHtml, /<link rel="canonical" id="canonical-url" href="https:\/\/www\.missav-j\.com\/id\/watch\/h0930-ki180818-request-work-collection-771"/);
+  assert.match(idWatchHtml, /data-watch-hreflangs=""/);
+  assert.doesNotMatch(idWatchHtml, /rel="alternate" hreflang=/);
+  assert.doesNotMatch(idWatchHtml, /"@type":\s*"VideoObject"/);
 
-  // 2. Untranslated /ko/ watch URL stays self-canonical and omits mismatched hreflang tags
+  // 3. Untranslated /ko/ watch URL stays self-canonical, noindex, and omits hreflang tags
   const koWatchRes = await onRequest(makeBotCtx('https://www.missav-j.com/ko/watch/h0930-ki180818-request-work-collection-771'));
   const koWatchHtml = await koWatchRes.text();
   assert.equal(koWatchRes.status, 200);
+  assert.match(koWatchHtml, /<meta name="robots" content="noindex, follow">/);
   assert.match(koWatchHtml, /<link rel="canonical" id="canonical-url" href="https:\/\/www\.missav-j\.com\/ko\/watch\/h0930-ki180818-request-work-collection-771"/);
   assert.match(koWatchHtml, /data-watch-hreflangs=""/);
   assert.doesNotMatch(koWatchHtml, /rel="alternate" hreflang=/);
 
-  // 3. Listing SSR uses localized BreadcrumbList & translated catalog titles while keeping English href slug
+  // 4. Listing SSR uses localized BreadcrumbList & translated catalog titles while keeping English href slug
   const idTrendingRes = await onRequest(makeBotCtx('https://www.missav-j.com/id/trending'));
   const idTrendingHtml = await idTrendingRes.text();
   assert.equal(idTrendingRes.status, 200);
@@ -1421,7 +1436,7 @@ test('localized SEO keys cover all 13 locales and API/cron enforce canonical Eng
   assert.equal(frJson.en_slug, 'abc-088-original-english-title');
   assert.equal(frJson.localized_slugs.fr, 'abc-088-original-english-title');
   assert.equal(frJson.localized_slugs.ja, 'abc-088-original-english-title');
-  assert.deepEqual(frJson.available_hreflangs, ['en', 'ja', 'fr']);
+  assert.deepEqual(frJson.available_hreflangs, []);
 
   const koApiRes = await postsMod.onRequest(makeContext({
     request: new Request('https://www.missav-j.com/api/posts/88?lang=ko'),
@@ -1641,7 +1656,7 @@ test('category aliases 301 redirect, spam actors noindex, and Watch SSR avoids l
   assert.doesNotMatch(watchHtml, /studio\?name=Other/i);
 });
 
-test('dynamic taxonomies enforce >=5 indexable threshold, translation-gated Option 1A, and rich entity summaries', async () => {
+test('dynamic taxonomies enforce >=8 actor / >=5 category thresholds, translation-gated Option 1A, and rich entity summaries', async () => {
   globalThis.caches = { default: new MemoryCache() };
   const baseHtml = await readFile(new URL('index.html', ROOT), 'utf8');
   const { onRequest } = await importSource('functions/[[catchall]].js');
@@ -1680,16 +1695,22 @@ test('dynamic taxonomies enforce >=5 indexable threshold, translation-gated Opti
           headers: { 'Content-Type': 'application/json', 'X-WP-Total': '2', 'X-WP-TotalPages': '1' }
         });
       }
-      if (actor === 'Four Video Actor') {
-        return new Response(JSON.stringify(samplePosts.slice(0, 4)), {
+      if (actor === 'Seven Video Actor') {
+        return new Response(JSON.stringify(samplePosts), {
           status: 200,
-          headers: { 'Content-Type': 'application/json', 'X-WP-Total': '4', 'X-WP-TotalPages': '1' }
+          headers: { 'Content-Type': 'application/json', 'X-WP-Total': '7', 'X-WP-TotalPages': '1' }
         });
       }
       if (actor === 'Mayu Nozomi') {
         return new Response(JSON.stringify(samplePosts), {
           status: 200,
-          headers: { 'Content-Type': 'application/json', 'X-WP-Total': '7', 'X-WP-TotalPages': '1' }
+          headers: { 'Content-Type': 'application/json', 'X-WP-Total': '10', 'X-WP-TotalPages': '1' }
+        });
+      }
+      if (cat === 'Five Video Cat') {
+        return new Response(JSON.stringify(samplePosts), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'X-WP-Total': '5', 'X-WP-TotalPages': '1' }
         });
       }
       if (cat === 'Jav English Sub') {
@@ -1709,7 +1730,7 @@ test('dynamic taxonomies enforce >=5 indexable threshold, translation-gated Opti
     ASSETS: { fetch: async () => new Response(baseHtml, { status: 200 }) }
   };
 
-  // < 5 videos -> noindex even with translations present
+  // < 8 videos on actor -> noindex even with translations present
   const thinTwoRes = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/id/actor?name=Takagi%20Misato', { headers: botHeaders }),
     env
@@ -1718,11 +1739,20 @@ test('dynamic taxonomies enforce >=5 indexable threshold, translation-gated Opti
   assert.match(thinTwoHtml, /<meta name="robots" content="noindex, follow">/);
   assert.doesNotMatch(thinTwoHtml, /<link rel="alternate" hreflang=/);
 
-  const thinFourRes = await onRequest(makeContext({
-    request: new Request('https://www.missav-j.com/en/actor?name=Four%20Video%20Actor', { headers: botHeaders }),
+  const thinSevenActorRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/actor?name=Seven%20Video%20Actor', { headers: botHeaders }),
     env
   }));
-  assert.match(await thinFourRes.text(), /<meta name="robots" content="noindex, follow">/);
+  const thinSevenActorHtml = await thinSevenActorRes.text();
+  assert.match(thinSevenActorHtml, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(thinSevenActorHtml, /<link rel="alternate" hreflang=/);
+
+  // Category threshold stays at >= 5 videos -> indexable on 5 videos
+  const fiveCatRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Five%20Video%20Cat', { headers: botHeaders }),
+    env
+  }));
+  assert.match(await fiveCatRes.text(), /<meta name="robots" content="index, follow/);
 
   // English-specific category in German -> noindex, no hreflang
   const deEngSubRes = await onRequest(makeContext({
@@ -1733,7 +1763,7 @@ test('dynamic taxonomies enforce >=5 indexable threshold, translation-gated Opti
   assert.match(deEngSubHtml, /<meta name="robots" content="noindex, follow">/);
   assert.doesNotMatch(deEngSubHtml, /<link rel="alternate" hreflang=/);
 
-  // Untranslated locale on >=5 video actor -> noindex, follow + self-canonical + omitted hreflang
+  // Untranslated locale on >=8 video actor -> noindex, follow + self-canonical + omitted hreflang
   const koUntransRes = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/ko/actor?name=Mayu%20Nozomi', { headers: botHeaders }),
     env
@@ -1743,7 +1773,7 @@ test('dynamic taxonomies enforce >=5 indexable threshold, translation-gated Opti
   assert.match(koUntransHtml, /<link rel="canonical" id="canonical-url" href="https:\/\/www\.missav-j\.com\/ko\/actor\?name=Mayu%20Nozomi"/);
   assert.doesNotMatch(koUntransHtml, /<link rel="alternate" hreflang=/);
 
-  // English canonical on >=5 video actor -> index, follow + symmetrical hreflangs (en, id, ja + x-default) + rich entity summary & ItemList
+  // English canonical on >=8 video actor -> index, follow + symmetrical hreflangs (en, id, ja + x-default) + rich entity summary & ItemList
   const enMayuRes = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/en/actor?name=Mayu%20Nozomi', { headers: botHeaders }),
     env
@@ -1757,7 +1787,7 @@ test('dynamic taxonomies enforce >=5 indexable threshold, translation-gated Opti
   assert.doesNotMatch(enMayuHtml, /hreflang="ko"/);
   assert.match(enMayuHtml, /<section class="taxonomy-profile-summary"/);
   assert.match(enMayuHtml, /MYS-100/);
-  assert.match(enMayuHtml, /"numberOfItems": 7/);
+  assert.match(enMayuHtml, /"numberOfItems": 10/);
   assert.match(enMayuHtml, /"itemListElement": \[/);
 
   // Translated locale -> index, follow + same symmetrical hreflang set + Indonesian titles
@@ -2023,11 +2053,11 @@ test('Watch SSR enforces noindex on untranslated locales, localizes facts/relate
   assert.match(edHtml, /ATID-581 Newly Married Teacher \(English Subtitle\)/);
   assert.match(edHtml, /"name": "ATID-581 Newly Married Teacher \(English Subtitle\)"/);
 
-  // 5. Client router app.js handles %3F normalization, untranslated watch/unknown route noindex, and edition formatting
+  // 5. Client router app.js handles %3F normalization, non-EN watch/unknown route noindex, and edition formatting
   const appSource = await readFile(new URL('assets/js/app.js', ROOT), 'utf8');
   assert.match(appSource, /\/%3f\/i\.test\(window\.location\.pathname\)/);
   assert.match(appSource, /isUnknownRoute/);
-  assert.match(appSource, /isUntranslatedWatch/);
+  assert.match(appSource, /isNonIndexableWatchLocale/);
   assert.match(appSource, /formatWatchEditionTitle/);
 });
 
@@ -2923,6 +2953,7 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   ]);
 
   assert.match(feedSrc, /const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;/);
+  assert.match(feedSrc, /const TAXONOMY_MIN_INDEXABLE_ACTOR_VIDEOS = 8;/);
   assert.match(feedSrc, /class="feed-page-h1"/);
   assert.match(feedSrc, /class="home-hub-links"/);
   assert.match(playerSrc, /<a href="\$\{ui\.escapeHTML\(watchPath\)\}" class="related-video-card/);
@@ -2933,6 +2964,7 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(studiosSrc, /<h1\b/);
   assert.match(categoriesSrc, /<a href="\$\{catHref\}" class="category-browse-card/);
   assert.match(categoriesSrc, /<h1\b/);
+  assert.match(actorsSrc, /Number\(actor\.count\) < 8/);
   assert.match(actorsSrc, /isThinActor[\s\S]*role="link"[^>]*taxonomy-link-thin/);
   assert.doesNotMatch(actorsSrc, /rel="nofollow"/);
   assert.match(actorsSrc, /<h1\b/);
@@ -2946,9 +2978,13 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(baseHtml, /rel="preload" as="style" href="https:\/\/fonts\.googleapis\.com/);
   assert.match(baseHtml, /benchform\.org/);
   assert.match(baseHtml, /biomanos\.org/);
-  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.105/);
-  assert.match(swSrc, /hub-content\.js\?v=2\.8\.105/);
-  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.105/);
+  assert.match(baseHtml, />Home<\/span>/);
+  assert.match(baseHtml, />Popular Actors<\/span>/);
+  assert.doesNotMatch(baseHtml, />(?:Beranda|Populer \(Trending\)|Tonton Nanti|Riwayat Sesi|Aktor Populer|Studio Populer)</);
+  assert.doesNotMatch(baseHtml, /title="Toggle Tema"/);
+  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.106/);
+  assert.match(swSrc, /hub-content\.js\?v=2\.8\.106/);
+  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.106/);
 });
 
 test('noindex discovery guard: client chips link only indexable taxonomies', async () => {
@@ -3060,12 +3096,14 @@ test('noindex discovery guard: client chips link only indexable taxonomies', asy
     assert.ok(routes.exclude.includes('/api/categories.json'));
     assert.match(swSrc, /\/api\/actors\.json['"][\s\S]*ONE_DAY/);
     assert.match(swSrc, /\/api\/categories\.json['"][\s\S]*ONE_DAY/);
-    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.105/);
+    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.106/);
     assert.match(playerSrc, /renderTaxonomyLink\(/);
     assert.doesNotMatch(playerSrc, /<a href="\$\{baseHref\}\?name=Other"|<a href="\/\$\{lang\}\/studio\?name=Other"/);
     assert.match(playerSrc, /glamournakedemployee\.com/);
     assert.match(baseHtml, /benchform\.org/);
     assert.match(baseHtml, /biomanos\.org/);
+    const wfSrc = await readFile(new URL('.github/workflows/weekly-sitemap.yml', ROOT), 'utf8');
+    assert.match(wfSrc, /seo-enrich\.mjs --limit=400/);
   } finally {
     delete globalThis.__testTaxonomyMod;
     globalThis.fetch = prevFetch;

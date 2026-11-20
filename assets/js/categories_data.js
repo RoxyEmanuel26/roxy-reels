@@ -1,6 +1,6 @@
 /**
  * MISSAV-J — Auto-generated Categories list
- * Contains 479 active categories verified against apijav server.
+ * Contains 486 active categories verified against apijav server.
  */
 
 export const ALL_CATEGORIES = [
@@ -135,6 +135,12 @@ export const ALL_CATEGORIES = [
     "slug": "anal-sex",
     "icon": "🍑",
     "key": "category_anal_sex"
+  },
+  {
+    "name": "Anal Sex (Cross-Dressing Man)",
+    "slug": "anal-sex-cross-dressing-man",
+    "icon": "📁",
+    "key": "category_anal_sex__cross_dressing_man_"
   },
   {
     "name": "Anchorwoman",
@@ -353,6 +359,12 @@ export const ALL_CATEGORIES = [
     "key": "category_big_ass"
   },
   {
+    "name": "Big Boobs",
+    "slug": "big-boobs",
+    "icon": "📁",
+    "key": "category_big_boobs"
+  },
+  {
     "name": "Big Breast Fetish",
     "slug": "big-breast-fetish",
     "icon": "🍈",
@@ -435,6 +447,12 @@ export const ALL_CATEGORIES = [
     "slug": "blow-mono",
     "icon": "📁",
     "key": "category_blow_mono"
+  },
+  {
+    "name": "Blowjob",
+    "slug": "blowjob",
+    "icon": "📁",
+    "key": "category_blowjob"
   },
   {
     "name": "Body Piercing",
@@ -759,6 +777,12 @@ export const ALL_CATEGORIES = [
     "slug": "customs",
     "icon": "📁",
     "key": "category_customs"
+  },
+  {
+    "name": "Cute",
+    "slug": "cute",
+    "icon": "📁",
+    "key": "category_cute"
   },
   {
     "name": "Cute Little Boy",
@@ -1299,6 +1323,12 @@ export const ALL_CATEGORIES = [
     "slug": "hairlessness",
     "icon": "📁",
     "key": "category_hairlessness"
+  },
+  {
+    "name": "Hameha",
+    "slug": "hameha",
+    "icon": "📁",
+    "key": "category_hameha"
   },
   {
     "name": "Handjob And Blowjob",
@@ -2177,6 +2207,12 @@ export const ALL_CATEGORIES = [
     "key": "category_raw_digging"
   },
   {
+    "name": "Raw Sex",
+    "slug": "raw-sex",
+    "icon": "📁",
+    "key": "category_raw_sex"
+  },
+  {
     "name": "Realistic Version Of The Game",
     "slug": "realistic-version-of-the-game",
     "icon": "📁",
@@ -2643,6 +2679,12 @@ export const ALL_CATEGORIES = [
     "slug": "tit-job",
     "icon": "📁",
     "key": "category_tit_job"
+  },
+  {
+    "name": "Tits",
+    "slug": "tits",
+    "icon": "📁",
+    "key": "category_tits"
   },
   {
     "name": "Together",

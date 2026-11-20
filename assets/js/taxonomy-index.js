@@ -5,7 +5,7 @@
  * stay clickable for humans without exposing <a href> crawl traps to search bots.
  */
 
-import ui from './ui.js?v=2.8.105';
+import ui from './ui.js?v=2.8.106';
 
 const ENGLISH_SPECIFIC_CATEGORIES = new Set([
   'jav english sub',

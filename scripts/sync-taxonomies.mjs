@@ -8,7 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const WP_V2_BASE = 'https://server.apijav.com/wp-json/wp/v2';
 const MYVIDEO_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
-export const MIN_INDEXABLE_VIDEOS = 5;
+export const MIN_INDEXABLE_ACTOR_VIDEOS = 8;
+export const MIN_INDEXABLE_CATEGORY_VIDEOS = 5;
+export const MIN_INDEXABLE_VIDEOS = MIN_INDEXABLE_CATEGORY_VIDEOS;
 
 export function decodeHtmlEntities(value) {
   if (!value) return '';
@@ -265,25 +267,25 @@ async function main() {
     return effectiveCount >= 1;
   });
 
-  const indexableActors = cleanActors.filter(a => a.count >= MIN_INDEXABLE_VIDEOS);
+  const indexableActors = cleanActors.filter(a => a.count >= MIN_INDEXABLE_ACTOR_VIDEOS);
   const indexableCuratedCats = [...new Set(activeCuratedCats)]
     .filter(name => {
       const mvCount = myVideoCatTotals.get(name.toLowerCase());
       const fallbackWpCount = Number(liveCatByLower.get(name.toLowerCase())?.count || 0);
       const effectiveCount = (mvCount !== undefined && mvCount >= 0) ? mvCount : fallbackWpCount;
-      return effectiveCount >= MIN_INDEXABLE_VIDEOS;
+      return effectiveCount >= MIN_INDEXABLE_CATEGORY_VIDEOS;
     })
     .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
 
   console.log(`[Sync] Live actors: ${rawActors.length} -> valid non-spam with >=1 video: ${cleanActors.length} (rejected: ${rejectedActors.length})`);
-  console.log(`[Sync] Indexable actors (>=${MIN_INDEXABLE_VIDEOS} videos): ${indexableActors.length} | thin (1-${MIN_INDEXABLE_VIDEOS - 1} videos): ${cleanActors.length - indexableActors.length}`);
-  console.log(`[Sync] Curated categories: ${existingCatsList.length} -> active valid: ${activeCuratedCats.length} (rejected/dead: ${deadCuratedCats.length}) | indexable (>=${MIN_INDEXABLE_VIDEOS} videos): ${indexableCuratedCats.length}`);
+  console.log(`[Sync] Indexable actors (>=${MIN_INDEXABLE_ACTOR_VIDEOS} videos): ${indexableActors.length} | thin (1-${MIN_INDEXABLE_ACTOR_VIDEOS - 1} videos): ${cleanActors.length - indexableActors.length}`);
+  console.log(`[Sync] Curated categories: ${existingCatsList.length} -> active valid: ${activeCuratedCats.length} (rejected/dead: ${deadCuratedCats.length}) | indexable (>=${MIN_INDEXABLE_CATEGORY_VIDEOS} videos): ${indexableCuratedCats.length}`);
   if (deadCuratedCats.length > 0) console.log('[Sync] Rejected/dead curated categories:', deadCuratedCats);
   console.log('[Sync] Sample rejected actors (count >= 1):', rejectedActors.filter(x => x.count >= 1).slice(0, 15));
 
   if (dryRun) return;
 
-  // Sitemap & SSR directory only list indexable actors (>=5 videos); frontend search retains all >=1-video actors.
+  // Sitemap & SSR directory only list indexable actors (>=8 videos); frontend search retains all >=1-video actors.
   const indexableActorNames = indexableActors.map(a => a.name);
   fs.writeFileSync(path.join(ROOT, 'api', 'actors.json'), JSON.stringify(indexableActorNames), 'utf8');
   fs.writeFileSync(

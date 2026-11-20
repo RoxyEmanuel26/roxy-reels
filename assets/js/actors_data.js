@@ -1,6 +1,6 @@
 /**
  * MISSAV-J — Auto-generated Actors list
- * Contains 7347 verified active actors synced from apijav server.
+ * Contains 7351 verified active actors synced from apijav server.
  */
 
 export const ALL_ACTORS = [
@@ -786,7 +786,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "airi-ichise",
     "letter": "A",
-    "count": 17
+    "count": 19
   },
   {
     "name": "Airi Jinguji",
@@ -891,7 +891,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "airi-sato",
     "letter": "A",
-    "count": 53
+    "count": 54
   },
   {
     "name": "Airi Tachibana",
@@ -1332,7 +1332,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "akari-minase",
     "letter": "A",
-    "count": 137
+    "count": 140
   },
   {
     "name": "Akari Misaki",
@@ -1514,7 +1514,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "aki-mori",
     "letter": "A",
-    "count": 4
+    "count": 5
   },
   {
     "name": "Aki Mukai",
@@ -1542,7 +1542,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "aki-sasaki",
     "letter": "A",
-    "count": 131
+    "count": 132
   },
   {
     "name": "Aki Segawa",
@@ -1794,7 +1794,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "akiyama-mian",
     "letter": "A",
-    "count": 6
+    "count": 8
   },
   {
     "name": "Akizono Koe",
@@ -1927,7 +1927,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "alice-shaku",
     "letter": "A",
-    "count": 38
+    "count": 40
   },
   {
     "name": "Alice Shinomiya",
@@ -2005,6 +2005,13 @@ export const ALL_ACTORS = [
     "slug": "amagase-yuka",
     "letter": "A",
     "count": 6
+  },
+  {
+    "name": "Amagi Nene",
+    "native": "",
+    "slug": "amagi-nene",
+    "letter": "A",
+    "count": 1
   },
   {
     "name": "Amaha Cocoon",
@@ -2193,7 +2200,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "amane-shinohara",
     "letter": "A",
-    "count": 2
+    "count": 3
   },
   {
     "name": "Amane Tao",
@@ -3299,14 +3306,14 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "aoi-ai",
     "letter": "A",
-    "count": 26
+    "count": 27
   },
   {
     "name": "Aoi Aosaka",
     "native": "",
     "slug": "aoi-aosaka",
     "letter": "A",
-    "count": 15
+    "count": 16
   },
   {
     "name": "Aoi Aoyama",
@@ -3558,14 +3565,14 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "aoi-yurika",
     "letter": "A",
-    "count": 145
+    "count": 147
   },
   {
     "name": "Aoka Tsukimachi",
     "native": "",
     "slug": "aoka-tsukimachi",
     "letter": "A",
-    "count": 6
+    "count": 7
   },
   {
     "name": "Aoki Kuzuha",
@@ -3880,7 +3887,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "arisa-saijo",
     "letter": "A",
-    "count": 1
+    "count": 2
   },
   {
     "name": "Arisa Saotome",
@@ -4811,7 +4818,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "aya-sasakura",
     "letter": "A",
-    "count": 54
+    "count": 55
   },
   {
     "name": "Aya Sato",
@@ -6617,7 +6624,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "chiharu-okui",
     "letter": "C",
-    "count": 10
+    "count": 11
   },
   {
     "name": "Chiharu Sakai",
@@ -8675,7 +8682,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "flower-and-bird-douka",
     "letter": "F",
-    "count": 12
+    "count": 14
   },
   {
     "name": "Flower Buds",
@@ -8969,7 +8976,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "fumika-kashiwagi",
     "letter": "F",
-    "count": 27
+    "count": 29
   },
   {
     "name": "Fumika Nagano",
@@ -8990,7 +8997,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "fumika-nakayama",
     "letter": "F",
-    "count": 92
+    "count": 93
   },
   {
     "name": "Fumika Yoshinaga",
@@ -9088,7 +9095,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "futaba-otani",
     "letter": "F",
-    "count": 28
+    "count": 29
   },
   {
     "name": "Futaba Rena",
@@ -9634,7 +9641,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "hanamori-kaho",
     "letter": "H",
-    "count": 121
+    "count": 122
   },
   {
     "name": "Hanamoto Kyouka",
@@ -10446,7 +10453,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "haruno-ruru",
     "letter": "H",
-    "count": 41
+    "count": 42
   },
   {
     "name": "Haruno Sakuma",
@@ -11027,7 +11034,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "higashi-mika",
     "letter": "H",
-    "count": 14
+    "count": 15
   },
   {
     "name": "High Ratio Good Cage",
@@ -11335,7 +11342,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "hikaru-konno",
     "letter": "H",
-    "count": 85
+    "count": 86
   },
   {
     "name": "Hikaru Matsuyuki",
@@ -11349,14 +11356,14 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "hikaru-minazuki",
     "letter": "H",
-    "count": 303
+    "count": 306
   },
   {
     "name": "Hikaru Miyanishi",
     "native": "",
     "slug": "hikaru-miyanishi",
     "letter": "H",
-    "count": 223
+    "count": 224
   },
   {
     "name": "Hikaru Momoi",
@@ -11405,7 +11412,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "himari",
     "letter": "H",
-    "count": 60
+    "count": 61
   },
   {
     "name": "Himari Arihara",
@@ -11937,7 +11944,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "hinako-higashimine",
     "letter": "H",
-    "count": 6
+    "count": 8
   },
   {
     "name": "Hinako Matsui",
@@ -11951,7 +11958,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "hinako-mori",
     "letter": "H",
-    "count": 288
+    "count": 289
   },
   {
     "name": "Hinako Niizaki",
@@ -12805,7 +12812,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "hiyori-sasakura",
     "letter": "H",
-    "count": 10
+    "count": 11
   },
   {
     "name": "Hiyori Shiokawa",
@@ -13113,7 +13120,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "hono-watanabe",
     "letter": "H",
-    "count": 26
+    "count": 27
   },
   {
     "name": "Hono-Chan",
@@ -13141,7 +13148,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "honoka-ashina",
     "letter": "H",
-    "count": 89
+    "count": 91
   },
   {
     "name": "Honoka Kimura",
@@ -14331,7 +14338,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "itoi-ruka",
     "letter": "I",
-    "count": 123
+    "count": 124
   },
   {
     "name": "Itome",
@@ -14856,7 +14863,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "jun-suehiro",
     "letter": "J",
-    "count": 306
+    "count": 307
   },
   {
     "name": "Jun Uchida",
@@ -15570,7 +15577,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kana-tamura",
     "letter": "K",
-    "count": 12
+    "count": 13
   },
   {
     "name": "Kana Uno",
@@ -15605,7 +15612,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kanade-tamaki",
     "letter": "K",
-    "count": 3
+    "count": 4
   },
   {
     "name": "Kanae Hyodo",
@@ -15696,7 +15703,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kanae-yumemi",
     "letter": "K",
-    "count": 49
+    "count": 50
   },
   {
     "name": "Kanae-Sensei (Huge Ass Alien)",
@@ -15927,7 +15934,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kanna-misaki",
     "letter": "K",
-    "count": 297
+    "count": 299
   },
   {
     "name": "Kanna Sasaki",
@@ -16501,7 +16508,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "karen-kaede",
     "letter": "K",
-    "count": 198
+    "count": 200
   },
   {
     "name": "Karen Kazuki",
@@ -16949,7 +16956,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kasumi-tsukino",
     "letter": "K",
-    "count": 243
+    "count": 245
   },
   {
     "name": "Kasumi Uehara",
@@ -18384,7 +18391,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kiyomiya-renai",
     "letter": "K",
-    "count": 60
+    "count": 62
   },
   {
     "name": "Kiyomiya Sana",
@@ -18541,6 +18548,13 @@ export const ALL_ACTORS = [
     "count": 62
   },
   {
+    "name": "Koharu Shiraishi",
+    "native": "",
+    "slug": "koharu-shiraishi",
+    "letter": "K",
+    "count": 2
+  },
+  {
     "name": "Koharu Tachibana",
     "native": "",
     "slug": "koharu-tachibana",
@@ -18601,7 +18615,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "koikawa-momo",
     "letter": "K",
-    "count": 8
+    "count": 9
   },
   {
     "name": "Koiro Yuki",
@@ -18804,7 +18818,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kondo-mumu",
     "letter": "K",
-    "count": 20
+    "count": 21
   },
   {
     "name": "Konishi Mika",
@@ -19014,7 +19028,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kotone-fuyue",
     "letter": "K",
-    "count": 168
+    "count": 169
   },
   {
     "name": "Kotone Suzumiya",
@@ -19113,6 +19127,13 @@ export const ALL_ACTORS = [
     "slug": "kotori-morino",
     "letter": "K",
     "count": 2
+  },
+  {
+    "name": "Kotori Natsume",
+    "native": "",
+    "slug": "kotori-natsume",
+    "letter": "K",
+    "count": 1
   },
   {
     "name": "Kotori Takanashi",
@@ -19371,7 +19392,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "kurata-mao",
     "letter": "K",
-    "count": 83
+    "count": 85
   },
   {
     "name": "Kurata Sanan",
@@ -20001,7 +20022,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "leila-fujii",
     "letter": "L",
-    "count": 56
+    "count": 57
   },
   {
     "name": "Leila Jenner",
@@ -20148,7 +20169,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "lily-haruka",
     "letter": "L",
-    "count": 62
+    "count": 63
   },
   {
     "name": "Lily Heart",
@@ -20666,7 +20687,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mahiro",
     "letter": "M",
-    "count": 1
+    "count": 2
   },
   {
     "name": "Mahiro Ichiki",
@@ -21261,7 +21282,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "maina-shiraha",
     "letter": "M",
-    "count": 12
+    "count": 13
   },
   {
     "name": "Maina Yuuri",
@@ -21758,7 +21779,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mami-zenba-mami-mashiro",
     "letter": "M",
-    "count": 50
+    "count": 53
   },
   {
     "name": "Mamika",
@@ -22402,7 +22423,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "maria-himesaki",
     "letter": "M",
-    "count": 203
+    "count": 204
   },
   {
     "name": "Maria Hoshi",
@@ -22486,7 +22507,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "maria-valentine",
     "letter": "M",
-    "count": 11
+    "count": 12
   },
   {
     "name": "Maria Wakatsuki",
@@ -22787,7 +22808,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "marina-nishio",
     "letter": "M",
-    "count": 35
+    "count": 36
   },
   {
     "name": "Marina Saito",
@@ -22815,7 +22836,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "marina-yakuno",
     "letter": "M",
-    "count": 54
+    "count": 55
   },
   {
     "name": "Marina Yuzuki",
@@ -23417,7 +23438,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mayu-misaki",
     "letter": "M",
-    "count": 8
+    "count": 9
   },
   {
     "name": "Mayu Momose",
@@ -23935,7 +23956,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mei-itsukaichi",
     "letter": "M",
-    "count": 243
+    "count": 244
   },
   {
     "name": "Mei Kotone",
@@ -23970,7 +23991,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mei-satsuki",
     "letter": "M",
-    "count": 173
+    "count": 174
   },
   {
     "name": "Mei Suzushiro",
@@ -24054,7 +24075,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "meina-aikawa",
     "letter": "M",
-    "count": 1
+    "count": 2
   },
   {
     "name": "Meina Nakazono",
@@ -24537,7 +24558,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "miho-tono",
     "letter": "M",
-    "count": 199
+    "count": 200
   },
   {
     "name": "Miho Touno",
@@ -24866,7 +24887,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "miki-kanna",
     "letter": "M",
-    "count": 47
+    "count": 49
   },
   {
     "name": "Miki Kitamura",
@@ -25321,7 +25342,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mina-kitano",
     "letter": "M",
-    "count": 291
+    "count": 293
   },
   {
     "name": "Mina Matsuoka",
@@ -25482,7 +25503,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "minami-hinano",
     "letter": "M",
-    "count": 113
+    "count": 114
   },
   {
     "name": "Minami Hironaka",
@@ -26581,7 +26602,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mirei-shirakawa",
     "letter": "M",
-    "count": 4
+    "count": 5
   },
   {
     "name": "Mirei Uno",
@@ -26749,7 +26770,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "misaki-hikari",
     "letter": "M",
-    "count": 25
+    "count": 26
   },
   {
     "name": "Misaki Hinata",
@@ -26994,7 +27015,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "misono-waka",
     "letter": "M",
-    "count": 396
+    "count": 397
   },
   {
     "name": "Misora Kyou",
@@ -27757,7 +27778,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "miyoshi-yuuka",
     "letter": "M",
-    "count": 23
+    "count": 24
   },
   {
     "name": "Miyoshi Yuzuka",
@@ -27778,7 +27799,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "miyu-aizawa",
     "letter": "M",
-    "count": 312
+    "count": 316
   },
   {
     "name": "Miyu Amano",
@@ -28044,7 +28065,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "miyuki-shiori",
     "letter": "M",
-    "count": 4
+    "count": 5
   },
   {
     "name": "Miyuki Shiratori",
@@ -28163,7 +28184,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mizukawa-natsuki",
     "letter": "M",
-    "count": 2
+    "count": 3
   },
   {
     "name": "Mizukawa Violet",
@@ -28282,7 +28303,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mizuki-nishida",
     "letter": "M",
-    "count": 2
+    "count": 3
   },
   {
     "name": "Mizuki Ohno",
@@ -28415,7 +28436,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "mizuki-yayoi",
     "letter": "M",
-    "count": 346
+    "count": 348
   },
   {
     "name": "Mizuki Yume",
@@ -29598,7 +29619,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "nagi-asuka",
     "letter": "N",
-    "count": 3
+    "count": 4
   },
   {
     "name": "Nagi Ayase",
@@ -29633,7 +29654,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "nagi-yasaka",
     "letter": "N",
-    "count": 46
+    "count": 47
   },
   {
     "name": "Nagi-San",
@@ -29787,7 +29808,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "nagisa-tanimura",
     "letter": "N",
-    "count": 29
+    "count": 31
   },
   {
     "name": "Nagisa Yukino",
@@ -29843,7 +29864,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "naho-kado",
     "letter": "N",
-    "count": 24
+    "count": 25
   },
   {
     "name": "Naho Makino",
@@ -29857,7 +29878,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "naho-ozawa",
     "letter": "N",
-    "count": 34
+    "count": 35
   },
   {
     "name": "Naho Yamaguchi",
@@ -30676,7 +30697,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "nanasawa-mia",
     "letter": "N",
-    "count": 99
+    "count": 100
   },
   {
     "name": "Nanase Alice",
@@ -32272,7 +32293,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "nitta-snow",
     "letter": "N",
-    "count": 34
+    "count": 35
   },
   {
     "name": "Niwa Sumire",
@@ -32342,7 +32363,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "noao-hazuki",
     "letter": "N",
-    "count": 281
+    "count": 282
   },
   {
     "name": "Nobeoka Suzuka",
@@ -32559,7 +32580,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "nozomi-arimura",
     "letter": "N",
-    "count": 187
+    "count": 189
   },
   {
     "name": "Nozomi Ashida",
@@ -32636,7 +32657,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "nozomi-ishihara",
     "letter": "N",
-    "count": 110
+    "count": 111
   },
   {
     "name": "Nozomi Kamata",
@@ -32853,7 +32874,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "oguri-misao",
     "letter": "O",
-    "count": 61
+    "count": 63
   },
   {
     "name": "Oguri Monaka",
@@ -33245,7 +33266,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "ouka-rin",
     "letter": "O",
-    "count": 49
+    "count": 51
   },
   {
     "name": "Owadas Visit",
@@ -33665,7 +33686,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "ran-kikuno",
     "letter": "R",
-    "count": 61
+    "count": 62
   },
   {
     "name": "Ran Kosaka",
@@ -34015,7 +34036,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "rei-saegusa",
     "letter": "R",
-    "count": 10
+    "count": 11
   },
   {
     "name": "Rei Saeki",
@@ -34477,7 +34498,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "reina-dan",
     "letter": "R",
-    "count": 12
+    "count": 13
   },
   {
     "name": "Reina Fujikawa",
@@ -34547,7 +34568,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "reina-makino",
     "letter": "R",
-    "count": 26
+    "count": 27
   },
   {
     "name": "Reina Murase",
@@ -34589,7 +34610,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "reina-sumi",
     "letter": "R",
-    "count": 11
+    "count": 13
   },
   {
     "name": "Reina Tachibana",
@@ -34603,7 +34624,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "reina-taozono",
     "letter": "R",
-    "count": 104
+    "count": 105
   },
   {
     "name": "Reino Kawamura",
@@ -34631,7 +34652,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "reira-aizawa",
     "letter": "R",
-    "count": 1
+    "count": 2
   },
   {
     "name": "Reira Natsuki",
@@ -34708,7 +34729,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "remu-suzumori",
     "letter": "R",
-    "count": 88
+    "count": 89
   },
   {
     "name": "Ren Asakura",
@@ -34890,7 +34911,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "rena-miyashita",
     "letter": "R",
-    "count": 98
+    "count": 99
   },
   {
     "name": "Rena Mori",
@@ -36465,7 +36486,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "rinka-ono",
     "letter": "R",
-    "count": 25
+    "count": 26
   },
   {
     "name": "Rinka Tahara",
@@ -36514,7 +36535,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "rinne-mochizuki",
     "letter": "R",
-    "count": 37
+    "count": 39
   },
   {
     "name": "Rino Harukawa",
@@ -37382,7 +37403,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "ruisa-miyakozuki",
     "letter": "R",
-    "count": 258
+    "count": 259
   },
   {
     "name": "Ruka",
@@ -39111,7 +39132,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "sakura-yuno",
     "letter": "S",
-    "count": 61
+    "count": 62
   },
   {
     "name": "Sakura Yura",
@@ -40161,7 +40182,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "satsuki-nanao",
     "letter": "S",
-    "count": 97
+    "count": 101
   },
   {
     "name": "Satsuki Sakura",
@@ -41176,7 +41197,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "shallow-sea",
     "letter": "S",
-    "count": 12
+    "count": 13
   },
   {
     "name": "Shen R.i.",
@@ -41211,7 +41232,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "shibamata-shiho",
     "letter": "S",
-    "count": 4
+    "count": 5
   },
   {
     "name": "Shibukawa Akari",
@@ -42128,7 +42149,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "shiori-yorimoto",
     "letter": "S",
-    "count": 97
+    "count": 99
   },
   {
     "name": "Shirahana Ko",
@@ -42149,7 +42170,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "shirahime-kanna",
     "letter": "S",
-    "count": 4
+    "count": 5
   },
   {
     "name": "Shirahonome",
@@ -42233,7 +42254,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "shiraiwa-fuyumoe",
     "letter": "S",
-    "count": 28
+    "count": 29
   },
   {
     "name": "Shirakami Sakka",
@@ -42653,7 +42674,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "shoko-akase",
     "letter": "S",
-    "count": 30
+    "count": 32
   },
   {
     "name": "Shoko Akiyama",
@@ -43059,7 +43080,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "sora-kamikawa",
     "letter": "S",
-    "count": 351
+    "count": 352
   },
   {
     "name": "Sora Mikumo",
@@ -43500,7 +43521,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "sumire-kuramoto",
     "letter": "S",
-    "count": 312
+    "count": 313
   },
   {
     "name": "Sumire Kurokawa",
@@ -43668,7 +43689,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "sunao-kui",
     "letter": "S",
-    "count": 157
+    "count": 159
   },
   {
     "name": "Suwa Tamao",
@@ -43780,7 +43801,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "suzuka-shirato",
     "letter": "S",
-    "count": 3
+    "count": 4
   },
   {
     "name": "Suzuka Tone",
@@ -44340,7 +44361,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "takimoto-shizukuha",
     "letter": "T",
-    "count": 42
+    "count": 43
   },
   {
     "name": "Takonyan",
@@ -44921,7 +44942,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "toba-iku",
     "letter": "T",
-    "count": 16
+    "count": 17
   },
   {
     "name": "Toba Konae",
@@ -45040,7 +45061,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "tomoe-hikari",
     "letter": "T",
-    "count": 80
+    "count": 82
   },
   {
     "name": "Tomoe Kashihara",
@@ -45390,7 +45411,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "towa-hikaru",
     "letter": "T",
-    "count": 1
+    "count": 2
   },
   {
     "name": "Towa Makihara",
@@ -45474,7 +45495,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "tsubaki-rika",
     "letter": "T",
-    "count": 301
+    "count": 302
   },
   {
     "name": "Tsubaki Yamaguchi",
@@ -45558,7 +45579,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "tsubomi-mochizuki",
     "letter": "T",
-    "count": 131
+    "count": 132
   },
   {
     "name": "Tsuchiya Kanade",
@@ -45789,7 +45810,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "tsukinoe-sui",
     "letter": "T",
-    "count": 127
+    "count": 128
   },
   {
     "name": "Tsukishima Kanon",
@@ -46048,7 +46069,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "urakami-hinori",
     "letter": "U",
-    "count": 30
+    "count": 31
   },
   {
     "name": "Uran Kobayashi",
@@ -46335,7 +46356,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "waka-natsuki",
     "letter": "W",
-    "count": 31
+    "count": 32
   },
   {
     "name": "Waka Ninomiya",
@@ -46972,7 +46993,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yoha-ishikawa",
     "letter": "Y",
-    "count": 33
+    "count": 35
   },
   {
     "name": "Yoichi Matsumoto",
@@ -47847,7 +47868,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yui-haruna",
     "letter": "Y",
-    "count": 52
+    "count": 54
   },
   {
     "name": "Yui Hashimoto",
@@ -48232,7 +48253,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yuika-onozaka",
     "letter": "Y",
-    "count": 238
+    "count": 241
   },
   {
     "name": "Yuiki Rumina",
@@ -48876,7 +48897,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yuki-rino",
     "letter": "Y",
-    "count": 58
+    "count": 59
   },
   {
     "name": "Yuki Sakuya",
@@ -49135,7 +49156,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yukimura-izuki",
     "letter": "Y",
-    "count": 63
+    "count": 64
   },
   {
     "name": "Yukimura Kina",
@@ -49201,11 +49222,18 @@ export const ALL_ACTORS = [
     "count": 5
   },
   {
+    "name": "Yukine Hasegawa",
+    "native": "",
+    "slug": "yukine-hasegawa",
+    "letter": "Y",
+    "count": 1
+  },
+  {
     "name": "Yukine Nagasaki",
     "native": "",
     "slug": "yukine-nagasaki",
     "letter": "Y",
-    "count": 120
+    "count": 121
   },
   {
     "name": "Yukine Sakuragi",
@@ -49751,7 +49779,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yumi-nijimura",
     "letter": "Y",
-    "count": 170
+    "count": 172
   },
   {
     "name": "Yumi Nitta",
@@ -50150,7 +50178,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yura-kana",
     "letter": "Y",
-    "count": 196
+    "count": 198
   },
   {
     "name": "Yura Kano",
@@ -50206,7 +50234,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yuri-adachi",
     "letter": "Y",
-    "count": 131
+    "count": 133
   },
   {
     "name": "Yuri Fujisawa",
@@ -50255,7 +50283,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yuri-kudo",
     "letter": "Y",
-    "count": 70
+    "count": 71
   },
   {
     "name": "Yuri Kuroda",
@@ -50374,7 +50402,7 @@ export const ALL_ACTORS = [
     "native": "",
     "slug": "yuri-sasahara",
     "letter": "Y",
-    "count": 106
+    "count": 109
   },
   {
     "name": "Yuri Sato",

@@ -5,7 +5,7 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
-const POSTS_CACHE_VERSION = 'v2.8.105';
+const POSTS_CACHE_VERSION = 'v2.8.106';
 const LIST_FRESH_TTL_SECONDS = 15 * 60;
 const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
 const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -132,16 +132,8 @@ function generateLocalizedSlugs(code, title, _translations, sourceSlug = '') {
   return slugs;
 }
 
-const VALID_HREFLANG_ORDER = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko', 'ms', 'th', 'de', 'fr', 'vi', 'id', 'fil', 'pt'];
-
-function getAvailableWatchHreflangs(targetLang, translations) {
-  if (!translations || typeof translations !== 'object') {
-    return (!targetLang || targetLang === 'en') ? ['en'] : [];
-  }
-  if (targetLang && targetLang !== 'en' && !translations[targetLang]) {
-    return [];
-  }
-  return VALID_HREFLANG_ORDER.filter(code => code === 'en' || Boolean(translations[code]));
+function getAvailableWatchHreflangs(targetLang) {
+  return (!targetLang || targetLang === 'en') ? ['en'] : [];
 }
 
 async function getTranslationFromDb(id, supabaseUrl, supabaseKey) {

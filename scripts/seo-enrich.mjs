@@ -249,10 +249,10 @@ export async function fetchCandidatePosts(db, targetQueueSize = maxToProcess, fe
     return false;
   };
 
-  // Fetch page 1..5 of latest daily releases + page 1..10 of top viewed releases
+  // Fetch page 1..5 of latest daily releases + page 1..40 of top viewed releases (short-circuits once queue buffer is full)
   const feedPlan = [
     ...Array.from({ length: 5 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&page=${i + 1}`),
-    ...Array.from({ length: 10 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&orderby=views&page=${i + 1}`)
+    ...Array.from({ length: 40 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&orderby=views&page=${i + 1}`)
   ];
 
   for (const endpoint of feedPlan) {

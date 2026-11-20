@@ -50,7 +50,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: 'gemini-3.5-flash'
         run: |
-          node scripts/seo-enrich.mjs --limit=50 || echo "AI Enrichment completed with soft fallback"
+          node scripts/seo-enrich.mjs --limit=400 || echo "AI Enrichment completed with soft fallback"
 
       - name: Submit latest URLs to IndexNow (Bing & Yandex)
         run: |

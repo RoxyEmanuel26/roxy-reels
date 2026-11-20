@@ -5,15 +5,16 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.105';
-import ui from './ui.js?v=2.8.105';
-import filter from './filter.js?v=2.8.105';
-import i18n from './i18n.js?v=2.8.105';
-import { getHubContent } from './hub-content.js?v=2.8.105';
-import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.105';
+import api from './api.js?v=2.8.106';
+import ui from './ui.js?v=2.8.106';
+import filter from './filter.js?v=2.8.106';
+import i18n from './i18n.js?v=2.8.106';
+import { getHubContent } from './hub-content.js?v=2.8.106';
+import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.106';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;
+const TAXONOMY_MIN_INDEXABLE_ACTOR_VIDEOS = 8;
 let currentPage = 1;
 let totalPages = 1;
 let isLoading = false;
@@ -550,12 +551,13 @@ function renderUniqueFeedBatch(posts) {
 function syncFeedRobotsMeta(data, filters) {
   const pageNum = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10);
   const totalCount = Number(data?.total || 0);
+  const minRequired = filters.actor ? TAXONOMY_MIN_INDEXABLE_ACTOR_VIDEOS : TAXONOMY_MIN_INDEXABLE_VIDEOS;
   const isThinTaxonomy = (
     Boolean(filters.actor) ||
     Boolean(filters.tag) ||
     Boolean(filters.category) ||
     Boolean(filters.studio)
-  ) && totalCount > 0 && totalCount < TAXONOMY_MIN_INDEXABLE_VIDEOS;
+  ) && totalCount > 0 && totalCount < minRequired;
   const isNonIndexable = pageNum > 1 || Boolean(filters.search) || filters.studio === 'Other' || isThinTaxonomy;
   ui.setRobotsMeta(isNonIndexable);
 }
