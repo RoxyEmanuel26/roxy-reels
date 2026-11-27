@@ -5,7 +5,7 @@
  */
 
 const TARGET_BASE = 'https://server.apijav.com/wp-json/myvideo/v1';
-const POSTS_CACHE_VERSION = 'v2.8.107';
+const POSTS_CACHE_VERSION = 'v2.8.108';
 const LIST_FRESH_TTL_SECONDS = 15 * 60;
 const LIST_FILTER_TTL_SECONDS = 24 * 60 * 60;
 const DETAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -34,10 +34,25 @@ function resolveStudioAlias(value) {
   return STUDIO_ALIASES[trimmed.toLowerCase()] || trimmed;
 }
 
+function decodeBasicEntities(value) {
+  if (!value) return '';
+  return String(value)
+    .replace(/&amp;/g, '&')
+    .replace(/&#0?38;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?34;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/gi, ' ')
+    .trim();
+}
+
 function slugifyTaxonomyTag(value) {
-  return String(value || '')
-    .trim()
+  return decodeBasicEntities(value)
     .toLowerCase()
+    .replace(/['’`]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 }

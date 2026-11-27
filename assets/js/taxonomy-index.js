@@ -5,12 +5,31 @@
  * stay clickable for humans without exposing <a href> crawl traps to search bots.
  */
 
-import ui from './ui.js?v=2.8.107';
+import ui from './ui.js?v=2.8.108';
 
 const ENGLISH_SPECIFIC_CATEGORIES = new Set([
   'jav english sub',
   'english subtitle',
   'english sub'
+]);
+
+const NOISE_CATEGORIES = new Set([
+  '123av',
+  'javtiful',
+  'missav',
+  'missav-j',
+  'famous',
+  'release',
+  'hd',
+  'japanese',
+  'english',
+  'uncensored leaked',
+  'blog',
+  'other',
+  'original',
+  'exclusive',
+  'planning',
+  'set product'
 ]);
 
 const CATEGORY_ALIASES = {
@@ -22,6 +41,8 @@ const CATEGORY_ALIASES = {
   'en/madou': 'Madou',
   'en/english subtitle': 'English Subtitle',
   'en/uncensored leak': 'Uncensored leak',
+  'uncensored leaked': 'Uncensored leak',
+  'kimono / yukata': 'Kimono',
   'en/xxxav': 'Xxxav',
   'dm29/en/xxxav': 'Xxxav',
   'en/naughty4610': 'Naughty4610',
@@ -140,9 +161,13 @@ export function isIndexableTaxonomy(type, name, lang = 'en') {
   if (type === 'actor') {
     return Boolean(actorSet && actorSet.has(clean.toLowerCase()));
   }
-  if (type === 'category' || type === 'tag') {
+  if (type === 'tag') {
+    return false;
+  }
+  if (type === 'category') {
     const resolved = resolveCategoryAlias(clean);
     if (!resolved) return false;
+    if (NOISE_CATEGORIES.has(resolved.toLowerCase())) return false;
     if (lang !== 'en' && ENGLISH_SPECIFIC_CATEGORIES.has(resolved.toLowerCase())) return false;
     return Boolean(categorySet && categorySet.has(resolved.toLowerCase()));
   }

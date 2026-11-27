@@ -5,11 +5,11 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.8.107';
-import ui from './ui.js?v=2.8.107';
-import filter from './filter.js?v=2.8.107';
-import i18n from './i18n.js?v=2.8.107';
-import { getHubContent } from './hub-content.js?v=2.8.107';
+import api from './api.js?v=2.8.108';
+import ui from './ui.js?v=2.8.108';
+import filter from './filter.js?v=2.8.108';
+import i18n from './i18n.js?v=2.8.108';
+import { getHubContent } from './hub-content.js?v=2.8.108';
 import {
   loadIndexableTaxonomies,
   renderTaxonomyLink,
@@ -17,7 +17,7 @@ import {
   resolveCategoryAlias,
   hasLoadedTaxonomySet,
   isEnglishSpecificCategory
-} from './taxonomy-index.js?v=2.8.107';
+} from './taxonomy-index.js?v=2.8.108';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 const TAXONOMY_MIN_INDEXABLE_VIDEOS = 5;
@@ -609,8 +609,10 @@ function syncFeedRobotsMeta(data, filters) {
     (lang !== 'en' && isEnglishSpecificCategory(filters.tag)) ||
     (hasLoadedTaxonomySet('tag') && !isIndexableTaxonomy('tag', filters.tag, lang))
   );
-  const isNonIndexable = pageNum > 1 ||
+  const isNonIndexable = lang !== 'en' ||
+    pageNum > 1 ||
     Boolean(filters.search) ||
+    Boolean(filters.tag) ||
     filters.studio === 'Other' ||
     isThinTaxonomy ||
     isNonCuratedActor ||

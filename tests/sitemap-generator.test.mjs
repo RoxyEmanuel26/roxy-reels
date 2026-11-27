@@ -113,20 +113,16 @@ test('duration parsing accepts Google range and rejects empty or oversized value
 });
 
 
-test('sitemap_pages.xml emits xhtml:link alternates for all 13 locales and x-default', async () => {
+test('sitemap_pages.xml emits canonical English static routes only (Option A consolidation)', async () => {
   const mod = await import('../generate_sitemap.js');
-  const { buildStaticTaxonomyFiles, SITEMAP_VALID_LANGS } = mod.default || mod;
+  const { buildStaticTaxonomyFiles } = mod.default || mod;
   const files = buildStaticTaxonomyFiles();
   const pagesXml = files.get('sitemap_pages.xml');
-  assert.ok(pagesXml.includes('xmlns:xhtml="http://www.w3.org/1999/xhtml"'));
+  assert.doesNotMatch(pagesXml, /xmlns:xhtml=/);
   assert.match(pagesXml, /<loc>https:\/\/www\.missav-j\.com\/en\/<\/loc>/);
-  assert.match(pagesXml, /<xhtml:link rel="alternate" hreflang="fr" href="https:\/\/www\.missav-j\.com\/fr\/" \/>/);
-  assert.match(pagesXml, /<xhtml:link rel="alternate" hreflang="tl" href="https:\/\/www\.missav-j\.com\/fil\/" \/>/);
-  assert.match(pagesXml, /<xhtml:link rel="alternate" hreflang="x-default" href="https:\/\/www\.missav-j\.com\/en\/" \/>/);
-  for (const lang of SITEMAP_VALID_LANGS) {
-    const code = lang === 'fil' ? 'tl' : lang;
-    assert.ok(pagesXml.includes(`hreflang="${code}" href="https://www.missav-j.com/${lang}/"`));
-  }
+  assert.match(pagesXml, /<loc>https:\/\/www\.missav-j\.com\/en\/trending<\/loc>/);
+  assert.doesNotMatch(pagesXml, /https:\/\/www\.missav-j\.com\/(?:fr|de|id|ko|ja|ms|zh-CN|zh-TW|th|vi|fil|pt)\//);
+  assert.equal((pagesXml.match(/<loc>/g) || []).length, 12);
 });
 
 test('sync-taxonomies enforces >=8 actor / >=5 category thresholds, spam/hyphen actor filter, and dirty category exclusion', async () => {
@@ -149,10 +145,16 @@ test('sync-taxonomies enforces >=8 actor / >=5 category thresholds, spam/hyphen 
   assert.equal(8 >= MIN_INDEXABLE_ACTOR_VIDEOS, true);
   assert.equal(isValidActorTerm({ name: 'Eimi Fukada (深田えいみ)', count: 20 }), true);
   assert.equal(isValidActorTerm({ name: 'Ai, 23 Years Old', count: 10 }), false);
+  assert.equal(isValidActorTerm({ name: 'Actress X Nh', count: 15 }), false);
+  assert.equal(isValidActorTerm({ name: '123 Yuri', count: 15 }), false);
 
   assert.equal(isValidCategoryTerm({ name: 'En/tokyohot', count: 1087 }), false);
   assert.equal(isValidCategoryTerm({ name: 'Dm150/en/fc2', count: 21851 }), false);
   assert.equal(isValidCategoryTerm({ name: 'Blonde / Blonde', count: 8 }), false);
+  assert.equal(isValidCategoryTerm({ name: '123av', count: 5000 }), false);
+  assert.equal(isValidCategoryTerm({ name: 'Javtiful', count: 1200 }), false);
+  assert.equal(isValidCategoryTerm({ name: 'Famous', count: 900 }), false);
+  assert.equal(isValidCategoryTerm({ name: 'Release', count: 900 }), false);
   assert.equal(isValidCategoryTerm({ name: 'Thin Cat', count: 4 }), true);
   assert.equal(4 >= MIN_INDEXABLE_CATEGORY_VIDEOS, false);
   assert.equal(5 >= MIN_INDEXABLE_CATEGORY_VIDEOS, true);

@@ -39,6 +39,8 @@ export function decodeHtmlEntities(value) {
 const SPAM_ACTOR_PATTERNS = [
   /[\[\]【】◯!?！？]/,
   /\.\.\./,
+  /^actress\s+x\b/i,
+  /^\d{2,}\s+/,
   /\byears?\s*old\b/i,
   /\b(?:creampie|orgy|sluts?|bitch|big\s*tits|squirts?|married\s*for|college\s*student|office\s*lady|company\s*(?:employee|president)|flight\s*attendant|beauty\s*(?:salon|clinic|industry|treatments)|dental\s*(?:clinic|hygienist|assistant)|hostess|course|therapist|receptionist|part-?timer|new\s*client|generation\s*z|underground\s*idol|amateur|masochistic|housewife|university\s*student)\b/i,
   /,\s*\d{2}\b/,
@@ -73,10 +75,13 @@ export function isValidActorTerm(term) {
   return true;
 }
 
+const NOISE_CATEGORY_BLOCKLIST = /^(?:123av|javtiful|missav|missav-j|famous|release|hd|japanese|english|uncensored leaked|blog|other|original|exclusive|planning|set product)$/i;
+
 export function isValidCategoryTerm(term) {
   const name = decodeHtmlEntities(term?.name || '');
   const count = Number(term?.count || 0);
   if (!name || count < 1) return false;
+  if (NOISE_CATEGORY_BLOCKLIST.test(name)) return false;
   if (name.startsWith('©') || name.startsWith('#')) return false;
   if (/^(?:dm\d+\/|en\/)/i.test(name)) return false;
   if (/^\s*(.+?)\s*\/\s*\1\s*$/i.test(name)) return false;

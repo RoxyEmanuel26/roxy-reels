@@ -1372,12 +1372,13 @@ test('Watch SSR consolidates indexing on canonical English (A1), marks non-EN wa
   assert.match(koWatchHtml, /data-watch-hreflangs=""/);
   assert.doesNotMatch(koWatchHtml, /rel="alternate" hreflang=/);
 
-  // 4. Listing SSR uses localized BreadcrumbList & translated catalog titles while keeping English href slug
+  // 4. Listing SSR uses localized BreadcrumbList & translated catalog titles while routing Googlebot links to canonical /en/watch/
   const idTrendingRes = await onRequest(makeBotCtx('https://www.missav-j.com/id/trending'));
   const idTrendingHtml = await idTrendingRes.text();
   assert.equal(idTrendingRes.status, 200);
+  assert.match(idTrendingHtml, /<meta name="robots" content="noindex, follow">/);
   assert.match(idTrendingHtml, /"name":\s*"Beranda"/);
-  assert.match(idTrendingHtml, /href="\/id\/watch\/h0930-ki180818-request-work-collection-771"[\s\S]*Koleksi Permintaan Kerja/);
+  assert.match(idTrendingHtml, /href="\/en\/watch\/h0930-ki180818-request-work-collection-771"[\s\S]*Koleksi Permintaan Kerja/);
 });
 
 test('localized SEO keys cover all 13 locales and API/cron enforce canonical English watch slugs', async () => {
@@ -1498,7 +1499,7 @@ test('localized shell eliminates internal links to / and normalizes Watch entiti
   const entityWatchHtml = await entityWatch.text();
   assert.equal(entityWatch.status, 200);
   assert.match(entityWatchHtml, /<a href="\/id\/" class="logo" id="logo-branding">/);
-  assert.match(entityWatchHtml, /href="\/id\/studio\?name=Moody's"/);
+  assert.match(entityWatchHtml, /href="\/en\/studio\?name=Moody's"/);
   assert.match(entityWatchHtml, /"item":\s*"https:\/\/www\.missav-j\.com\/id\/"/);
 
   // Case-insensitive Prestige studio alias redirects cleanly to PRESTIGE
@@ -1555,20 +1556,20 @@ test('upstream ID reassignment returns 410 Gone while same-video legacy watch al
   }));
   assert.equal(reassignedFc2.status, 410);
 
-  // Same-video legacy translated slug and double-code alias -> 301 SEARCH-REDIRECT
+  // Same-video legacy translated slug and double-code alias -> 301 SEARCH-REDIRECT directly to canonical /en/watch/ for Googlebot
   const translatedAlias = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/id/watch/jur-231-english-subtitle-jur-231-hari-hari-gangbang-115025', { headers: botHeaders }),
     env
   }));
   assert.equal(translatedAlias.status, 301);
-  assert.equal(translatedAlias.headers.get('Location'), 'https://www.missav-j.com/id/watch/jur-231-english-subtitle-jur-231-the-days-of-creampie-gangbang-115025');
+  assert.equal(translatedAlias.headers.get('Location'), 'https://www.missav-j.com/en/watch/jur-231-english-subtitle-jur-231-the-days-of-creampie-gangbang-115025');
 
   const doubleCodeAlias = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/id/watch/okb-190-okb-190-mika-sumikawa-118079', { headers: botHeaders }),
     env
   }));
   assert.equal(doubleCodeAlias.status, 301);
-  assert.equal(doubleCodeAlias.headers.get('Location'), 'https://www.missav-j.com/id/watch/okb-190-mika-sumikawa-118079');
+  assert.equal(doubleCodeAlias.headers.get('Location'), 'https://www.missav-j.com/en/watch/okb-190-mika-sumikawa-118079');
 });
 
 test('category aliases 301 redirect, spam actors noindex, and Watch SSR avoids linking uncurated or spam taxonomies', async () => {
@@ -1773,7 +1774,7 @@ test('dynamic taxonomies enforce >=8 actor / >=5 category thresholds, translatio
   assert.match(koUntransHtml, /<link rel="canonical" id="canonical-url" href="https:\/\/www\.missav-j\.com\/ko\/actor\?name=Mayu%20Nozomi"/);
   assert.doesNotMatch(koUntransHtml, /<link rel="alternate" hreflang=/);
 
-  // English canonical on >=8 video actor -> index, follow + symmetrical hreflangs (en, id, ja + x-default) + rich entity summary & ItemList
+  // English canonical on >=8 video actor -> index, follow + EN-only hreflang (en + x-default) + rich entity summary & ItemList
   const enMayuRes = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/en/actor?name=Mayu%20Nozomi', { headers: botHeaders }),
     env
@@ -1781,24 +1782,21 @@ test('dynamic taxonomies enforce >=8 actor / >=5 category thresholds, translatio
   const enMayuHtml = await enMayuRes.text();
   assert.match(enMayuHtml, /<meta name="robots" content="index, follow/);
   assert.match(enMayuHtml, /hreflang="en" href="https:\/\/www\.missav-j\.com\/en\/actor\?name=Mayu%20Nozomi"/);
-  assert.match(enMayuHtml, /hreflang="id" href="https:\/\/www\.missav-j\.com\/id\/actor\?name=Mayu%20Nozomi"/);
-  assert.match(enMayuHtml, /hreflang="ja" href="https:\/\/www\.missav-j\.com\/ja\/actor\?name=Mayu%20Nozomi"/);
   assert.match(enMayuHtml, /hreflang="x-default" href="https:\/\/www\.missav-j\.com\/en\/actor\?name=Mayu%20Nozomi"/);
-  assert.doesNotMatch(enMayuHtml, /hreflang="ko"/);
+  assert.doesNotMatch(enMayuHtml, /hreflang="(?:id|ja|ko|fr|de)"/);
   assert.match(enMayuHtml, /<section class="taxonomy-profile-summary"/);
   assert.match(enMayuHtml, /MYS-100/);
   assert.match(enMayuHtml, /"numberOfItems": 10/);
   assert.match(enMayuHtml, /"itemListElement": \[/);
 
-  // Translated locale -> index, follow + same symmetrical hreflang set + Indonesian titles
+  // Non-EN dynamic taxonomy -> noindex, follow + omitted hreflang while keeping localized titles & canonical /en/watch/ links
   const idMayuRes = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/id/actor?name=Mayu%20Nozomi', { headers: botHeaders }),
     env
   }));
   const idMayuHtml = await idMayuRes.text();
-  assert.match(idMayuHtml, /<meta name="robots" content="index, follow/);
-  assert.match(idMayuHtml, /hreflang="id" href="https:\/\/www\.missav-j\.com\/id\/actor\?name=Mayu%20Nozomi"/);
-  assert.doesNotMatch(idMayuHtml, /hreflang="ko"/);
+  assert.match(idMayuHtml, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(idMayuHtml, /<link rel="alternate" hreflang=/);
   assert.match(idMayuHtml, /Judul Bahasa Indonesia 8100/);
 });
 
@@ -2002,14 +2000,14 @@ test('Watch SSR enforces noindex on untranslated locales, localizes facts/relate
     ASSETS: { fetch: async () => new Response(baseHtml, { status: 200 }) }
   };
 
-  // 1. Duplicate video canonical map triggers 301 redirect in Watch SSR before upstream post fetch
+  // 1. Duplicate video canonical map triggers 301 redirect straight to canonical /en/watch/ for Googlebot (0 upstream calls)
   const dupRes = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/ko/watch/jura-140-foo-3-125081', { headers: botHeaders }),
     env
   }));
   assert.equal(dupRes.status, 301);
   assert.equal(dupRes.headers.get('X-Edge-Mode'), 'DUPLICATE-VIDEO-REDIRECT');
-  assert.equal(dupRes.headers.get('Location'), 'https://www.missav-j.com/ko/watch/jura-140-foo-100694');
+  assert.equal(dupRes.headers.get('Location'), 'https://www.missav-j.com/en/watch/jura-140-foo-100694');
   assert.equal(upstreamPostFetches, 0);
 
   // 2. Non-en (id) skips English SEO_ENRICHED_POSTS on 619, sets noindex when untranslated, localizes facts & related videos, and sets og:locale
@@ -2057,7 +2055,8 @@ test('Watch SSR enforces noindex on untranslated locales, localizes facts/relate
   const appSource = await readFile(new URL('assets/js/app.js', ROOT), 'utf8');
   assert.match(appSource, /\/%3f\/i\.test\(window\.location\.pathname\)/);
   assert.match(appSource, /isUnknownRoute/);
-  assert.match(appSource, /isNonIndexableWatchLocale/);
+  assert.match(appSource, /isNonEnLocale/);
+  assert.match(appSource, /routePath === '\/tag'/);
   assert.match(appSource, /formatWatchEditionTitle/);
 });
 
@@ -2366,17 +2365,21 @@ test('404 prevention: duplicate clone redirects (human + bot), ?id= watch querie
   const socialHeaders = { 'User-Agent': 'TelegramBot (like TwitterBot)' };
   const humanHeaders = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36' };
 
-  // 1. GSC 404 example (/de/watch/...-113561) and ?id=113561 both 301 to canonical -32079 for humans AND bots with 0 upstream calls
+  // 1. GSC 404 example (/de/watch/...-113561) and ?id=113561 both 301 to canonical -32079:
+  //    Googlebot goes directly to indexable /en/watch/, while humans keep /de/watch/ (0 upstream calls)
   for (const reqUrl of [
     'https://www.missav-j.com/de/watch/heyzo-3360-heyzo-3360-an-unattractive-married-woman-listens-to-her-japanese-husbands-wishes-and-has-113561',
     'https://www.missav-j.com/de/watch?id=113561'
   ]) {
-    for (const hdrs of [googleHeaders, humanHeaders]) {
-      const res = await onRequest(makeContext({ request: new Request(reqUrl, { headers: hdrs }), env }));
-      assert.equal(res.status, 301);
-      assert.equal(res.headers.get('X-Edge-Mode'), 'DUPLICATE-VIDEO-REDIRECT');
-      assert.match(res.headers.get('Location'), /^https:\/\/www\.missav-j\.com\/de\/watch\/heyzo-3360-.*-32079$/);
-    }
+    const botDupRes = await onRequest(makeContext({ request: new Request(reqUrl, { headers: googleHeaders }), env }));
+    assert.equal(botDupRes.status, 301);
+    assert.equal(botDupRes.headers.get('X-Edge-Mode'), 'DUPLICATE-VIDEO-REDIRECT');
+    assert.match(botDupRes.headers.get('Location'), /^https:\/\/www\.missav-j\.com\/en\/watch\/heyzo-3360-.*-32079$/);
+
+    const humanDupRes = await onRequest(makeContext({ request: new Request(reqUrl, { headers: humanHeaders }), env }));
+    assert.equal(humanDupRes.status, 301);
+    assert.equal(humanDupRes.headers.get('X-Edge-Mode'), 'DUPLICATE-VIDEO-REDIRECT');
+    assert.match(humanDupRes.headers.get('Location'), /^https:\/\/www\.missav-j\.com\/de\/watch\/heyzo-3360-.*-32079$/);
   }
   assert.equal(upstreamPostCalls, 0);
 
@@ -2717,7 +2720,7 @@ test('growth SEO upgrades: 8 related links, 24-item SSR pagination, Kanji Profil
     }
     if (url.includes('myvideo/v1/posts?')) {
       listingRequestedUrls.push(url);
-      if (url.includes('per_page=8')) {
+      if (url.includes('per_page=16')) {
         watchRelatedCalls += 1;
         return new Response(JSON.stringify(relatedPool), { status: 200, headers: { 'Content-Type': 'application/json' } });
       }
@@ -2769,9 +2772,9 @@ test('growth SEO upgrades: 8 related links, 24-item SSR pagination, Kanji Profil
   assert.match(enHomeHtml, /https:\/\/t\.me\/missav_jav_english/);
   assert.doesNotMatch(enHomeHtml, /https:\/\/t\.me\/missav_j["']/);
   assert.match(enHomeHtml, /class="home-hub-links"/);
-  assert.match(enHomeHtml, /category\?name=English%20Subtitle/);
-  assert.doesNotMatch(idHomeHtml, /category\?name=English%20Subtitle/);
-  assert.match(idHomeHtml, /studio\?name=S1/);
+  assert.match(enHomeHtml, /href="\/en\/category\?name=English%20Subtitle"/);
+  assert.match(idHomeHtml, /<meta name="robots" content="noindex, follow">/);
+  assert.match(idHomeHtml, /href="\/en\/studio\?name=S1"/);
 
   // 5. Multi-page seo-enrich skips enriched page 1 (matching source_hash) and collects page 2+ candidates
   const { createHash } = await import('node:crypto');
@@ -2982,9 +2985,9 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(baseHtml, />Popular Actors<\/span>/);
   assert.doesNotMatch(baseHtml, />(?:Beranda|Populer \(Trending\)|Tonton Nanti|Riwayat Sesi|Aktor Populer|Studio Populer)</);
   assert.doesNotMatch(baseHtml, /title="Toggle Tema"/);
-  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.107/);
-  assert.match(swSrc, /hub-content\.js\?v=2\.8\.107/);
-  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.107/);
+  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.108/);
+  assert.match(swSrc, /hub-content\.js\?v=2\.8\.108/);
+  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.108/);
 });
 
 test('noindex discovery guard: client chips link only indexable taxonomies', async () => {
@@ -3096,7 +3099,7 @@ test('noindex discovery guard: client chips link only indexable taxonomies', asy
     assert.ok(routes.exclude.includes('/api/categories.json'));
     assert.match(swSrc, /\/api\/actors\.json['"][\s\S]*ONE_DAY/);
     assert.match(swSrc, /\/api\/categories\.json['"][\s\S]*ONE_DAY/);
-    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.107/);
+    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.108/);
     assert.match(playerSrc, /renderTaxonomyLink\(/);
     assert.doesNotMatch(playerSrc, /<a href="\$\{baseHref\}\?name=Other"|<a href="\/\$\{lang\}\/studio\?name=Other"/);
     assert.match(playerSrc, /glamournakedemployee\.com/);
@@ -3293,7 +3296,7 @@ test('compact double-prefix release codes 301 redirect instead of false 410 whil
   }));
   assert.equal(compactDup6253.status, 301);
   assert.equal(compactDup6253.headers.get('X-Edge-Mode'), 'SEARCH-REDIRECT');
-  assert.equal(compactDup6253.headers.get('Location'), 'https://www.missav-j.com/de/watch/pm028-grounded-flight-sample-6253');
+  assert.equal(compactDup6253.headers.get('Location'), 'https://www.missav-j.com/en/watch/pm028-grounded-flight-sample-6253');
 
   const compactDup43861 = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/en/watch/pp004-pp004-old-slug-43861', { headers: botHeaders }),
@@ -3401,9 +3404,229 @@ test('curated hub link hygiene: zero 404, 301 alias, or noindex crawl-trap links
   assert.match(categoriesSrc, /role="link"[^>]*taxonomy-link-thin[^>]*data-nav-href="\$\{catHref\}"/);
   assert.match(studiosSrc, /isThinStudio[\s\S]*role="link"[^>]*taxonomy-link-thin[^>]*data-nav-href="\$\{studioHref\}"/);
 
-  // Adsterra & v2.8.107 invariants
+  // Adsterra & v2.8.108 invariants
   assert.match(indexHtml, /benchform\.org/);
   assert.match(indexHtml, /biomanos\.org/);
-  assert.match(indexHtml, /app\.js\?v=2\.8\.107/);
-  assert.match(swSrc, /missavj-cache-v2\.8\.107/);
+  assert.match(indexHtml, /app\.js\?v=2\.8\.108/);
+  assert.match(swSrc, /missavj-cache-v2\.8\.108/);
+});
+
+test('v2.8.108 404 elimination: HTML-entity tag redirects, apostrophe WP slugify, and slash category fallback', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const { onRequest: postsOnRequest } = await importSource('functions/api/posts/[[id]].js');
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const botHeaders = { 'User-Agent': 'Googlebot/2.1' };
+  const env = { ASSETS: { fetch: async () => new Response(indexHtml, { status: 200 }) } };
+
+  // 1. Raw HTML entity in ?name= redirects 301 to decoded query param
+  const entityTagRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/ms/tag?name=one%26%23039%3Bs%20junior', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(entityTagRes.status, 301);
+  assert.equal(entityTagRes.headers.get('X-Edge-Mode'), 'TAXONOMY-ENTITY-REDIRECT');
+  assert.equal(entityTagRes.headers.get('Location'), "https://www.missav-j.com/ms/tag?name=one's%20junior");
+
+  // 2. Decoded apostrophe tag resolves to WordPress slug "ones-junior" (not "one-s-junior") and emits noindex
+  const seenTagQueries = [];
+  globalThis.caches = { default: new MemoryCache() };
+  globalThis.fetch = async input => {
+    const u = String(input);
+    seenTagQueries.push(u);
+    if (u.includes('tag=ones-junior')) {
+      return new Response(JSON.stringify([
+        { id: 9101, code: 'JUN-101', title: 'Junior Sample 1', slug: 'jun-101-sample', thumbnail: 'https://img.example/9101.jpg' }
+      ]), { status: 200, headers: { 'Content-Type': 'application/json', 'X-WP-Total': '10', 'X-WP-TotalPages': '1' } });
+    }
+    if (u.includes('category=Kimono')) {
+      return new Response(JSON.stringify([
+        { id: 9102, code: 'KIM-102', title: 'Kimono Sample 1', slug: 'kim-102-sample', thumbnail: 'https://img.example/9102.jpg' }
+      ]), { status: 200, headers: { 'Content-Type': 'application/json', 'X-WP-Total': '508', 'X-WP-TotalPages': '22' } });
+    }
+    return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json', 'X-WP-Total': '0', 'X-WP-TotalPages': '1' } });
+  };
+
+  const apostropheTagRes = await onRequest(makeContext({
+    request: new Request("https://www.missav-j.com/ms/tag?name=one's%20junior", { headers: botHeaders }),
+    env
+  }));
+  const apostropheTagHtml = await apostropheTagRes.text();
+  assert.equal(apostropheTagRes.status, 200);
+  assert.ok(seenTagQueries.some(u => u.includes('tag=ones-junior')), `Expected WP apostrophe slug ones-junior in: ${seenTagQueries}`);
+  assert.match(apostropheTagHtml, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(apostropheTagHtml, /rel="alternate" hreflang=/);
+
+  // /api/posts also normalizes HTML entities + apostrophes to ones-junior
+  await postsOnRequest(makeContext({
+    request: new Request('https://www.missav-j.com/api/posts?lang=ms&tag=one%26%23039%3Bs%20junior'),
+    env: {},
+    params: { id: [] }
+  }));
+  assert.ok(seenTagQueries.filter(u => u.includes('tag=ones-junior')).length >= 2);
+
+  // 3. Static alias "Kimono / Yukata" redirects O(1) to "Kimono", and dynamic unknown slash category falls back to active segment
+  const kimonoAliasRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Kimono%20/%20Yukata', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(kimonoAliasRes.status, 301);
+  assert.equal(kimonoAliasRes.headers.get('X-Edge-Mode'), 'CATEGORY-ALIAS-REDIRECT');
+  assert.equal(kimonoAliasRes.headers.get('Location'), 'https://www.missav-j.com/en/category?name=Kimono');
+
+  const dynamicSlashRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=ObsoleteLabel%20/%20Kimono', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(dynamicSlashRes.status, 301);
+  assert.equal(dynamicSlashRes.headers.get('X-Edge-Mode'), 'CATEGORY-ALIAS-REDIRECT');
+  assert.equal(dynamicSlashRes.headers.get('Location'), 'https://www.missav-j.com/en/category?name=Kimono');
+});
+
+test('v2.8.108 Option A consolidation: /tag and non-EN routes noindex, curated tags 301 to /en/category, zero Supabase on /en/ taxonomies', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const botHeaders = { 'User-Agent': 'Googlebot/2.1' };
+
+  let supabaseCallsOnEn = 0;
+  globalThis.caches = { default: new MemoryCache() };
+  globalThis.fetch = async input => {
+    const u = String(input);
+    if (u.includes('supabase.test')) {
+      supabaseCallsOnEn += 1;
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response(JSON.stringify([
+      { id: 9201, code: 'DAT-201', title: 'Sample Video 1', slug: 'dat-201-sample', categories: ['123av', 'Dating'], thumbnail: 'https://img.example/9201.jpg' },
+      { id: 9202, code: 'DAT-202', title: 'Sample Video 2', slug: 'dat-202-sample', categories: ['Javtiful', 'Dating'], thumbnail: 'https://img.example/9202.jpg' }
+    ]), { status: 200, headers: { 'Content-Type': 'application/json', 'X-WP-Total': '450', 'X-WP-TotalPages': '19' } });
+  };
+  const env = {
+    SUPABASE_URL: 'https://supabase.test',
+    SUPABASE_KEY: 'test-key',
+    ASSETS: { fetch: async () => new Response(indexHtml, { status: 200 }) }
+  };
+
+  // Curated tag redirects 301 to canonical /en/category
+  const curatedTagRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/zh-TW/tag?name=Uncensored', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(curatedTagRes.status, 301);
+  assert.equal(curatedTagRes.headers.get('X-Edge-Mode'), 'TAG-TO-CATEGORY-REDIRECT');
+  assert.equal(curatedTagRes.headers.get('Location'), 'https://www.missav-j.com/en/category?name=Uncensored');
+
+  // Uncurated tag -> 200 noindex, 0 hreflang, video links -> /en/watch/
+  const indecentTagRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/zh-TW/tag?name=Indecent', { headers: botHeaders }),
+    env
+  }));
+  const indecentHtml = await indecentTagRes.text();
+  assert.equal(indecentTagRes.status, 200);
+  assert.match(indecentHtml, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(indecentHtml, /rel="alternate" hreflang=/);
+  assert.match(indecentHtml, /href="\/en\/watch\/dat-201-sample-9201"/);
+  assert.doesNotMatch(indecentHtml, /href="\/zh-TW\/watch\//);
+
+  // /en/ taxonomy -> index, EN-only hreflang, 0 Supabase calls
+  supabaseCallsOnEn = 0;
+  const enDatingRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=Dating', { headers: botHeaders }),
+    env
+  }));
+  const enDatingHtml = await enDatingRes.text();
+  assert.equal(enDatingRes.status, 200);
+  assert.match(enDatingHtml, /<meta name="robots" content="index, follow/);
+  assert.match(enDatingHtml, /hreflang="en"/);
+  assert.match(enDatingHtml, /hreflang="x-default"/);
+  assert.doesNotMatch(enDatingHtml, /hreflang="(?:fr|ms|id|ko|ja|zh-TW|zh-CN|de)"/);
+  assert.equal(supabaseCallsOnEn, 0, '/en/ dynamic taxonomy must skip Supabase batch lookup');
+  assert.doesNotMatch(enDatingHtml, /category\?name=123av/);
+  assert.doesNotMatch(enDatingHtml, /category\?name=Javtiful/);
+
+  // Noise/competitor category /en/category?name=123av -> noindex even with 450 videos
+  const noiseCatRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/category?name=123av', { headers: botHeaders }),
+    env
+  }));
+  assert.match(await noiseCatRes.text(), /<meta name="robots" content="noindex, follow">/);
+
+  // Non-EN home /fr/ & non-EN category /fr/category?name=Dating -> noindex, 0 hreflang, video links -> /en/watch/
+  for (const nonEnUrl of ['https://www.missav-j.com/fr/', 'https://www.missav-j.com/fr/category?name=Dating']) {
+    const res = await onRequest(makeContext({ request: new Request(nonEnUrl, { headers: botHeaders }), env }));
+    const html = await res.text();
+    assert.equal(res.status, 200);
+    assert.match(html, /<meta name="robots" content="noindex, follow">/);
+    assert.doesNotMatch(html, /rel="alternate" hreflang=/);
+    assert.match(html, /href="\/en\/watch\/dat-201-sample-9201"/);
+    assert.doesNotMatch(html, /href="\/fr\/watch\//);
+  }
+});
+
+test('v2.8.108 Watch on-page quality: concise FAQ code, deduped Related Videos, and zero noise brands in catalogs/sitemaps', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const botHeaders = { 'User-Agent': 'Googlebot/2.1' };
+  const longTitle = 'FNS-168 A very long descriptive title sample repeated check for concise fallback summary and FAQ formatting verification across the catalog entry';
+
+  globalThis.caches = { default: new MemoryCache() };
+  globalThis.fetch = async input => {
+    const u = String(input);
+    if (u.includes('/posts/107269')) {
+      return new Response(JSON.stringify({
+        id: 107269,
+        code: 'FNS-168',
+        slug: 'fns-168-long-title-sample',
+        title: longTitle,
+        date: '2026-03-29T18:11:53+08:00',
+        duration: '00:00:00',
+        views: 10156,
+        studio: 'FALENO',
+        actors: ['Rin Hachimitsu'],
+        categories: ['123av', 'Javtiful', 'Famous', 'Release', 'Hd', 'Big Breasts'],
+        thumbnail: 'https://img.example/107269.jpg',
+        embed_url: 'https://server.apijav.com/?mvapm_embed=107269'
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (u.includes('myvideo/v1/posts?')) {
+      return new Response(JSON.stringify([
+        { id: 107269, code: 'FNS-168', slug: 'fns-168-self', title: longTitle },
+        { id: 20001, code: 'FNS-249', slug: 'fns-249-std', title: 'FNS-249 First Edition' },
+        { id: 20002, code: 'FNS-249-UNCENSORED-LEAK', slug: 'fns-249-leak', title: 'FNS-249 Leak Duplicate' },
+        { id: 20003, code: 'FNS-237', slug: 'fns-237-std', title: 'FNS-237 First Edition' },
+        { id: 20004, code: 'FNS-237-UNCENSORED-LEAK', slug: 'fns-237-leak', title: 'FNS-237 Leak Duplicate' },
+        { id: 20005, code: 'FNS-220', slug: 'fns-220-std', title: 'FNS-220 Distinct' }
+      ]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+
+  const watchRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/fns-168-long-title-sample-107269', { headers: botHeaders }),
+    env: { ASSETS: { fetch: async () => new Response(indexHtml, { status: 200 }) } }
+  }));
+  const watchHtml = await watchRes.text();
+  assert.equal(watchRes.status, 200);
+  assert.match(watchHtml, /What is the catalog identification for FNS-168\?/);
+  assert.doesNotMatch(watchHtml, /What is the catalog identification for FNS-168 A very long descriptive/);
+  assert.doesNotMatch(watchHtml, /"genre":\s*\[[^\]]*"(?:123av|Javtiful|Famous|Release|Hd)"/);
+  const relatedNav = (watchHtml.match(/<nav aria-label="Related Videos"[\s\S]*?<\/nav>/) || [''])[0];
+  assert.equal((relatedNav.match(/FNS-249/g) || []).length, 1, 'Related Videos must deduplicate FNS-249 base code');
+  assert.equal((relatedNav.match(/FNS-237/g) || []).length, 1, 'Related Videos must deduplicate FNS-237 base code');
+  assert.match(relatedNav, /FNS-220/);
+
+  // Static catalog & sitemap hygiene
+  const [catsJson, actorsJson, smCats, smActors, smPages] = await Promise.all([
+    readFile(new URL('api/categories.json', ROOT), 'utf8'),
+    readFile(new URL('api/actors.json', ROOT), 'utf8'),
+    readFile(new URL('sitemaps/sitemap_categories.xml', ROOT), 'utf8'),
+    readFile(new URL('sitemaps/sitemap_actors_1.xml', ROOT), 'utf8'),
+    readFile(new URL('sitemaps/sitemap_pages.xml', ROOT), 'utf8')
+  ]);
+  for (const noise of ['"123av"', '"Javtiful"', '"Famous"', '"Release"', '"Uncensored Leaked"']) {
+    assert.ok(!catsJson.includes(noise), `api/categories.json must exclude ${noise}`);
+  }
+  assert.doesNotMatch(smCats, /name=(?:123av|Javtiful|Famous|Release|Uncensored%20Leaked)</);
+  assert.doesNotMatch(actorsJson, /"Actress X Nh"|"123 Yuri"/);
+  assert.doesNotMatch(smActors, /name=(?:Actress%20X%20Nh|123%20Yuri)</);
+  assert.doesNotMatch(smPages, /xhtml:link/);
 });

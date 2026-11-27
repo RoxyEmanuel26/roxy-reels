@@ -297,21 +297,8 @@ function sitemapHreflangCode(lang) {
 }
 
 function buildLocalizedPagesUrlset(routes) {
-  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
-  for (const route of routes) {
-    const suffix = route ? `/${route}` : '/';
-    const enLoc = `${BASE_URL}/en${suffix}`;
-    xml += '  <url>\n';
-    xml += `    <loc>${escXml(enLoc)}</loc>\n`;
-    for (const lang of SITEMAP_VALID_LANGS) {
-      const href = `${BASE_URL}/${lang}${suffix}`;
-      xml += `    <xhtml:link rel="alternate" hreflang="${sitemapHreflangCode(lang)}" href="${escXml(href)}" />\n`;
-    }
-    xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(enLoc)}" />\n`;
-    xml += '  </url>\n';
-  }
-  return `${xml}</urlset>\n`;
+  const urls = routes.map(route => `${BASE_URL}/en${route ? `/${route}` : '/'}`);
+  return standardUrlset(urls);
 }
 
 function buildVideoUrlXml(post, enrichedPost = null) {
