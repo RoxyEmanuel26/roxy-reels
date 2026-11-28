@@ -2492,7 +2492,7 @@ test('video indexing fix: above-fold eager SSR iframe, ?mvapm_embed fallback, Vi
   };
   const googleHeaders = { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' };
 
-  // 1. Indexable EN Watch SSR: iframe placed above-the-fold before poster <img> & details, no loading="lazy", ?mvapm_embed fallback
+  // 1. Indexable EN Watch SSR: iframe placed first above-the-fold before <h1> & details, no duplicate poster <img>, no loading="lazy", ?mvapm_embed fallback
   const enWatchRes = await onRequest(makeContext({
     request: new Request('https://www.missav-j.com/en/watch/h4610-ki230907-miyuki-24-years-old-4110', { headers: googleHeaders }),
     env
@@ -2501,9 +2501,10 @@ test('video indexing fix: above-fold eager SSR iframe, ?mvapm_embed fallback, Vi
   assert.equal(enWatchRes.status, 200);
   const seoIdx = enHtml.indexOf('<div class="seo-fallback"');
   const iframeIdx = enHtml.indexOf('<iframe', seoIdx);
-  const imgIdx = enHtml.indexOf('<img', seoIdx);
+  const h1Idx = enHtml.indexOf('<h1>', seoIdx);
   const detailsIdx = enHtml.indexOf('video-release-details', seoIdx);
-  assert.ok(iframeIdx > seoIdx && imgIdx > iframeIdx, 'Watch SSR must render <iframe> before poster <img>');
+  assert.ok(iframeIdx > seoIdx && h1Idx > iframeIdx, 'Watch SSR must render <iframe> first before <h1> above the fold');
+  assert.doesNotMatch(enHtml.slice(seoIdx), /<img[^>]*width="800"[^>]*height="450"/, 'Watch SSR must not emit duplicate 800x450 poster <img> below iframe');
   assert.ok(detailsIdx === -1 || detailsIdx > iframeIdx, 'Watch SSR must render <iframe> before editorial details');
   assert.match(enHtml.slice(iframeIdx, iframeIdx + 450), /src="https:\/\/server\.apijav\.com\/\?mvapm_embed=4110"/);
   assert.match(enHtml.slice(iframeIdx, iframeIdx + 450), /width="800"[\s\S]*height="450"/);
@@ -2511,6 +2512,9 @@ test('video indexing fix: above-fold eager SSR iframe, ?mvapm_embed fallback, Vi
   assert.doesNotMatch(enHtml, /server\.apijav\.com\/embed\//);
   assert.match(enHtml, /"@type":\s*"VideoObject"/);
   assert.match(enHtml, /"embedUrl":\s*"https:\/\/server\.apijav\.com\/\?mvapm_embed=4110"/);
+  assert.match(enHtml, /"width":\s*800/);
+  assert.match(enHtml, /"height":\s*450/);
+  assert.match(enHtml, /"mainEntityOfPage":\s*\{\s*"@type":\s*"WebPage"/);
   assert.match(enHtml, /"uploadDate":\s*"2026-01-01T00:00:00\.000Z"/);
 
   // 2. Thumbnail-less Watch SSR (e.g. 33 standard_only_videos): keeps visible <iframe> & BreadcrumbList, skips VideoObject with logo.webp
@@ -2985,9 +2989,9 @@ test('traffic breakthrough: concise Watch <title>, semantic card links, WRS SSR 
   assert.match(baseHtml, />Popular Actors<\/span>/);
   assert.doesNotMatch(baseHtml, />(?:Beranda|Populer \(Trending\)|Tonton Nanti|Riwayat Sesi|Aktor Populer|Studio Populer)</);
   assert.doesNotMatch(baseHtml, /title="Toggle Tema"/);
-  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.108/);
-  assert.match(swSrc, /hub-content\.js\?v=2\.8\.108/);
-  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.108/);
+  assert.match(swSrc, /popular_actors\.js\?v=2\.8\.109/);
+  assert.match(swSrc, /hub-content\.js\?v=2\.8\.109/);
+  assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.109/);
 });
 
 test('noindex discovery guard: client chips link only indexable taxonomies', async () => {
@@ -3099,7 +3103,7 @@ test('noindex discovery guard: client chips link only indexable taxonomies', asy
     assert.ok(routes.exclude.includes('/api/categories.json'));
     assert.match(swSrc, /\/api\/actors\.json['"][\s\S]*ONE_DAY/);
     assert.match(swSrc, /\/api\/categories\.json['"][\s\S]*ONE_DAY/);
-    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.108/);
+    assert.match(swSrc, /taxonomy-index\.js\?v=2\.8\.109/);
     assert.match(playerSrc, /renderTaxonomyLink\(/);
     assert.doesNotMatch(playerSrc, /<a href="\$\{baseHref\}\?name=Other"|<a href="\/\$\{lang\}\/studio\?name=Other"/);
     assert.match(playerSrc, /glamournakedemployee\.com/);
@@ -3404,11 +3408,11 @@ test('curated hub link hygiene: zero 404, 301 alias, or noindex crawl-trap links
   assert.match(categoriesSrc, /role="link"[^>]*taxonomy-link-thin[^>]*data-nav-href="\$\{catHref\}"/);
   assert.match(studiosSrc, /isThinStudio[\s\S]*role="link"[^>]*taxonomy-link-thin[^>]*data-nav-href="\$\{studioHref\}"/);
 
-  // Adsterra & v2.8.108 invariants
+  // Adsterra & v2.8.109 invariants
   assert.match(indexHtml, /benchform\.org/);
   assert.match(indexHtml, /biomanos\.org/);
-  assert.match(indexHtml, /app\.js\?v=2\.8\.108/);
-  assert.match(swSrc, /missavj-cache-v2\.8\.108/);
+  assert.match(indexHtml, /app\.js\?v=2\.8\.109/);
+  assert.match(swSrc, /missavj-cache-v2\.8\.109/);
 });
 
 test('v2.8.108 404 elimination: HTML-entity tag redirects, apostrophe WP slugify, and slash category fallback', async () => {
@@ -3629,4 +3633,167 @@ test('v2.8.108 Watch on-page quality: concise FAQ code, deduped Related Videos, 
   assert.doesNotMatch(actorsJson, /"Actress X Nh"|"123 Yuri"/);
   assert.doesNotMatch(smActors, /name=(?:Actress%20X%20Nh|123%20Yuri)</);
   assert.doesNotMatch(smPages, /xhtml:link/);
+});
+
+test('v2.8.109 indexing & video breakthrough: zero-delay bot iframe, 503 Watch Soft-404 guard, orderby=views trending, edge X-Robots-Tag, and EN-only IndexNow', async () => {
+  const { onRequest } = await importSource('functions/[[catchall]].js');
+  const indexHtml = await readFile(new URL('index.html', ROOT), 'utf8');
+  const botHeaders = { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' };
+  const env = { ASSETS: { fetch: async () => new Response(indexHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }) } };
+
+  // 1. Watch SSR returns 503 (never 200 homepage Soft 404) when upstream returns incomplete watch record without title
+  const fetchedQueries = [];
+  globalThis.caches = { default: new MemoryCache() };
+  globalThis.fetch = async (input) => {
+    const u = String(input);
+    fetchedQueries.push(u);
+    if (u.includes('/posts/90999')) {
+      return new Response(JSON.stringify({ id: 90999, code: 'BROKEN-99', title: '' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (u.includes('/posts/90998')) {
+      return new Response(JSON.stringify({
+        id: 90998,
+        code: 'WRS-109',
+        slug: 'wrs-109-sample-watch',
+        title: 'WRS-109 Sample Watch Feature',
+        thumbnail: 'https://img.example/90998.jpg',
+        embed_url: 'https://server.apijav.com/?mvapm_embed=90998'
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (u.includes('myvideo/v1/posts?')) {
+      return new Response(JSON.stringify([
+        { id: 43861, code: 'TOP-001', slug: 'top-001-popular', title: 'TOP-001 Popular Video', views: 60002, thumbnail: 'https://img.example/43861.jpg' }
+      ]), { status: 200, headers: { 'Content-Type': 'application/json', 'X-WP-Total': '100', 'X-WP-TotalPages': '5' } });
+    }
+    return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+
+  const brokenWatchRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/broken-99-90999', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(brokenWatchRes.status, 503, 'Incomplete Watch metadata must return 503 to Googlebot instead of 200 Soft 404');
+  assert.equal(brokenWatchRes.headers.get('Retry-After'), '120');
+
+  // 2. Valid Watch SSR stamps data-ssr-embed-url & data-ssr-title on #canonical-url
+  const validWatchRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/watch/wrs-109-sample-watch-90998', { headers: botHeaders }),
+    env
+  }));
+  const validWatchHtml = await validWatchRes.text();
+  assert.equal(validWatchRes.status, 200);
+  assert.match(validWatchHtml, /data-ssr-embed-url="https:\/\/server\.apijav\.com\/\?mvapm_embed=90998"/);
+  assert.match(validWatchHtml, /data-ssr-title="WRS-109 Sample Watch Feature"/);
+
+  // 3. /en/trending and /en/recent forward orderby=views / orderby=date (never ignored sort=views)
+  const trendRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/trending', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(trendRes.status, 200);
+  const recentRes = await onRequest(makeContext({
+    request: new Request('https://www.missav-j.com/en/recent', { headers: botHeaders }),
+    env
+  }));
+  assert.equal(recentRes.status, 200);
+  assert.ok(fetchedQueries.some(q => q.includes('orderby=views') && q.includes('order=desc')), '/en/trending must pass orderby=views');
+  assert.ok(fetchedQueries.some(q => q.includes('orderby=date') && q.includes('order=desc')), '/en/recent must pass orderby=date');
+  assert.ok(!fetchedQueries.some(q => q.includes('sort=views') || q.includes('sort=release')), 'SSR must not send ignored sort= params');
+
+  // 4. Zero-delay bot player.js renders <iframe> synchronously before api.getPost resolves & skips api.getPlayer
+  let getPlayerCalls = 0;
+  let resolvePost;
+  const savedGlobals = {
+    window: globalThis.window,
+    document: globalThis.document,
+    navigatorDesc: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
+    localStorage: globalThis.localStorage,
+    ResizeObserver: globalThis.ResizeObserver
+  };
+  try {
+    const { init: initPlayer } = await importSource('assets/js/player.js', [
+      [/^import\s+api\s+from\s+'[^']+';/m, `const api = {
+        getPost() { return new Promise(r => { globalThis.__resolveDelayedPost = r; }); },
+        async getPlayer() { globalThis.__bumpPlayerCalls(); return { iframe_html: '<iframe src="https://server.apijav.com/?mvapm_embed=90998"></iframe>' }; },
+        async getPosts() { return []; }
+      };`],
+      [/^import\s+ui\s+from\s+'[^']+';/m, `const ui = { showError() {}, showSkeletonsInElement() {}, showToast() {}, escapeHTML: s => String(s || ''), getProxiedThumbnail: s => s || '', setRobotsMeta() {} };`],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/feed\.js[^']*';/m, `const renderVideoCard = () => ''; const getDeterministicDuration = () => '45:00'; const resolveStudioAlias = s => s;`],
+      [/^import\s+i18n\s+from\s+'[^']+';/m, `const i18n = { t: k => k, getLang: () => 'en', translateVideoTitle: t => t };`],
+      [/^import\s+ReferralSystem\s+from\s+'[^']+';/m, `const ReferralSystem = {};`],
+      [/^import\s+\{\s*Analytics\s*\}\s+from\s+'[^']+';/m, `const Analytics = { trackVideoPlay() {} };`],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/related-strategy\.js[^']*';/m, `const MIN_RELATED_RESULTS = 6; const getPrimaryRelatedQuery = () => ({}); const getFallbackRelatedQuery = () => ({});`],
+      [/^import\s+\{[^}]+\}\s+from\s+'\.\/taxonomy-index\.js[^']*';/m, `const loadIndexableTaxonomies = async () => {}; const renderTaxonomyLink = ({ label }) => label;`]
+    ]);
+    globalThis.__bumpPlayerCalls = () => { getPlayerCalls += 1; };
+    const appContent = { innerHTML: '', querySelector: () => null };
+    const inlinePlaceholder = { innerHTML: '' };
+    const floatWrapper = { classList: { _s: new Set(['hidden']), add(...c){c.forEach(x=>this._s.add(x));}, remove(...c){c.forEach(x=>this._s.delete(x));}, contains(x){return this._s.has(x);} } };
+    const canonicalEl = {
+      getAttribute(k) {
+        if (k === 'data-ssr-watch-id') return '90998';
+        if (k === 'data-ssr-embed-url') return 'https://server.apijav.com/?mvapm_embed=90998';
+        if (k === 'data-ssr-title') return 'WRS-109 Sample Watch Feature';
+        return '';
+      }
+    };
+    const elements = {
+      'app-content': appContent,
+      'canonical-url': canonicalEl,
+      'floating-player-wrapper': floatWrapper,
+      'related-videos-list': { innerHTML: '' },
+      'player-title': { textContent: '' }
+    };
+    globalThis.window = {
+      scrollY: 0, scrollX: 0,
+      location: { pathname: '/en/watch/wrs-109-sample-watch-90998', search: '', origin: 'https://www.missav-j.com' },
+      missavJState: { activeVideo: null, currentPath: '/watch', history: [] },
+      missavJGetCurrentWatchId: () => '90998',
+      missavJUpdateSEOTags() {}
+    };
+    globalThis.document = {
+      title: '',
+      getElementById: id => elements[id] || null,
+      querySelector: sel => (sel === '.player-container-placeholder' ? inlinePlaceholder : null)
+    };
+    Object.defineProperty(globalThis, 'navigator', { value: { userAgent: botHeaders['User-Agent'] }, configurable: true, writable: true });
+    globalThis.localStorage = { setItem() {}, getItem: () => null };
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+
+    const initPromise = initPlayer('90998');
+    // Before api.getPost even resolves (0ms synchronous WRS snapshot), iframe & SSR title MUST already be in DOM
+    assert.match(appContent.innerHTML, /<iframe[^>]*src="https:\/\/server\.apijav\.com\/\?mvapm_embed=90998"/);
+    assert.doesNotMatch(appContent.innerHTML, /player-loading-shimmer/);
+    assert.match(appContent.innerHTML, /WRS-109 Sample Watch Feature/);
+    assert.match(inlinePlaceholder.innerHTML, /<iframe[^>]*width="800" height="450"/);
+    resolvePost = globalThis.__resolveDelayedPost;
+    resolvePost({ id: 90998, code: 'WRS-109', title: 'WRS-109 Sample Watch Feature', thumbnail: '', embed_url: 'https://server.apijav.com/?mvapm_embed=90998' });
+    await initPromise;
+    assert.equal(getPlayerCalls, 0, 'Bot hydration must skip redundant /api/player call when SSR embed URL is active');
+  } finally {
+    delete globalThis.__resolveDelayedPost;
+    delete globalThis.__bumpPlayerCalls;
+    globalThis.window = savedGlobals.window;
+    globalThis.document = savedGlobals.document;
+    globalThis.localStorage = savedGlobals.localStorage;
+    globalThis.ResizeObserver = savedGlobals.ResizeObserver;
+    if (savedGlobals.navigatorDesc) Object.defineProperty(globalThis, 'navigator', savedGlobals.navigatorDesc);
+  }
+
+  // 5. Edge _headers X-Robots-Tag, sidebar rel=nofollow, single canonical robots.txt Sitemap, EN-only IndexNow
+  const [headersTxt, robotsTxt] = await Promise.all([
+    readFile(new URL('_headers', ROOT), 'utf8'),
+    readFile(new URL('robots.txt', ROOT), 'utf8')
+  ]);
+  for (const route of ['/history', '/*/history', '/watch-later', '/*/watch-later', '/search', '/*/search']) {
+    assert.match(headersTxt, new RegExp(`${route.replace(/[/*]/g, '\\$&')}\\r?\\n\\s+X-Robots-Tag: noindex, nofollow`), `_headers missing noindex for ${route}`);
+  }
+  assert.match(indexHtml, /<a href="\/en\/watch-later" rel="nofollow">/);
+  assert.match(indexHtml, /<a href="\/en\/history" rel="nofollow">/);
+  assert.equal((robotsTxt.match(/^Sitemap:/gm) || []).length, 1, 'robots.txt must declare exactly one canonical Sitemap index');
+  assert.doesNotMatch(robotsTxt, /^Disallow:\s*\/(?:\*\/)?(?:history|watch-later|search)\s*$/m, 'robots.txt must not block crawlers from reading X-Robots-Tag noindex on private routes');
+
+  const { buildIndexNowUrls } = await import(`../scripts/indexnow.mjs?v109=${Date.now()}`);
+  const idxUrls = buildIndexNowUrls();
+  assert.ok(!idxUrls.some(u => /^https:\/\/www\.missav-j\.com\/(?!en\/)/.test(u)), 'IndexNow must only submit canonical /en/ URLs');
 });

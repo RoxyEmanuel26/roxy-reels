@@ -4,10 +4,10 @@
  * Integrates an alphabetical A-Z navigation index for instant search and filtering.
  */
 
-import ui from './ui.js?v=2.8.108';
-import i18n from './i18n.js?v=2.8.108';
-import { ALL_CATEGORIES } from './categories_data.js?v=2.8.108';
-import { loadIndexableTaxonomies, isIndexableTaxonomy, hasLoadedTaxonomySet } from './taxonomy-index.js?v=2.8.108';
+import ui from './ui.js?v=2.8.109';
+import i18n from './i18n.js?v=2.8.109';
+import { ALL_CATEGORIES } from './categories_data.js?v=2.8.109';
+import { loadIndexableTaxonomies, isIndexableTaxonomy, hasLoadedTaxonomySet } from './taxonomy-index.js?v=2.8.109';
 
 /**
  * Render category grid cards based on filtered data

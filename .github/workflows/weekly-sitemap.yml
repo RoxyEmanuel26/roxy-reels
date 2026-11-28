@@ -41,16 +41,18 @@ jobs:
       - name: Sync curated actors and categories
         run: node scripts/sync-taxonomies.mjs || echo "Taxonomy sync completed with soft fallback"
 
-      - name: Generate deterministic sitemap set
-        id: generate
-        run: node generate_sitemap.js
-
       - name: Enrich latest videos with Gemini AI SEO
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: 'gemini-3.5-flash'
         run: |
           node scripts/seo-enrich.mjs --limit=400 || echo "AI Enrichment completed with soft fallback"
+
+      - name: Generate deterministic sitemap set
+        id: generate
+        env:
+          SITEMAP_MAX_VIDEOS: '15000'
+        run: node generate_sitemap.js
 
       - name: Submit latest URLs to IndexNow (Bing & Yandex)
         run: |

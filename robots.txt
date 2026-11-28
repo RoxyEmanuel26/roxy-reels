@@ -52,18 +52,13 @@ Disallow: /
 User-agent: *
 Allow: /
 # Disallow parameter filter internal berulang yang memicu duplikasi
+# (Rute /search, /history, dan /watch-later mengirim X-Robots-Tag: noindex, nofollow di edge CDN
+# agar crawler dapat membaca sinyal noindex dan menghapusnya dari indeks tanpa "Indexed, though blocked".)
 Disallow: /*?*q=
 Disallow: /*?*search=
 Disallow: /*?*sort=
 Disallow: /*?*filter=
-# Blokir rute user-session & halaman pencarian — mencegah crawler trap & index bloat.
-Disallow: /search
-Disallow: /*/search
-Disallow: /history
-Disallow: /*/history
-Disallow: /watch-later
-Disallow: /*/watch-later
+Disallow: /*?*session=
 
-# Sitemaps
-Sitemap: https://www.missav-j.com/sitemap_index.xml
+# Canonical Sitemap Index
 Sitemap: https://www.missav-j.com/sitemaps/sitemap_index.xml

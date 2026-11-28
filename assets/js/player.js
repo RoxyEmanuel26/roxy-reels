@@ -5,14 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.8.108';
-import ui from './ui.js?v=2.8.108';
-import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.108';
-import i18n from './i18n.js?v=2.8.108';
-import ReferralSystem from './referral.js?v=2.8.108';
-import { Analytics } from './analytics.js?v=2.8.108';
-import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.108';
-import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.108';
+import api from './api.js?v=2.8.109';
+import ui from './ui.js?v=2.8.109';
+import { renderVideoCard, getDeterministicDuration, resolveStudioAlias } from './feed.js?v=2.8.109';
+import i18n from './i18n.js?v=2.8.109';
+import ReferralSystem from './referral.js?v=2.8.109';
+import { Analytics } from './analytics.js?v=2.8.109';
+import { MIN_RELATED_RESULTS, getPrimaryRelatedQuery, getFallbackRelatedQuery } from './related-strategy.js?v=2.8.109';
+import { loadIndexableTaxonomies, renderTaxonomyLink } from './taxonomy-index.js?v=2.8.109';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -85,15 +85,26 @@ export async function init(id) {
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
 
-  // Preserve SSR Watch release details / FAQ markup during initial hydration on WRS/crawlers
+  // Preserve SSR Watch release details / FAQ markup & embed URL during initial hydration on WRS/crawlers
+  const isBot = isCrawlerUserAgent();
   const canonicalEl = document.getElementById('canonical-url') || document.querySelector('link[rel="canonical"]');
   const ssrWatchId = canonicalEl ? (canonicalEl.getAttribute('data-ssr-watch-id') || '') : '';
+  const ssrEmbedUrlAttr = ssrWatchId === String(id) ? (canonicalEl.getAttribute('data-ssr-embed-url') || '').trim() : '';
+  const ssrTitleAttr = ssrWatchId === String(id) ? (canonicalEl.getAttribute('data-ssr-title') || '').trim() : '';
   const ssrFallbackEl = ssrWatchId === String(id) ? mainApp.querySelector('.seo-fallback') : null;
   const preservedSsrFullHtml = ssrFallbackEl ? ssrFallbackEl.outerHTML : '';
   const ssrEnrichEl = ssrWatchId === String(id)
     ? mainApp.querySelector('.seo-fallback .video-ai-enrichment, .seo-fallback .video-release-details')
     : null;
   const preservedSsrReleaseHtml = ssrEnrichEl ? ssrEnrichEl.outerHTML : '';
+  const fallbackDeterministicEmbed = `https://server.apijav.com/?mvapm_embed=${encodeURIComponent(id)}`;
+  const initialBotEmbedUrl = /^https?:\/\//i.test(ssrEmbedUrlAttr)
+    ? ssrEmbedUrlAttr.replace(/^http:\/\//i, 'https://')
+    : fallbackDeterministicEmbed;
+  const initialBotTitle = ssrTitleAttr || (ssrFallbackEl?.querySelector?.('h1')?.textContent || '').trim() || '';
+  const initialBotIframeMarkup = isBot
+    ? getSecureIframeMarkup(`<iframe src="${ui.escapeHTML(initialBotEmbedUrl)}" title="${ui.escapeHTML(initialBotTitle || 'Video Player')}"></iframe>`)
+    : '';
 
   // 1. Tampilkan layout teater lengkap dengan Ambient Glow Canvas
   mainApp.innerHTML = `
@@ -106,16 +117,16 @@ export async function init(id) {
         <!-- Responsive video frame container (16:9) -->
         <div class="player-container-wrapper">
           <div class="player-container-placeholder">
-            <div class="player-loading-shimmer">
+            ${isBot ? initialBotIframeMarkup : `<div class="player-loading-shimmer">
               <div class="spinner"></div>
               <span>${i18n.t('loading_player_embed')}</span>
-            </div>
+            </div>`}
           </div>
         </div>
 
         <!-- Metadata Video -->
         <div class="player-metadata-container">
-          <h1 class="player-title" id="player-title">${i18n.t('loading_video_title')}</h1>
+          <h1 class="player-title" id="player-title">${isBot && initialBotTitle ? ui.escapeHTML(initialBotTitle) : i18n.t('loading_video_title')}</h1>
           
           <div class="player-action-row">
             <div class="player-stats">
@@ -196,27 +207,35 @@ export async function init(id) {
   `;
 
   const relatedList = document.getElementById('related-videos-list');
-  ui.showSkeletonsInElement(relatedList, 6);
+  if (!isBot) {
+    ui.showSkeletonsInElement(relatedList, 6);
+  }
+
+  // Zero-delay bot player hydration: guarantee visible 800x450 iframe & hidden float overlay at 0ms before any await.
+  const floatWrapper = document.getElementById('floating-player-wrapper');
+  if (isBot) {
+    if (floatWrapper) {
+      floatWrapper.classList.add('hidden');
+      floatWrapper.classList.remove('mode-theater', 'mode-floating');
+    }
+    const immediatePlaceholder = document.querySelector('.player-container-placeholder');
+    if (immediatePlaceholder && !immediatePlaceholder.innerHTML.includes('<iframe')) {
+      immediatePlaceholder.innerHTML = initialBotIframeMarkup;
+    }
+  }
 
   try {
     let post;
-    const isBot = isCrawlerUserAgent();
     const taxonomiesPromise = loadIndexableTaxonomies();
     const isCurrentlyPlaying = !isBot && window.missavJState.activeVideo && String(window.missavJState.activeVideo.id) === String(id);
 
     // Keep global floating player hidden for bots so its mode-theater overlay never occludes the inline bot iframe.
-    const floatWrapper = document.getElementById('floating-player-wrapper');
-    if (floatWrapper) {
-      if (isBot) {
-        floatWrapper.classList.add('hidden');
-        floatWrapper.classList.remove('mode-theater', 'mode-floating');
-      } else {
-        floatWrapper.classList.remove('hidden');
-        floatWrapper.classList.remove('mode-floating');
-        floatWrapper.classList.add('mode-theater');
-        alignGlobalPlayerWithPlaceholder();
-        setupPlaceholderObserver();
-      }
+    if (floatWrapper && !isBot) {
+      floatWrapper.classList.remove('hidden');
+      floatWrapper.classList.remove('mode-floating');
+      floatWrapper.classList.add('mode-theater');
+      alignGlobalPlayerWithPlaceholder();
+      setupPlaceholderObserver();
     }
 
     if (isCurrentlyPlaying) {
@@ -248,17 +267,21 @@ export async function init(id) {
         return null;
       });
       
-      // 2. Start fetching player embed in the background (DO NOT await it yet)
-      const playerPromise = api.getPlayer(id).catch(err => {
-        console.warn('[API Warning] Failed to load player endpoint, trying fallback...', err);
-        return null;
-      });
+      // 2. Start fetching player embed in the background for humans (bots already rendered iframe synchronously at 0ms)
+      const playerPromise = !isBot
+        ? api.getPlayer(id).catch(err => {
+            console.warn('[API Warning] Failed to load player endpoint, trying fallback...', err);
+            return null;
+          })
+        : Promise.resolve(null);
       
       if (!fetchedPost) {
         // Jika post gagal, coba tunggu player info (mungkin server sedang lelah)
-        const p = await playerPromise;
+        const p = isBot
+          ? await api.getPlayer(id).catch(() => null)
+          : await playerPromise;
         if (!p) throw new Error(i18n.t('error_failed_fetch_video_player'));
-        post = { id, title: 'Video Stream', views: 0, thumbnail: '', iframe_html: p.iframe_html, _isSeoFallback: true };
+        post = { id, title: initialBotTitle || 'Video Stream', views: 0, thumbnail: '', iframe_html: p.iframe_html, _isSeoFallback: true };
       } else {
         post = fetchedPost;
       }
@@ -332,7 +355,12 @@ export async function init(id) {
                 floatWrapper.classList.add('hidden');
                 floatWrapper.classList.remove('mode-theater', 'mode-floating');
               }
-              inlinePlaceholder.innerHTML = getSecureIframeMarkup(iframeMarkup);
+              const nextMarkup = getSecureIframeMarkup(iframeMarkup);
+              const nextSrcMatch = nextMarkup.match(/\bsrc=["']([^"']+)["']/i);
+              const currentSrcMatch = inlinePlaceholder.innerHTML.match(/\bsrc=["']([^"']+)["']/i);
+              if (!currentSrcMatch || (nextSrcMatch && currentSrcMatch[1] !== nextSrcMatch[1])) {
+                inlinePlaceholder.innerHTML = nextMarkup;
+              }
               return;
             }
           }

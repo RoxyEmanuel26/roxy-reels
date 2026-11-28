@@ -302,3 +302,47 @@ test('sitemap uses enriched descriptions, strips third-party brand tags, and add
   assert.match(indexXml, /<loc>https:\/\/www\.missav-j\.com\/sitemaps\/sitemap_studios\.xml<\/loc>\s*<lastmod>2026-10-15<\/lastmod>/);
   assert.match(indexXml, /<loc>https:\/\/www\.missav-j\.com\/sitemaps\/sitemap_actors_1\.xml<\/loc>\s*<lastmod>2026-10-15<\/lastmod>/);
 });
+
+test('curated priority sitemap keeps enriched, latest, and top-views videos while preserving full duplicate canonicals', () => {
+  const { parseMaxVideosLimit } = require('../generate_sitemap.js');
+  assert.equal(parseMaxVideosLimit('15000'), 15000);
+  assert.equal(parseMaxVideosLimit('all'), Infinity);
+  assert.equal(parseMaxVideosLimit('0'), Infinity);
+  assert.equal(parseMaxVideosLimit(''), 15000);
+
+  const input = [
+    post(101, { code: 'OLD-101', title: 'OLD-101 Enriched Classic', views: 50 }),
+    post(201, { code: 'POP-201', title: 'POP-201 Viral Hit', views: 95000 }),
+    post(202, { code: 'POP-202', title: 'POP-202 Second Hit', views: 80000 }),
+    post(301, { code: 'MID-301', title: 'MID-301 Low Views', views: 10 }),
+    post(302, { code: 'MID-302', slug: 'mid-302-clone-winner', title: 'MID-302 Clone Winner', views: 15 }),
+    post(303, { code: 'MID-302', slug: 'mid-302-clone-winner-2', title: 'MID-302 Clone Winner', views: 5 }),
+    post(401, { code: 'NEW-401', title: 'NEW-401 Recent Release', views: 200 }),
+    post(402, { code: 'NEW-402', title: 'NEW-402 Brand New Release', views: 120 })
+  ];
+
+  // Limit to 4 videos: Tier 1 enriched (101) + guaranteed latest (402) + Tier 2 topViewsQuota=1 (201) + Tier 3 newest (401)
+  const result = buildSitemapSet(input, {
+    ...options,
+    preferredIds: new Set(['101']),
+    maxVideos: 4,
+    topViewsQuota: 1
+  });
+
+  assert.doesNotThrow(() => validateSitemapSet(result, input.length));
+  assert.equal(result.summary.totalVideos, 4);
+  assert.equal(result.summary.duplicateClonesSkipped, 1);
+  assert.equal(result.summary.curatedExcludedVideos, 3);
+  assert.equal(result.summary.latest.id, 402);
+  // Duplicate canonical map MUST still cover excluded clone 303 -> 302
+  assert.equal(result.duplicateCanonicals['303'], 'mid-302-clone-winner-302');
+
+  const shard = result.files.get('sitemap_videos_0-999.xml');
+  assert.match(shard, /-101<\/loc>/);
+  assert.match(shard, /-201<\/loc>/);
+  assert.match(shard, /-401<\/loc>/);
+  assert.match(shard, /-402<\/loc>/);
+  assert.doesNotMatch(shard, /-301<\/loc>/);
+  assert.doesNotMatch(shard, /-302<\/loc>/);
+  assert.doesNotMatch(shard, /-202<\/loc>/);
+});

@@ -4,8 +4,8 @@
  * dan perutean dinamis ke feed video berbasis API.
  */
 
-import ui from './ui.js?v=2.8.108';
-import i18n from './i18n.js?v=2.8.108';
+import ui from './ui.js?v=2.8.109';
+import i18n from './i18n.js?v=2.8.109';
 
 // Daftar Studio JAV terkemuka terkurasi (disesuaikan dengan nama studio aktif pada upstream API)
 const POPULAR_STUDIOS = [

@@ -16,23 +16,12 @@ const KEY_LOCATION = `https://${HOST}/${KEY}.txt`;
 
 const STATIC_CRITICAL_URLS = [
   `https://${HOST}/en/`,
-  `https://${HOST}/id/`,
-  `https://${HOST}/zh-TW/`,
-  `https://${HOST}/zh-CN/`,
-  `https://${HOST}/ja/`,
-  `https://${HOST}/ko/`,
-  `https://${HOST}/ms/`,
-  `https://${HOST}/th/`,
-  `https://${HOST}/de/`,
-  `https://${HOST}/fr/`,
-  `https://${HOST}/vi/`,
-  `https://${HOST}/fil/`,
-  `https://${HOST}/pt/`,
   `https://${HOST}/en/trending`,
   `https://${HOST}/en/recent`,
   `https://${HOST}/en/actors`,
   `https://${HOST}/en/categories`,
   `https://${HOST}/en/studios`,
+  `https://${HOST}/en/popular-actors`,
   `https://${HOST}/en/category?name=Uncensored`,
   `https://${HOST}/en/category?name=${encodeURIComponent('Uncensored leak')}`,
   `https://${HOST}/en/category?name=${encodeURIComponent('English Subtitle')}`,
@@ -52,7 +41,8 @@ const STATIC_CRITICAL_URLS = [
   `https://${HOST}/en/dmca`,
   `https://${HOST}/en/terms`,
   `https://${HOST}/en/privacy-policy`,
-  `https://${HOST}/en/2257`
+  `https://${HOST}/en/2257`,
+  `https://${HOST}/en/contact`
 ];
 
 const MAX_INDEXNOW_BATCH = 10000;

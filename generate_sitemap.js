@@ -12,6 +12,8 @@ const MAX_ATTEMPTS = 3;
 const MAX_SITEMAP_BYTES = 50 * 1024 * 1024;
 const MAX_SITEMAP_URLS = 50_000;
 const VIDEO_BUCKET_SIZE = 1000;
+const DEFAULT_CURATED_MAX_VIDEOS = 15_000;
+const DEFAULT_TOP_VIEWS_QUOTA = 5_000;
 
 const STATIC_ROUTES = [
   '',
@@ -271,6 +273,7 @@ function normalizePost(post) {
     date: String(post.date || '').trim(),
     thumbnail: String(post.thumbnail || '').trim(),
     duration: post.duration,
+    views: Math.max(0, Number(post.views) || 0),
     categories: labels(post.categories).map(decodeHtmlEntities),
     tags: labels(post.tags).map(decodeHtmlEntities),
     actors: labels(post.actors).map(decodeHtmlEntities),
@@ -434,6 +437,114 @@ function deduplicateExactVideoClones(posts, options = {}) {
   return { posts: kept, canonicalMap, skippedCount };
 }
 
+function parseMaxVideosLimit(rawValue, fallback = DEFAULT_CURATED_MAX_VIDEOS) {
+  if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') return fallback;
+  const trimmed = String(rawValue).trim().toLowerCase();
+  if (trimmed === 'all' || trimmed === 'unlimited' || trimmed === 'infinity' || trimmed === '0') {
+    return Infinity;
+  }
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.floor(parsed);
+}
+
+function isVideoSitemapEligible(post) {
+  const title = formatEditionVideoTitle(post);
+  const thumbnail = buildImageProxyUrl(post.thumbnail);
+  const player = buildPlayerUrl(post);
+  const location = `${BASE_URL}/en/watch/${buildVideoSlug(post)}`;
+  return Boolean(title && thumbnail && player && player !== location);
+}
+
+function selectCuratedPriorityPosts(posts, options = {}) {
+  const maxVideos = options.maxVideos ?? Infinity;
+  if (!Number.isFinite(maxVideos) || maxVideos <= 0 || posts.length <= maxVideos) {
+    return {
+      posts,
+      excludedCount: 0,
+      tiers: { enriched: 0, topViews: 0, newest: posts.length }
+    };
+  }
+
+  const preferredIds = options.preferredIds instanceof Set ? options.preferredIds : new Set();
+  const topViewsQuota = Math.max(0, Number.isFinite(options.topViewsQuota) ? options.topViewsQuota : DEFAULT_TOP_VIEWS_QUOTA);
+  const selected = [];
+  const selectedIds = new Set();
+  const tryAdd = (post) => {
+    if (!post || selected.length >= maxVideos || selectedIds.has(post.id)) return false;
+    selected.push(post);
+    selectedIds.add(post.id);
+    return true;
+  };
+
+  // Guarantee the newest post overall is always retained so latest_id checks and daily freshness stay intact.
+  let newestOverall = null;
+  for (const post of posts) {
+    if (!newestOverall || post.id > newestOverall.id) newestOverall = post;
+  }
+
+  // Tier 1: All AI-enriched posts (newest first if enriched ever exceeds maxVideos)
+  let enrichedAdded = 0;
+  const enrichedPosts = posts
+    .filter(p => preferredIds.has(String(p.id)))
+    .sort((a, b) => b.id - a.id);
+  const reserveSlotForLatest = newestOverall && !preferredIds.has(String(newestOverall.id)) && maxVideos > 1 ? 1 : 0;
+  for (const post of enrichedPosts) {
+    if (selected.length >= maxVideos - reserveSlotForLatest) break;
+    if (tryAdd(post)) enrichedAdded += 1;
+  }
+
+  let newestAdded = 0;
+  if (newestOverall && !selectedIds.has(newestOverall.id)) {
+    if (tryAdd(newestOverall)) newestAdded += 1;
+  }
+
+  const remaining = posts.filter(p => !selectedIds.has(p.id));
+  const eligibleRemaining = remaining.filter(isVideoSitemapEligible);
+  const nonEligibleRemaining = remaining.filter(p => !isVideoSitemapEligible(p));
+
+  // Tier 2: Top popular (highest views > 0) video-eligible posts
+  let topViewsAdded = 0;
+  if (topViewsQuota > 0 && selected.length < maxVideos) {
+    const byViews = eligibleRemaining
+      .filter(p => (p.views || 0) > 0)
+      .sort((a, b) => (b.views - a.views) || (b.id - a.id));
+    for (const post of byViews) {
+      if (topViewsAdded >= topViewsQuota || selected.length >= maxVideos) break;
+      if (tryAdd(post)) topViewsAdded += 1;
+    }
+  }
+
+  // Tier 3: Freshness — newest video-eligible releases fill the remaining quota
+  const byNewestEligible = eligibleRemaining
+    .filter(p => !selectedIds.has(p.id))
+    .sort((a, b) => b.id - a.id);
+  for (const post of byNewestEligible) {
+    if (selected.length >= maxVideos) break;
+    if (tryAdd(post)) newestAdded += 1;
+  }
+
+  // Tier 4: Fallback to newest remaining non-eligible records only if quota is still unfilled
+  if (selected.length < maxVideos) {
+    const byNewestFallback = nonEligibleRemaining.sort((a, b) => b.id - a.id);
+    for (const post of byNewestFallback) {
+      if (selected.length >= maxVideos) break;
+      if (tryAdd(post)) newestAdded += 1;
+    }
+  }
+
+  selected.sort((a, b) => a.id - b.id);
+  return {
+    posts: selected,
+    excludedCount: posts.length - selected.length,
+    tiers: {
+      enriched: enrichedAdded,
+      topViews: topViewsAdded,
+      newest: newestAdded
+    }
+  };
+}
+
 function buildSitemapSet(posts, options = {}) {
   const actors = options.actors || [];
   const categories = options.categories || [];
@@ -448,7 +559,12 @@ function buildSitemapSet(posts, options = {}) {
   const dedupResult = options.deduplicateClones === false
     ? { posts: [...uniquePosts.values()], canonicalMap: {}, skippedCount: 0 }
     : deduplicateExactVideoClones([...uniquePosts.values()], options);
-  const activePosts = dedupResult.posts;
+  const curatedResult = selectCuratedPriorityPosts(dedupResult.posts, {
+    maxVideos: options.maxVideos ?? Infinity,
+    preferredIds: options.preferredIds,
+    topViewsQuota: options.topViewsQuota ?? DEFAULT_TOP_VIEWS_QUOTA
+  });
+  const activePosts = curatedResult.posts;
 
   const files = buildStaticTaxonomyFiles({ actors, categories, studios });
 
@@ -527,6 +643,8 @@ function buildSitemapSet(posts, options = {}) {
     summary: {
       totalVideos: activePosts.length,
       duplicateClonesSkipped: dedupResult.skippedCount,
+      curatedExcludedVideos: curatedResult.excludedCount,
+      curatedTiers: curatedResult.tiers,
       eligibleVideos,
       standardOnlyVideos: missingVideoMetadata.length,
       missingVideoMetadata,
@@ -543,7 +661,7 @@ function sha256(value) {
 function validateSitemapSet(result, expectedTotal) {
   const { files, summary } = result;
   if (!files.has('sitemap_index.xml')) throw new Error('Missing sitemap_index.xml');
-  const accountedTotal = summary.totalVideos + (summary.duplicateClonesSkipped || 0);
+  const accountedTotal = summary.totalVideos + (summary.duplicateClonesSkipped || 0) + (summary.curatedExcludedVideos || 0);
   if (accountedTotal !== expectedTotal) {
     throw new Error(`Video count mismatch: expected ${expectedTotal}, generated ${accountedTotal}`);
   }
@@ -823,8 +941,17 @@ async function main() {
     } catch {}
   }
   const fetched = await fetchAllPosts();
-  console.log(`[BUILD] Building ${fetched.total.toLocaleString('en-US')} upstream records with clone deduplication...`);
-  const result = buildSitemapSet(fetched.posts, { actors, categories, studios: STUDIOS, preferredIds, enrichedByPostId });
+  const maxVideos = parseMaxVideosLimit(process.env.SITEMAP_MAX_VIDEOS, DEFAULT_CURATED_MAX_VIDEOS);
+  const limitLabel = Number.isFinite(maxVideos) ? `curated top ${maxVideos.toLocaleString('en-US')}` : 'unlimited';
+  console.log(`[BUILD] Building ${fetched.total.toLocaleString('en-US')} upstream records with clone deduplication (${limitLabel})...`);
+  const result = buildSitemapSet(fetched.posts, {
+    actors,
+    categories,
+    studios: STUDIOS,
+    preferredIds,
+    enrichedByPostId,
+    maxVideos
+  });
   validateSitemapSet(result, fetched.total);
   const changes = promoteSitemapSet(result.files, outputDir);
   const dupMapPath = path.join(root, 'api', 'duplicate-video-canonicals.json');
@@ -844,6 +971,8 @@ async function main() {
   const publicSummary = {
     totalVideos: result.summary.totalVideos,
     duplicateClonesSkipped: result.summary.duplicateClonesSkipped,
+    curatedExcludedVideos: result.summary.curatedExcludedVideos,
+    curatedTiers: result.summary.curatedTiers,
     eligibleVideos: result.summary.eligibleVideos,
     standardOnlyVideos: result.summary.standardOnlyVideos,
     videoFiles: result.summary.videoFiles,
@@ -861,6 +990,8 @@ async function main() {
 
 module.exports = {
   BASE_URL,
+  DEFAULT_CURATED_MAX_VIDEOS,
+  DEFAULT_TOP_VIEWS_QUOTA,
   STUDIOS,
   VIDEO_BUCKET_SIZE,
   actorFiles,
@@ -877,9 +1008,12 @@ module.exports = {
   fetchAllPosts,
   fetchPage,
   formatEditionVideoTitle,
+  isVideoSitemapEligible,
   normalizeDate,
   parseDuration,
+  parseMaxVideosLimit,
   promoteSitemapSet,
+  selectCuratedPriorityPosts,
   SITEMAP_VALID_LANGS,
   sitemapHreflangCode,
   slugify,

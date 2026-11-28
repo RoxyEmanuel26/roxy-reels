@@ -36,7 +36,9 @@ const DATA_FILE = path.resolve('data/seo-enriched-posts.json');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const DAILY_LIMIT = parseInt(process.env.GEMINI_DAILY_REQUEST_LIMIT || '1000', 10);
-const DEFAULT_BATCH_SIZE = parseInt(process.env.GEMINI_BATCH_SIZE || '5', 10);
+const DEFAULT_BATCH_SIZE = parseInt(process.env.GEMINI_BATCH_SIZE || '8', 10);
+const BATCH_DELAY_MS = parseInt(process.env.GEMINI_BATCH_DELAY_MS || '350', 10);
+const MAX_REJECTED_ATTEMPTS = 4;
 
 // Parse CLI flags
 const args = process.argv.slice(2);
@@ -138,15 +140,15 @@ STRICT RULES:
     duration: p.duration || ''
   })), null, 2);
 
-  const candidateModels = [model, 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
+  const candidateModels = [model, 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
   let lastError = null;
 
   for (const currentModel of candidateModels) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
     let attempts = 0;
-    let delay = 1000;
+    let delay = 1500;
 
-    while (attempts < 2) {
+    while (attempts < 3) {
       attempts++;
       try {
         const response = await fetch(endpoint, {
@@ -166,18 +168,25 @@ STRICT RULES:
           })
         });
 
-        if (response.status === 429) {
-          console.warn(`[Gemini 429] Rate limited on ${currentModel}. Retrying after ${delay}ms...`);
-          await new Promise(r => setTimeout(r, delay));
-          delay *= 2;
-          continue;
+        if (response.status === 429 || response.status === 503) {
+          const text = await response.text();
+          lastError = new Error(`Model ${currentModel} (${response.status}): ${text}`);
+          if (attempts < 3) {
+            const jitter = Math.floor(Math.random() * 400);
+            console.warn(`[Gemini ${response.status}] Transient error on ${currentModel}. Retrying after ${delay + jitter}ms...`);
+            await new Promise(r => setTimeout(r, delay + jitter));
+            delay *= 2;
+            continue;
+          }
+          console.warn(`[Gemini Fallback] Model ${currentModel} exhausted retries (${response.status}), trying next fallback model...`);
+          break;
         }
 
-        if (response.status === 404 || response.status === 503) {
+        if (response.status === 404) {
           const text = await response.text();
-          console.warn(`[Gemini Fallback] Model ${currentModel} returned ${response.status}, trying next fallback model...`);
-          lastError = new Error(`Model ${currentModel} (${response.status}): ${text}`);
-          break; // break retry loop to try next model in candidateModels
+          console.warn(`[Gemini Fallback] Model ${currentModel} returned 404, trying next fallback model...`);
+          lastError = new Error(`Model ${currentModel} (404): ${text}`);
+          break;
         }
 
         if (!response.ok) {
@@ -241,6 +250,8 @@ export async function fetchCandidatePosts(db, targetQueueSize = maxToProcess, fe
     for (const post of byId.values()) {
       const pId = String(post.id);
       const existing = db?.posts?.[pId];
+      const isPermanentlyRejected = existing?.status === 'rejected' && (existing.attempts || 0) >= MAX_REJECTED_ATTEMPTS && existing.source_hash === computeSourceHash(post);
+      if (isPermanentlyRejected) continue;
       if (!existing || existing.status !== 'enriched' || existing.source_hash !== computeSourceHash(post)) {
         needed++;
         if (needed >= targetQueueSize * 2) return true;
@@ -249,10 +260,10 @@ export async function fetchCandidatePosts(db, targetQueueSize = maxToProcess, fe
     return false;
   };
 
-  // Fetch page 1..5 of latest daily releases + page 1..40 of top viewed releases (short-circuits once queue buffer is full)
+  // Fetch page 1..5 of latest daily releases + page 1..60 of top viewed releases (Top 3,000 popular, short-circuits once queue buffer is full)
   const feedPlan = [
     ...Array.from({ length: 5 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&page=${i + 1}`),
-    ...Array.from({ length: 40 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&orderby=views&page=${i + 1}`)
+    ...Array.from({ length: 60 }, (_, i) => `https://server.apijav.com/wp-json/myvideo/v1/posts?per_page=50&orderby=views&page=${i + 1}`)
   ];
 
   for (const endpoint of feedPlan) {
@@ -308,6 +319,8 @@ export async function runEnrichmentPipeline() {
     const pId = String(post.id);
     const hash = computeSourceHash(post);
     const existing = db.posts[pId];
+    const isPermanentlyRejected = existing?.status === 'rejected' && (existing.attempts || 0) >= MAX_REJECTED_ATTEMPTS && existing.source_hash === hash;
+    if (isPermanentlyRejected) continue;
 
     if (!existing || existing.status !== 'enriched' || existing.source_hash !== hash) {
       queue.push({ post, hash });
@@ -323,88 +336,98 @@ export async function runEnrichmentPipeline() {
   let enrichedCount = 0;
   let failedCount = 0;
 
-  // Process in batches
+  // Process in batches (persist DB per batch, sync 3MB Worker file once in finally)
   const batchSize = isMock ? 2 : DEFAULT_BATCH_SIZE;
-  for (let i = 0; i < queue.length; i += batchSize) {
-    const batch = queue.slice(i, i + batchSize);
-    console.log(`Processing batch ${Math.floor(i / batchSize) + 1} (${batch.length} videos)...`);
+  try {
+    for (let i = 0; i < queue.length; i += batchSize) {
+      const batch = queue.slice(i, i + batchSize);
+      console.log(`Processing batch ${Math.floor(i / batchSize) + 1} (${batch.length} videos)...`);
 
-    let enrichedResults = [];
-    if (isMock) {
-      enrichedResults = batch.map(b => generateMockEnrichment(b.post));
-    } else {
-      try {
-        enrichedResults = await callGeminiBatch(batch.map(b => b.post), GEMINI_MODEL, GEMINI_API_KEY);
-      } catch (err) {
-        console.error('[Gemini Batch Error]', err.message);
-        // Tandai failed di database
-        for (const item of batch) {
-          const pId = String(item.post.id);
+      let enrichedResults = [];
+      if (isMock) {
+        enrichedResults = batch.map(b => generateMockEnrichment(b.post));
+      } else {
+        try {
+          enrichedResults = await callGeminiBatch(batch.map(b => b.post), GEMINI_MODEL, GEMINI_API_KEY);
+        } catch (err) {
+          console.error('[Gemini Batch Error]', err.message);
+          // Tandai failed di database
+          for (const item of batch) {
+            const pId = String(item.post.id);
+            db.posts[pId] = {
+              video_id: pId,
+              source_hash: item.hash,
+              status: 'failed',
+              error: err.message,
+              attempts: (db.posts[pId]?.attempts || 0) + 1,
+              generated_at: new Date().toISOString()
+            };
+            failedCount++;
+          }
+          if (!isDryRun) saveDatabase(db);
+          if (i + batchSize < queue.length && BATCH_DELAY_MS > 0) {
+            await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+          }
+          continue;
+        }
+      }
+
+      // Validasi dan simpan ke DB
+      for (const item of batch) {
+        const pId = String(item.post.id);
+        const resItem = enrichedResults.find(r => String(r.video_id) === pId);
+
+        if (!resItem) {
           db.posts[pId] = {
             video_id: pId,
             source_hash: item.hash,
             status: 'failed',
-            error: err.message,
+            error: 'Missing from AI batch output',
+            attempts: (db.posts[pId]?.attempts || 0) + 1,
+            generated_at: new Date().toISOString()
+          };
+          failedCount++;
+          continue;
+        }
+
+        const validation = validateEnrichedData(resItem, item.post);
+        if (validation.isValid) {
+          db.posts[pId] = {
+            ...resItem,
+            video_id: pId,
+            source_hash: item.hash,
+            status: 'enriched',
+            model: isMock ? 'mock-engine' : GEMINI_MODEL,
+            attempts: (db.posts[pId]?.attempts || 0) + 1,
+            generated_at: new Date().toISOString()
+          };
+          enrichedCount++;
+          console.log(`  [OK] Enriched #${pId} (${resItem.seo_title})`);
+        } else {
+          console.warn(`  [REJECTED] #${pId}:`, validation.errors.join(', '));
+          db.posts[pId] = {
+            video_id: pId,
+            source_hash: item.hash,
+            status: 'rejected',
+            errors: validation.errors,
             attempts: (db.posts[pId]?.attempts || 0) + 1,
             generated_at: new Date().toISOString()
           };
           failedCount++;
         }
-        continue;
+      }
+
+      if (!isDryRun) {
+        saveDatabase(db);
+      }
+      if (!isMock && i + batchSize < queue.length && BATCH_DELAY_MS > 0) {
+        await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
       }
     }
-
-    // Validasi dan simpan ke DB
-    for (const item of batch) {
-      const pId = String(item.post.id);
-      const resItem = enrichedResults.find(r => String(r.video_id) === pId);
-
-      if (!resItem) {
-        db.posts[pId] = {
-          video_id: pId,
-          source_hash: item.hash,
-          status: 'failed',
-          error: 'Missing from AI batch output',
-          attempts: (db.posts[pId]?.attempts || 0) + 1,
-          generated_at: new Date().toISOString()
-        };
-        failedCount++;
-        continue;
-      }
-
-      const validation = validateEnrichedData(resItem, item.post);
-      if (validation.isValid) {
-        db.posts[pId] = {
-          ...resItem,
-          video_id: pId,
-          source_hash: item.hash,
-          status: 'enriched',
-          model: isMock ? 'mock-engine' : GEMINI_MODEL,
-          attempts: (db.posts[pId]?.attempts || 0) + 1,
-          generated_at: new Date().toISOString()
-        };
-        enrichedCount++;
-        console.log(`  [OK] Enriched #${pId} (${resItem.seo_title})`);
-      } else {
-        console.warn(`  [REJECTED] #${pId}:`, validation.errors.join(', '));
-        db.posts[pId] = {
-          video_id: pId,
-          source_hash: item.hash,
-          status: 'rejected',
-          errors: validation.errors,
-          attempts: (db.posts[pId]?.attempts || 0) + 1,
-          generated_at: new Date().toISOString()
-        };
-        failedCount++;
-      }
-    }
-
-    if (!isDryRun) {
-      saveDatabase(db);
-      if (!isMock && enrichedCount > 0) {
-        const syncRes = syncWorkerSeoData();
-        console.log(`[Worker Sync] Updated=${syncRes.changed} enriched=${syncRes.enrichedCount}`);
-      }
+  } finally {
+    if (!isDryRun && !isMock && enrichedCount > 0) {
+      const syncRes = syncWorkerSeoData();
+      console.log(`[Worker Sync] Updated=${syncRes.changed} enriched=${syncRes.enrichedCount}`);
     }
   }
 

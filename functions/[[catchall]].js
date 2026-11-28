@@ -15,7 +15,7 @@ const SOCIAL_CRAWLER_REGEX = /Twitterbot|facebookexternalhit|Facebot|LinkedInBot
 const SEARCH_CRAWLER_REGEX = /Googlebot|Google-InspectionTool|GoogleOther|AdsBot-Google|Mediapartners-Google|Storebot-Google|Google-Read-Aloud|APIs-Google|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|ia_archiver|Applebot|GPTBot|ChatGPT-User|PerplexityBot|ClaudeBot|anthropic-ai|cohere-ai/i;
 const COMMERCIAL_CRAWLER_REGEX = /AhrefsBot|SemrushBot|MJ12bot/i;
 const TRACKING_PARAM_REGEX = /^(?:ref|utm_[a-z0-9_]+|fbclid|gclid|dclid|msclkid|_ga|cb)$/i;
-const SSR_CACHE_VERSION = 'v2.8.108';
+const SSR_CACHE_VERSION = 'v2.8.109';
 
 const EDITION_LOCALIZED_LABELS = {
   en: { 'uncensored-leak': 'Uncensored Leak', 'english-subtitle': 'English Subtitle', 'chinese-subtitle': 'Chinese Subtitle', uncensored: 'Uncensored' },
@@ -2948,6 +2948,13 @@ async function handleRequest(context) {
 
             const pageUrl = canonicalPath ? `${url.origin}${canonicalPath}` : getCleanPublicUrl(url).toString();
             const seoTitleTag = formatConciseWatchSeoTitle(fullTitle, { editionLabel });
+            const fallbackEmbedUrl = `https://server.apijav.com/?mvapm_embed=${id}`;
+            const rawEmbedUrl = post.embed_url
+              ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&').trim()
+              : fallbackEmbedUrl;
+            const cleanEmbedUrl = /^https?:\/\//i.test(rawEmbedUrl)
+              ? rawEmbedUrl.replace(/^http:\/\//i, 'https://')
+              : fallbackEmbedUrl;
 
             htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(seoTitleTag)}</title>`);
             htmlContent = htmlContent.replace(
@@ -2956,7 +2963,7 @@ async function handleRequest(context) {
             );
             htmlContent = htmlContent.replace(
               /<link rel="canonical" id="canonical-url" href="[^"]*"/i,
-              () => `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}" data-ssr-watch-id="${escapeHtml(String(id))}" data-watch-hreflangs="${escapeHtml(watchHreflangs.join(','))}"`
+              () => `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}" data-ssr-watch-id="${escapeHtml(String(id))}" data-watch-hreflangs="${escapeHtml(watchHreflangs.join(','))}" data-ssr-embed-url="${escapeHtml(cleanEmbedUrl)}" data-ssr-title="${escapeHtml(formattedTitle)}"`
             );
             htmlContent = htmlContent.replace(
               /<meta property="og:url" id="og-url" content="[^"]*"/i,
@@ -3025,13 +3032,6 @@ async function handleRequest(context) {
             
 
             if (htmlContent.includes('"@type": "WebSite"')) {
-              const fallbackEmbedUrl = `https://server.apijav.com/?mvapm_embed=${id}`;
-              const rawEmbedUrl = post.embed_url
-                ? post.embed_url.replace(/&#038;/g, '&').replace(/&amp;/g, '&').trim()
-                : fallbackEmbedUrl;
-              const cleanEmbedUrl = /^https?:\/\//i.test(rawEmbedUrl)
-                ? rawEmbedUrl.replace(/^http:\/\//i, 'https://')
-                : fallbackEmbedUrl;
               const hasValidThumbnail = Boolean(sourceImageUrl && !proxiedImageUrl.endsWith('/assets/images/logo.webp'));
               const isIndexableWatch = watchRobots.startsWith('index');
               const isoDuration = formatDuration(post.duration);
@@ -3069,8 +3069,14 @@ async function handleRequest(context) {
                   "uploadDate": uploadDate,
                   // url: URL halaman canonical kita — accessible oleh Googlebot (domain kita sendiri)
                   "url": pageUrl,
+                  "mainEntityOfPage": {
+                    "@type": "WebPage",
+                    "@id": pageUrl
+                  },
                   // embedUrl: URL embed player dari server — Google coba akses ini untuk verifikasi video
                   "embedUrl": cleanEmbedUrl,
+                  "width": 800,
+                  "height": 450,
                   "publisher": {
                     "@type": "Organization",
                     "name": "MISSAV-J",
@@ -3284,9 +3290,7 @@ async function handleRequest(context) {
 
               const seoFallbackContent = `
         <div class="seo-fallback" style="display: contents;">
-          <h1>${escapeHtml(fullTitle)}</h1>
-          <p>${escapeHtml(description)}</p>
-          <div style="position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; background: #000; margin: 16px 0; border-radius: 8px; overflow: hidden;">
+          <div style="position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; background: #000; margin: 0 0 16px; border-radius: 8px; overflow: hidden;">
             <iframe
               src="${escapeHtml(cleanEmbedUrl)}"
               title="${escapeHtml(fullTitle)}"
@@ -3298,9 +3302,8 @@ async function handleRequest(context) {
               referrerpolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>
-          <div style="margin: 16px 0;">
-            <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(fullTitle)}" width="800" height="450" decoding="async" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 1rem;" />
-          </div>
+          <h1>${escapeHtml(fullTitle)}</h1>
+          <p>${escapeHtml(description)}</p>
           ${enrichedHtml}
           <nav aria-label="Video Metadata" style="margin-top: 16px; font-size: 0.95rem; line-height: 1.6;">
             ${studioLinkHtml}
@@ -3333,9 +3336,8 @@ async function handleRequest(context) {
         shouldCache = false;
         console.warn(`[SSR Warning] Metadata unavailable or incomplete for ${id}. Bypassing cache to prevent poisoning.`);
 
-        // A 200 response containing homepage metadata is permanently misleading
-        // for social cards. Ask social crawlers to retry instead.
-        if (isSocialCrawler) {
+        // Never return 200 OK homepage shell on incomplete watch metadata to crawlers (prevents Soft 404).
+        if (isKnownCrawler) {
           return new Response('Video metadata temporarily unavailable', {
             status: 503,
             headers: {
@@ -3343,7 +3345,7 @@ async function handleRequest(context) {
               'Cache-Control': cacheControl,
               'CDN-Cache-Control': cdnCacheControl,
               'Retry-After': '120',
-              'X-Edge-Mode': 'SOCIAL-SSR',
+              'X-Edge-Mode': isSocialCrawler ? 'SOCIAL-SSR' : 'SEARCH-SSR',
               'X-Cache-Status': 'BYPASS'
             }
           });
@@ -3614,10 +3616,10 @@ async function handleRequest(context) {
           } else if (type === 'studio' && !isOtherStudio) {
             apiParams.set('studio', nameParam);
           } else if (type === 'trending') {
-            apiParams.set('sort', 'views');
+            apiParams.set('orderby', 'views');
             apiParams.set('order', 'desc');
           } else if (type === 'recent') {
-            apiParams.set('sort', 'release');
+            apiParams.set('orderby', 'date');
             apiParams.set('order', 'desc');
           }
 
